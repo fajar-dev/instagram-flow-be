@@ -1,3 +1,4 @@
+import { listQuerySchema } from '../../core/validators/list-query.validator'
 import { UserListSerializer } from "./serializers/user-list.serialize"
 import { Context } from "hono"
 import { UserService } from "./user.service"
@@ -8,12 +9,8 @@ export class UserController {
     constructor(private readonly service: UserService) {}
 
     async index(c: Context) {
-        const page = Number(c.req.query("page") || 1)
-        const limit = Number(c.req.query("limit") || 10)
-        const q = c.req.query("q") || ""
+        const { page, limit, q, sortBy, order } = listQuerySchema.parse(c.req.query())
         const isActive = c.req.query("isActive")
-        const sortBy = c.req.query("sortBy") || undefined
-        const order = c.req.query("order")?.toUpperCase() === "ASC" ? "ASC" : "DESC"
 
         const filters = { isActive }
         const { data, total } = await this.service.getAll(page, limit, q, filters, sortBy, order)

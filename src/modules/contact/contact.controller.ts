@@ -1,3 +1,4 @@
+import { listQuerySchema } from '../../core/validators/list-query.validator'
 import { Context } from "hono"
 import { ContactService } from "./contact.service"
 import { ContactSerializer } from "./serializers/contact.serialize"
@@ -7,11 +8,7 @@ export class ContactController {
     constructor(private readonly service: ContactService) {}
 
     async index(c: Context) {
-        const page = Number(c.req.query("page") || 1)
-        const limit = Number(c.req.query("limit") || 10)
-        const q = c.req.query("q") || ""
-        const sortBy = c.req.query("sortBy") || undefined
-        const order = c.req.query("order")?.toUpperCase() === "ASC" ? "ASC" : "DESC"
+        const { page, limit, q, sortBy, order } = listQuerySchema.parse(c.req.query())
 
         const { data, total } = await this.service.getAll(page, limit, q, sortBy, order)
 

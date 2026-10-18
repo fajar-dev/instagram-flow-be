@@ -6,6 +6,7 @@ export class UserSerializer {
     static async single(user: User) {
         return {
             id: user.id,
+
             name: user.name,
             photo: await resolveStorageUrl(user.photo),
             email: user.email,

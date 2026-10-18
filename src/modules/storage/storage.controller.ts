@@ -13,7 +13,4 @@ export class StorageController {
         return ApiResponse.success(c, await this.service.upload(file), "File uploaded successfully")
     }
 
-    proxy(c: Context) {
-        return this.service.proxy(c.req.query("path"))
-    }
 }
