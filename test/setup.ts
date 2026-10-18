@@ -1,16 +1,14 @@
 import { mockExternalServices, restoreExternalServices } from "./external-services"
-import { PasswordResetToken } from "../src/modules/auth/entities/password-reset-token.entity"
 import "reflect-metadata"
 import { Hono } from "hono"
 import { cors } from "hono/cors"
 import { DataSource } from "typeorm"
 import { User } from "../src/modules/user/entities/user.entity"
-import { Contact } from "../src/modules/contact/entities/contact.entity"
 import { ApiResponse } from "../src/core/helpers/response"
 import { BaseException, ValidationException } from "../src/core/exceptions/base"
 import { ZodError } from "zod"
 import { config } from "../src/config/config"
-import { databaseMigrations, setDataSource } from "../src/config/database"
+import { databaseOptions, setDataSource } from "../src/config/database"
 import { languageMiddleware } from "../src/core/middlewares/language.middleware"
 import { requestLogger } from "../src/core/middlewares/logger.middleware"
 
@@ -18,19 +16,16 @@ import { requestLogger } from "../src/core/middlewares/logger.middleware"
 // Uses real database with a separate test database name
 // Ensure DB_TEST_NAME database exists before running tests
 
-const testDbName = process.env.DB_TEST_NAME || "hono_be_test"
+const testDbName = config.database.testName
+
+if (testDbName === config.database.name || !/^[a-zA-Z0-9_]+_test$/.test(testDbName)) {
+    throw new Error('Tests require a dedicated *_test database different from DB_NAME')
+}
 
 const TestDataSource = new DataSource({
-    type: config.database.type,
-    host: config.database.host,
-    port: config.database.port,
-    username: config.database.user,
-    password: config.database.pass,
+    ...databaseOptions,
     database: testDbName,
-    synchronize: false,
-    migrations: databaseMigrations,
     dropSchema: true,
-    entities: [User, Contact, PasswordResetToken],
     logging: false,
 })
 
@@ -80,14 +75,14 @@ export async function cleanTestDatabase() {
  */
 export function createTestApp(): Hono {
     // Import routes — they use AppDataSource which is now TestDataSource
-    const api = require("../src/routes/api").default
+    const { registerRoutes } = require("../src/routes/api")
 
     const app = new Hono()
 
     app.use("*", requestLogger)
     app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"] }))
     app.use("*", languageMiddleware)
-    app.route("/api", api)
+    registerRoutes(app)
 
     // Global Error Handler (matches production)
     app.onError((err, c) => {
@@ -146,6 +141,7 @@ export async function registerAndLogin(
     if (!regRes.body.success) {
         throw new Error(`Register failed: ${JSON.stringify(regRes.body)}`)
     }
+
 
     // Login
     const loginRes = await request(app, "/api/auth/login", {
