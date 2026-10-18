@@ -1,0 +1,105 @@
+import { config } from '../../../config/config';
+import { BadRequestException, ConflictException } from '../../../core/exceptions/base';
+import type { IWorkflowRepository } from '../../shared/interfaces/workflow.repository.interface';
+import type { RenderService } from '../../content/media/render.service';
+import type { ResultInput, FailureInput } from './validators/workflow.validator';
+import { contentHash, id } from '../../shared/workflow.helpers';
+import { WorkflowContextService } from '../../shared/context.service';
+import { MediaService } from '../../content/media/media.service';
+export class WorkflowService {
+    constructor(private readonly repository: IWorkflowRepository, private readonly renders: RenderService, private readonly context: WorkflowContextService, private readonly mediaAccess: MediaService) { }
+    async claim(jobId: string, executionId: string, eventId: string) {
+        return this.repository.transaction(async (store) => {
+            const job = await this.context.job(jobId, store, true);
+            const dispatch = (await store.find('dispatch', { jobId }))[0];
+            if (!dispatch || dispatch.eventId !== eventId)
+                throw new ConflictException('Unknown dispatch event');
+            // A retried HTTP claim from the same execution must survive a lost response.
+            if (job.status === 'PROCESSING' && job.lastExecutionId === executionId)
+                return { claimed: true };
+            if (!['QUEUED', 'DISPATCHED'].includes(job.status))
+                return { claimed: false };
+            await store.save('job', { ...job, status: 'PROCESSING', startedAt: new Date(), lastExecutionId: executionId });
+            await this.context.audit(store, null, 'JOB_CLAIMED', 'job', job.id);
+            return { claimed: true };
+        });
+    }
+    async manifest(jobId: string) {
+        const job = await this.context.job(jobId);
+        if (job.status !== 'PROCESSING')
+            throw new ConflictException('Job has not been claimed');
+        const batch = await this.context.batch(job.batchId);
+        const assets = (await this.repository.find('asset', { batchId: batch.id })).filter(a => !a.deletedAt);
+        return {
+            jobId, projectName: batch.projectName, activity: batch.activity, location: batch.location, description: batch.description, reviewUrl: `${config.app.frontendUrl}/content/${jobId}/edit`, assets: await Promise.all(assets.map(async a => {
+                const previewUrl = await this.mediaAccess.signedUrl(a.id);
+                return { assetId: a.id, aiImageUrl: previewUrl, renderImageUrl: previewUrl, description: batch.activity };
+            }))
+        };
+    }
+    async result(jobId: string, input: ResultInput) {
+        if (input.jobId !== jobId)
+            throw new BadRequestException('Job ID mismatch');
+        const hash = contentHash(input);
+        const storedKeys: string[] = [];
+        try {
+            return await this.repository.transaction(async (store) => {
+                const job = await this.context.job(jobId, store, true);
+                const previous = (await store.find('aiResult', { jobId }))[0];
+                if (previous) {
+                    if (previous.rawPayloadHash !== hash)
+                        throw new ConflictException('Result already exists with different content');
+                    return { accepted: true, duplicate: true, jobId };
+                }
+                if (job.status !== 'PROCESSING' || job.lastExecutionId !== input.executionId)
+                    throw new ConflictException('Stale execution callback');
+                const batch = await this.context.batch(job.batchId, store);
+                const assets = (await store.find('asset', { batchId: job.batchId })).filter(a => !a.deletedAt);
+                const ids = new Set(assets.map(a => a.id));
+                if (input.rankings.length !== assets.length || new Set(input.rankings.map(r => r.assetId)).size !== assets.length || input.rankings.some(r => !ids.has(r.assetId)) || input.selectedAssetIds.some(a => !ids.has(a)) || new Set(input.selectedAssetIds).size !== input.selectedAssetIds.length)
+                    throw new BadRequestException('Results must cover every batch asset exactly once');
+                if (input.renders.length !== job.requestedOutputs.length || new Set(input.renders.map(r => r.placement)).size !== input.renders.length)
+                    throw new BadRequestException('Missing or duplicate renders');
+                const aiResultId = id();
+                const safeRenders = await this.renders.create(input.renders, assets, job.requestedOutputs, input.selectedAssetIds[0], aiResultId, storedKeys);
+                await store.save('aiResult', {
+                    id: aiResultId, jobId, executionId: input.executionId, resultVersion: input.resultVersion, rankings: input.rankings, selectedAssetIds: input.selectedAssetIds, rawCaption: input.caption, rawTitle: input.title, rawHashtags: input.hashtags, rawPayloadHash: hash
+                });
+                for (const render of safeRenders)
+                    await store.save('render', render);
+                const draft = await store.save('draft', { id: id(), jobId, reviewStatus: 'READY_FOR_REVIEW' });
+                const content = {
+                    primaryAssetId: input.selectedAssetIds[0], title: input.title, caption: input.caption, hashtags: input.hashtags, location: batch.location, activity: batch.activity
+                };
+                const revision = await store.save('revision', { id: id(), draftId: draft.id, revisionNo: 1, ...content, contentHash: contentHash(content), createdBy: null });
+                await store.save('draft', { ...draft, currentRevisionId: revision.id });
+                await store.save('job', { ...job, status: 'READY_FOR_REVIEW', completedAt: new Date() });
+                await store.save('batch', { ...batch, status: 'COMPLETED' });
+                await this.context.audit(store, null, 'JOB_READY', 'job', jobId);
+                return { accepted: true, jobId };
+            });
+        } catch (error) {
+            await this.renders.cleanup(storedKeys);
+            throw error;
+        }
+    }
+    async failure(jobId: string, input: FailureInput) {
+        return this.repository.transaction(async (store) => {
+            const job = await this.context.job(jobId, store, true);
+            if (job.lastExecutionId !== input.executionId)
+                throw new ConflictException('Stale execution callback');
+            if (job.status === 'READY_FOR_REVIEW' || job.status === 'FAILED')
+                return { accepted: true, duplicate: true };
+            if (job.status !== 'PROCESSING')
+                throw new ConflictException('Job is not processing');
+            // Never persist arbitrary worker text; it may contain secrets even after regex redaction.
+            const safeError = 'Workflow failed. Check the private n8n execution log and retry after fixing the cause.';
+            await store.save('job', {
+                ...job, status: 'FAILED', completedAt: new Date(), errorCode: 'WORKFLOW_ERROR', safeError, retryable: input.retryable
+            });
+            await store.save('batch', { id: job.batchId, status: 'FAILED' });
+            await this.context.audit(store, null, 'JOB_FAILED', 'job', jobId);
+            return { accepted: true };
+        });
+    }
+}
