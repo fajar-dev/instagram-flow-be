@@ -21,7 +21,7 @@ cp .env.dist .env
 | `APP_NAME` | string | `hono-be` | Nama service, muncul di setiap baris log JSON (field `service`) — dipakai sebagai label saat scrape ke Grafana Loki |
 | `PORT` | number | `4000` | Port server HTTP |
 | `ENV` | string | `development` | Environment: `development` / `production` |
-| `APP_URL` | string | `https://localhost:3000` | Base URL publik (untuk generate link, misal reset password) |
+| `APP_URL` | string | `http://localhost:4000` | Base URL API publik (signed media n8n) |
 
 #### Database
 
@@ -32,7 +32,6 @@ cp .env.dist .env
 | `DB_USER` | string | `root` | Username database |
 | `DB_PASS` | string | _(kosong)_ | Password database |
 | `DB_NAME` | string | `hono_be` | Nama database |
-| `DB_SYNC` | boolean | `false` | Schema sync selalu `false` pada semua environment; nilai env tidak dapat mengaktifkannya. |
 
 `DB_ROOT_PASS` digunakan oleh Docker Compose untuk password root MySQL (default lokal: `root`). Template Compose memakai user aplikasi `hono` / password `hono`; ganti password sebelum deployment. `MYSQL_USER` harus user non-root. Untuk MySQL yang sudah tersedia, gunakan kredensial koneksi yang ada.
 
@@ -42,7 +41,6 @@ cp .env.dist .env
 |----------|------|---------|-----------|
 | `JWT_SECRET` | string | _(dev only)_ | **WAJIB di production.** Secret key untuk access token (15 menit) |
 | `JWT_REFRESH_SECRET` | string | _(dev only)_ | **WAJIB di production.** Secret key untuk refresh token (7 hari) |
-| `API_KEY` | string | _(dev only)_ | **WAJIB di production.** Kunci untuk server-to-server authentication |
 
 #### SMTP (Email)
 
@@ -249,7 +247,7 @@ logs/              # Application logs (JSON, per tanggal)
 
 - Uploads disajikan melalui: `GET /api/uploads/*`
 - Root directory: `./public/uploads/`
-- MinIO proxy: `GET /api/proxy?path={objectName}`
+- Avatar URLs: direct MinIO presigned URLs returned by user/auth serializers.
 
 ---
 
@@ -283,7 +281,6 @@ Dicatat ke stdout untuk semua request, termasuk `requestId` (echo dari header `X
 |--------|----------|
 | `JWT_SECRET` tidak di-set | ❌ Crash saat startup |
 | `JWT_REFRESH_SECRET` tidak di-set | ❌ Crash saat startup |
-| `API_KEY` tidak di-set | ❌ Crash saat startup |
 | Schema sync (semua environment) | Selalu `false`; gunakan migration |
 | Stack trace di response | ⚠️ Hidden di production |
 
@@ -293,4 +290,40 @@ Hentikan aplikasi, lalu dari checkout backend jalankan `bun run migration:run` s
 
 ## Seeder User
 
-Seeder menggunakan fixture dummy di `src/database/seeders/user.seeder.ts`, tanpa variabel `SEED_USER_*`. Jalankan `bun run seed:users` atau `bun run seed` setelah migration. Akun admin@example.com, budi@example.com, siti@example.com menggunakan password development `password123`; password tetap di-hash oleh UserService. Email existing dilewati tanpa mengganti password/status/nama. Nama Admin Demo tidak memberikan role administrator. Sync tetap false; seeder tidak mengubah schema.
+Seeder menggunakan fixture dummy di `src/database/seeders/user.seeder.ts`, tanpa variabel `SEED_USER_*`. Jalankan `bun run seed:users` atau `bun run seed` setelah migration. Akun admin@example.com, budi@example.com, siti@example.com menggunakan password development `password123`; password tetap di-hash oleh UserService. Email existing dilewati tanpa mengganti password/status/nama. Semua akun aktif memiliki akses aplikasi yang sama; nama fixture tidak menentukan hak akses. Sync tetap false; seeder tidak mengubah schema.
+
+Social Agent environment variables and worker commands are documented in `../README_SETUP.md` and `.env.dist`. Secrets are server-only; Settings returns configuration presence and a masked webhook, never credential values.
+
+## Current content storage
+
+One private `MINIO_BUCKET` stores all media, separated by object prefixes: `users/`, `batches/`, and `renders/`. Avatar serializers return direct presigned URLs; the generic proxy endpoint has been removed. Content handlers retain authentication and scoped signatures. MinIO must be reachable from clients using the configured endpoint.
+
+`FRONTEND_URL` berada di config.app.frontendUrl dan digunakan untuk email reset password serta tautan review. APP_URL menunjuk backend/API; jangan gunakan URL frontend untuk signed media.
+
+## Configuration ownership (2026-10-16)
+
+- `.env.dist` is the only backend environment template. Copy it to `.env`; do not maintain a second `.env.example`.
+- Use `NODE_ENV`, not `ENV`. Runtime parsing and defaults live in `src/config/config.ts`. Numeric settings must be positive integers; invalid values fail startup without logging their contents.
+- Backend defaults to port 4000. Without `APP_URL`, its URL follows `PORT`. Set an explicit external `APP_URL` behind a proxy.
+- Schema synchronization is always false. `DB_SYNC` is no longer an accepted setting.
+- `databaseOptions` is shared by runtime/CLI and test setup. Tests override the database with `DB_TEST_NAME` (default `hono_be_test`), require a distinct `*_test` name and recreate only that test schema.
+- Register migrations once in `src/database/migrations/index.ts`.
+- Docker passes `.env` through `env_file`; only container-specific host/port/environment overrides belong in Compose. PM2 sets production once.
+One private `MINIO_BUCKET` stores all media, separated by object prefixes: `users/`, `batches/`, and `renders/`. Avatar serializers return direct presigned URLs; the generic proxy endpoint has been removed. Content handlers retain authentication and scoped signatures. MinIO must be reachable from clients using the configured endpoint.
+- Frontend `nuxt.config.ts` owns framework/runtime configuration; `app/app.config.ts` owns UI theme defaults. They have different responsibilities. API URL retains `API_BASE_URL` compatibility and defaults to `http://localhost:4000/api`; Nuxt's `NUXT_PUBLIC_API_URL` runtime override remains available.
+
+### Migrating existing content buckets
+
+Before deploying this change, copy objects from the former content bucket into MINIO_BUCKET with the same keys and metadata. Verify every destination object by SHA-256; refuse conflicting keys. Keep the original bucket as a backup until deployment is verified. Remove MINIO_MEDIA_BUCKET from environment files afterward. Do not make the unified bucket public. No database key rewrite is needed.
+
+## Dispatcher dashboard
+
+Sakelar dispatcher tetap disimpan di tabel settings sesuai pilihan pengguna, terpisah dari credential environment. Worker memerlukan sakelar aktif dan konfigurasi HTTPS/secret yang lengkap. TELEGRAM_NOTIFICATION_ENABLED telah dihapus; aplikasi tidak menyimpulkan kesehatan Telegram dari flag manual. Batas upload frontend berasal dari GET /api/batches/limits.
+
+## MinIO presigned media — 2026-10-18
+
+MEDIA_SIGNING_SECRET is removed. The existing MinIO credentials sign preview URLs using getPresignedUrl. SIGNED_MEDIA_URL_TTL_SECONDS remains the preview expiration setting. Configure the MinIO endpoint to be reachable by n8n and the image consumer; the backend API origin is no longer the image URL. Signed URLs grant access until expiry even if an asset is later archived; do not log or persist them. Existing JWT-protected dashboard media handlers remain. Dispatcher readiness checks MinIO configuration, not network reachability.
+
+### n8n with a local backend
+
+For the approved MacBook + server tunnel setup, see [the n8n runbook](../integrations/n8n/README.md). Use `N8N_CONTRACT=camelCase` and distinct webhook/backend service secrets. AI credentials live in n8n, not backend environment. Keep `APP_URL` pointed at the local backend and `FRONTEND_URL` at the local frontend; the workflow configuration contains the dedicated callback tunnel URL.

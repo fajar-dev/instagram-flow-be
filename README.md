@@ -77,7 +77,6 @@ hono-be/
 │   │   │   └── validator.ts           # Zod validation hook
 │   │   └── middlewares/
 │   │       ├── auth.middleware.ts      # JWT auth
-│   │       ├── api-key.middleware.ts   # API key auth
 │   │       └── token-auth.middleware.ts
 │   │
 │   ├── modules/                       # Feature modules
@@ -173,7 +172,6 @@ Salin `.env.dist` menjadi `.env` lalu isi setiap nilai:
 | `DB_SYNC`              | Schema sync dinonaktifkan                  | `false`                  |
 | `JWT_SECRET`           | Secret untuk access token (15 menit)       | —                       |
 | `JWT_REFRESH_SECRET`   | Secret untuk refresh token (7 hari)        | —                       |
-| `API_KEY`              | Kunci API server-to-server                 | —                       |
 | `SMTP_HOST`            | Host SMTP                                  | —                       |
 | `SMTP_PORT`            | Port SMTP                                  | —                       |
 | `SMTP_USER`            | Username SMTP                              | —                       |
@@ -195,3 +193,7 @@ Salin `.env.dist` menjadi `.env` lalu isi setiap nilai:
 Jalankan `bun run migration:run`, lalu `bun run seed:users` (atau `bun run seed`). Seeder berisi data dummy langsung di `src/database/seeders/user.seeder.ts`, tanpa konfigurasi SEED_USER_*. Akun: admin@example.com, budi@example.com, siti@example.com; password masing-masing `password123`. Password disimpan sebagai hash. Email yang sudah ada dilewati tanpa perubahan. Data ini untuk development; nama Admin Demo bukan role administrator.
 
 Command database: `bun run migration:run`, `bun run migration:revert`, dan `bun run migration:show` memakai CLI TypeORM. Buat migration dengan `bun run migration:create src/database/migrations/<nama>` atau generate dengan `bun run migration:generate src/database/migrations/<nama> -d src/config/database.ts`, lalu daftarkan class-nya di `databaseMigrations`. Seeder dijalankan dari `src/database/seeders`, melalui `bun run seed` atau `bun run seed:users`.
+
+## IG Flow n8n workflow
+
+See [workflow setup and local tunnel](integrations/n8n/README.md) and [live verification report](docs/AUDIT-N8N-2026-10-18.md). The backend and MySQL remain local; n8n runs on the server.

@@ -113,7 +113,6 @@ Baca: [`MODULE_GUIDE.md`](./MODULE_GUIDE.md)
 | File upload | `src/core/helpers/minio.ts` | minio.upload, minio.delete, dll |
 | Structured logger | `src/core/helpers/logger.ts` | `logger.info/warn/error/debug()` — JSON, lihat `docs/LOGGING_GUIDE.md` |
 | Auth middleware | `src/core/middlewares/auth.middleware.ts` | JWT Bearer |
-| API key middleware | `src/core/middlewares/api-key.middleware.ts` | x-api-key |
 | Request logger | `src/core/middlewares/logger.middleware.ts` | Access log JSON per request + `X-Request-Id` |
 | Route definitions | `src/routes/api.ts` | Semua route didefinisikan di sini |
 | Base repo interface | `src/core/interfaces/base.repository.interface.ts` | Interface dasar CRUD |
