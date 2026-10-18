@@ -2,6 +2,7 @@ import * as Minio from "minio"
 import { config } from "../../config/config"
 import { Readable } from "node:stream"
 import { logger } from "./logger"
+import { InternalServerException } from "../exceptions/base"
 
 const minioClient = new Minio.Client({
     endPoint: config.minio.endPoint,
@@ -14,13 +15,29 @@ const minioClient = new Minio.Client({
 const BUCKET = config.minio.bucket
 
 class MinioHelper {
+    /** All application objects use private storage; clients receive signed URLs. */
+    async ensurePrivateBucket(bucket: string) {
+        await this.ensureBucket(bucket)
+        let policy = ""
+        try {
+            policy = await minioClient.getBucketPolicy(bucket)
+        } catch (error) {
+            if ((error as { code?: string }).code !== "NoSuchBucketPolicy") throw error
+        }
+        // Bucket policies grant anonymous access in MinIO. Private buckets need no policy.
+        if (policy.trim()) throw new InternalServerException("Storage bucket must not have a public policy")
+    }
     /**
      * Ensure the default bucket exists, create it if not
      */
     async ensureBucket(bucket: string = BUCKET) {
         const exists = await minioClient.bucketExists(bucket)
         if (!exists) {
-            await minioClient.makeBucket(bucket)
+            try {
+                await minioClient.makeBucket(bucket)
+            } catch (error) {
+                if (!["BucketAlreadyOwnedByYou", "BucketAlreadyExists"].includes((error as { code?: string }).code || "")) throw error
+            }
             logger.info('MinIO bucket created', { bucket })
         }
     }
@@ -52,27 +69,6 @@ class MinioHelper {
      */
     async getPresignedUrl(objectName: string, expiry: number = 7 * 24 * 60 * 60, bucket: string = BUCKET): Promise<string> {
         return minioClient.presignedGetObject(bucket, objectName, expiry)
-    }
-
-    /**
-     * Get a public URL (for publicly accessible buckets)
-     * @param objectName - The object key in the bucket
-     * @param bucket - Optional bucket override
-     */
-    getPublicUrl(objectName: string, bucket: string = BUCKET): string {
-        const protocol = config.minio.useSSL ? "https" : "http"
-        const portPart = (config.minio.useSSL && config.minio.port === 443) || (!config.minio.useSSL && config.minio.port === 80)
-            ? ""
-            : `:${config.minio.port}`
-        return `${protocol}://${config.minio.endPoint}${portPart}/${bucket}/${objectName}`
-    }
-
-    /**
-     * Get a proxy URL that goes through the backend
-     * @param objectName - The object key in the bucket
-     */
-    getProxyUrl(objectName: string): string {
-        return `${config.app.appUrl}/api/proxy?path=${encodeURIComponent(objectName)}`
     }
 
     /**
@@ -108,31 +104,6 @@ class MinioHelper {
         } catch {
             return false
         }
-    }
-
-    /**
-     * Proxy handler: streams a MinIO object as an HTTP Response
-     * @param objectName - The object key in the bucket
-     */
-    async proxyHandler(objectName: string): Promise<Response> {
-        const { stream, stat } = await this.getObject(objectName)
-        const contentType = stat.metaData?.["content-type"] || "application/octet-stream"
-
-        const webStream = new ReadableStream({
-            start(controller) {
-                stream.on("data", (chunk: Buffer) => controller.enqueue(chunk))
-                stream.on("end", () => controller.close())
-                stream.on("error", (err: Error) => controller.error(err))
-            },
-        })
-
-        return new Response(webStream, {
-            headers: {
-                "Content-Type": contentType,
-                "Content-Length": String(stat.size),
-                "Cache-Control": "public, max-age=86400",
-            },
-        })
     }
 
     /**

@@ -1,6 +1,6 @@
-import { MigrationInterface, QueryRunner } from "typeorm"
+import type { MigrationInterface, QueryRunner } from "typeorm"
 
-export class CreateContacts1792022399000 implements MigrationInterface {
+export class CreateContacts1792195300001 implements MigrationInterface {
     transaction = false
 
     async up(queryRunner: QueryRunner): Promise<void> {

@@ -54,8 +54,8 @@ export class ApiResponse {
                 perPage: limit,
                 currentPage: page,
                 lastPage: lastPage,
-                from: (page - 1) * limit + 1,
-                to: Math.min(page * limit, total)
+                from: total > (page - 1) * limit ? (page - 1) * limit + 1 : 0,
+                to: total > (page - 1) * limit ? Math.min(page * limit, total) : 0
             }
         }, 200)
     }
