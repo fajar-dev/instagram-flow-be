@@ -247,7 +247,6 @@ bun test
 |------|----------|
 | `JWT_SECRET` tidak di-set di production | ❌ Server crash saat startup |
 | `JWT_REFRESH_SECRET` tidak di-set | ❌ Server crash saat startup |
-| `API_KEY` tidak di-set | ❌ Server crash saat startup |
 | Schema sync (semua environment) | Selalu `false`; gunakan migration |
 | Stack trace di response | ⚠️ Hidden di production |
 
@@ -272,7 +271,7 @@ Baca semua file di folder `docs/` untuk detail lebih lanjut:
 
 - Schema sync selalu `false` di semua environment, termasuk test.
 - Satu tabel aplikasi memiliki satu file migration pembuatan tabel di `src/database/migrations/`.
-- Daftarkan migration di `databaseMigrations` pada `src/config/database.ts`.
+- Daftarkan migration di `databaseMigrations` pada `src/database/migrations/index.ts`.
 - Jalankan `bun run migration:run` sebelum menjalankan aplikasi pada database baru maupun existing.
 - Perubahan schema setelah migration diterapkan harus memakai migration baru; jangan mengedit history yang sudah diterapkan.
 
@@ -292,3 +291,17 @@ Baca semua file di folder `docs/` untuk detail lebih lanjut:
 - Seeder CLI merupakan composition root khusus command, sehingga boleh membuat instance seeder di file tersebut; service/repository aplikasi tetap diwiring di `*.module.ts`.
 - `index.ts` hanya mengoordinasikan command `seed`, bukan memisahkan implementasi seeder. Tidak perlu `user-seeder.ts` atau `seeder.module.ts` tambahan.
 - Gunakan `import.meta.main` agar mengimpor seeder dari test/koordinator tidak otomatis menjalankan CLI.
+
+## Feature module boundaries
+
+Read `docs/content-automation/REFACTOR-2026-10-16.md` before extending content automation. Keep feature modules at the top level, with related children inside their owning feature. Do not recreate a social umbrella module. Reuse existing infrastructure, including MinIO, and preserve transaction/API boundaries.
+
+## Access and media policy — 2026-10-16
+
+All active authenticated users have the same application access. Do not add user roles, role selectors, role middleware or owner-only visibility filters. Keep authentication, n8n service secrets, rate limits and signed private-media access. Creator/uploader/reviewer IDs remain audit metadata, not permissions.
+
+Persist uploaded/generated media only in MinIO. No local media adapter/fallback or inline database SVG storage. Frontend branding/icons are build assets; temporary browser Blob URLs are not persistent media storage. Preserve applied migration history and use forward migrations for schema changes.
+
+## Baseline reset — 2026-10-16
+
+The user explicitly reset the database and migration history. The current baseline contains 14 per-table migrations without role or social_ table prefixes. Preserve this new history going forward. Read docs/AUDIT-BASELINE-2026-10-16.md before deployment; use jobs:dispatch and the current environment template (obsolete media-signing/Telegram flags have been removed).

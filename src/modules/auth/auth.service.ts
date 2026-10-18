@@ -133,7 +133,7 @@ export class AuthService {
             user.id, user.email, this.hashResetToken(resetToken), expiresAt,
         )
 
-        const resetUrl = new URL("auth/reset-password", `${config.app.appUrl.replace(/\/$/, "")}/`)
+        const resetUrl = new URL("auth/reset-password", `${config.app.frontendUrl.replace(/\/$/, "")}/`)
         resetUrl.search = new URLSearchParams({ email: user.email, token: resetToken }).toString()
         const { html, text } = renderForgotPasswordEmail({
             name: user.name,

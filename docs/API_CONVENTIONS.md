@@ -188,14 +188,9 @@ Authorization: Bearer <access_token>
 - Algoritma: HS256
 - User disimpan di `c.set("user", user)` → akses via `c.get("user")`
 
-### API Key (apiKeyMiddleware)
+### n8n service authentication
 
-```http
-x-api-key: <api_key>
-```
-
-- Untuk server-to-server communication
-- Verifikasi terhadap `config.app.apiKey`
+Callback endpoints use a Bearer service token validated against N8N_BACKEND_SERVICE_TOKEN. User endpoints require JWT authentication.
 
 ### Token Query Param (tokenAuthMiddleware)
 

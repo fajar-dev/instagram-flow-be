@@ -338,3 +338,9 @@ Command migration memakai CLI TypeORM: `migration:run`, `migration:revert`, `mig
 - Seeder CLI merupakan composition root khusus command, sehingga boleh membuat instance seeder di file tersebut; service/repository aplikasi tetap diwiring di `*.module.ts`.
 - `index.ts` hanya mengoordinasikan command `seed`, bukan memisahkan implementasi seeder. Tidak perlu `user-seeder.ts` atau `seeder.module.ts` tambahan.
 - Gunakan `import.meta.main` agar mengimpor seeder dari test/koordinator tidak otomatis menjalankan CLI.
+
+## Social tables
+
+Historical migrations created a role column; `RemoveUserRole1792195200000` removes it without rewriting applied history. There are no roles in the current schema. Feature tables retain one creation migration each for social_batches, social_assets, social_jobs, social_job_dispatches, social_ai_results, social_renders, social_drafts, social_draft_revisions, social_reviews, social_audit_logs and social_settings. UUID strings identify social records; integer user foreign keys retain the existing schema. MySQL UTC timezone is explicit. Outbox and result/revision updates use transaction-scoped repositories; schema synchronization remains false.
+
+Render media now uses `social_renders.storage_key`. `StoreRendersInObjectStorage1792195201000` copies existing SVG bytes into the private MinIO bucket and verifies bytes before removing `sanitized_svg`. The migration requires working MinIO only when existing render rows need copying. Failed verification keeps legacy bytes available; rerunning handles partial MySQL DDL. Down migration reads objects back before removing the key column and preserves remote objects.

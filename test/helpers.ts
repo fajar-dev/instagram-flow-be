@@ -81,3 +81,7 @@ export async function createPasswordResetToken(userId: number, email: string, ex
     })
     return token
 }
+
+export function createBatchData() {
+    return { projectName: 'Bridge monitoring', activity: 'Sensor installation', location: 'Jakarta', documentationDate: '2026-01-01', publicationPermission: true as const }
+}

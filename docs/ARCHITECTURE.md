@@ -80,7 +80,6 @@ HTTP Request
     ▼
 [Auth Middleware] (opsional, per-route)
     │   → authMiddleware:     JWT Bearer token
-    │   → apiKeyMiddleware:   x-api-key header
     │   → tokenAuthMiddleware: JWT via query param atau header
     │
     ▼
@@ -135,11 +134,10 @@ Error ditangani di `src/index.ts` → `app.onError()`:
 | **AuthHelper** | `core/helpers/auth.ts` | JWT token generation & Google OAuth verification |
 | **Hash** | `core/helpers/hash.ts` | bcrypt password hashing & comparison |
 | **Mail** | `core/helpers/mail.ts` | Singleton Nodemailer wrapper (sendText, sendHtml) |
-| **MinIO** | `core/helpers/minio.ts` | Singleton MinIO wrapper (upload, delete, presignedUrl, proxy) |
+| **MinIO** | `core/helpers/minio.ts` | Singleton MinIO wrapper (upload, delete, presignedUrl) |
 | **Logger** | `core/helpers/logger.ts` | Structured JSON logger (stdout/stderr + `logs/app-{date}.log`, semua level), lihat `LOGGING_GUIDE.md` |
 | **Validator** | `core/helpers/validator.ts` | Zod validation hook untuk Hono |
 | **Auth Middleware** | `core/middlewares/auth.middleware.ts` | JWT Bearer token verification |
-| **API Key Middleware** | `core/middlewares/api-key.middleware.ts` | x-api-key header verification |
 | **Token Auth Middleware** | `core/middlewares/token-auth.middleware.ts` | JWT via query param atau header |
 
 ---
@@ -157,3 +155,11 @@ Error ditangani di `src/index.ts` → `app.onError()`:
 AuthService menerima `IPasswordResetTokenRepository` melalui auth.module.ts. Implementasi TypeORM di `modules/auth/repositories/password-reset-token.repository.ts` menangani penerbitan token dan transaksi perubahan password + konsumsi token. Entity `PasswordResetToken` disimpan pada tabel `password_reset_tokens`, terpisah dari `User`, dengan FK cascade. Tidak ada endpoint CRUD publik atau serializer yang mengekspos token hash.
 
 Lihat [audit 2026-10-15](./AUDIT-2026-10-15.md) untuk keputusan arsitektur, batas pengujian layanan eksternal, dan temuan yang ditindaklanjuti.
+
+## Content automation
+
+Feature controllers call services through their module composition roots. Shared IWorkflowRepository provides atomic cross-feature persistence; IReportingRepository owns reporting queries. Feature serializers explicitly select response fields. MinioMedia uses the existing MinIO helper. JobDispatcher runs through the supervised CLI and locks batch, job, then dispatch. See [current audit](AUDIT-2026-10-16.md) and [feature map](content-automation/REFACTOR-2026-10-16.md).
+
+## Content automation modules
+
+Features live directly under the existing module/service/component roots: content, AI Job, Content Review, Integration and Reporting. Related children remain together. Backend persistence and HTTP contracts remain compatible. See [feature map](content-automation/REFACTOR-2026-10-16.md).

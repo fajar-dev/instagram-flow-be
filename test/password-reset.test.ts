@@ -1,4 +1,3 @@
-import { AllowMultiplePasswordResetTokens1792022401000 } from "../src/database/migrations/1792022401000-allow-multiple-password-reset-tokens"
 import { afterAll, beforeAll, beforeEach, describe, expect, spyOn, test } from "bun:test"
 import type { Hono } from "hono"
 import crypto from "node:crypto"
@@ -7,7 +6,6 @@ import { PasswordResetToken } from "../src/modules/auth/entities/password-reset-
 import { mail } from "../src/core/helpers/mail"
 import { createPasswordResetToken } from "./helpers"
 import { cleanTestDatabase, createTestApp, destroyTestDatabase, initTestDatabase, registerAndLogin, request } from "./setup"
-import { SeparatePasswordResetTokens1792022400000 } from "../src/database/migrations/1792022400000-separate-password-reset-tokens"
 
 let app: Hono
 beforeAll(async () => { await initTestDatabase(); app = createTestApp() })
@@ -111,24 +109,14 @@ describe("Password reset token storage", () => {
         expect(await AppDataSource.getRepository(PasswordResetToken).count()).toBe(0)
     })
 
-    test("migration preserves existing valid reset links and removes legacy columns", async () => {
-        const { user } = await registerAndLogin(app)
-        const queryRunner = AppDataSource.createQueryRunner()
+    test("baseline stores reset tokens separately with a non-unique user index", async () => {
+        const runner = AppDataSource.createQueryRunner()
         try {
-            await queryRunner.query("DROP TABLE password_reset_tokens")
-            await queryRunner.query("ALTER TABLE users ADD reset_password_token varchar(255) NULL, ADD reset_password_expires timestamp NULL")
-            await queryRunner.query("UPDATE users SET reset_password_token = ?, reset_password_expires = ? WHERE id = ?", [
-                "legacy-token", new Date(Date.now() + 3600000), user.id,
-            ])
-            await new SeparatePasswordResetTokens1792022400000().up(queryRunner)
-            await queryRunner.query("ALTER TABLE password_reset_tokens RENAME INDEX UQ_password_reset_user TO legacy_generated_unique")
-            await new AllowMultiplePasswordResetTokens1792022401000().up(queryRunner)
-            await new AllowMultiplePasswordResetTokens1792022401000().up(queryRunner)
-            expect(await queryRunner.hasColumn("users", "reset_password_token")).toBe(false)
-            expect(await queryRunner.hasColumn("users", "reset_password_expires")).toBe(false)
-            expect((await validate(user.email, "legacy-token")).status).toBe(200)
-            expect((await reset("legacy-token")).status).toBe(200)
-            await new SeparatePasswordResetTokens1792022400000().up(queryRunner)
-        } finally { await queryRunner.release() }
+            expect(await runner.hasColumn("users", "reset_password_token")).toBe(false)
+            expect(await runner.hasColumn("users", "reset_password_expires")).toBe(false)
+            const indexes = await runner.query("SHOW INDEX FROM password_reset_tokens WHERE Column_name = 'user_id'")
+            expect(indexes.length).toBeGreaterThan(0)
+            expect(indexes.every((index: { Non_unique: number }) => Number(index.Non_unique) === 1)).toBe(true)
+        } finally { await runner.release() }
     })
 })

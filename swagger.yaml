@@ -13,6 +13,11 @@ servers:
     description: Relative API server
 
 tags:
+  - name: Content
+  - name: AI Jobs
+  - name: Content Review
+  - name: Reporting
+  - name: Integration
   - name: Auth
     description: Registration, login, session, and password management
   - name: Contact
@@ -24,6 +29,10 @@ tags:
 
 components:
   securitySchemes:
+    n8nServiceAuth:
+      type: http
+      scheme: bearer
+      description: N8N_BACKEND_SERVICE_TOKEN (distinct from JWT)
     bearerAuth:
       type: http
       scheme: bearer
@@ -222,8 +231,8 @@ components:
         perPage: { type: integer, example: 10 }
         currentPage: { type: integer, example: 1 }
         lastPage: { type: integer, example: 5 }
-        from: { type: integer, example: 1 }
-        to: { type: integer, example: 10 }
+        from: { type: integer, example: 1, description: "First item index; 0 when the requested page is empty." }
+        to: { type: integer, example: 10, description: "Last item index; 0 when the requested page is empty." }
 
     User:
       type: object
@@ -255,6 +264,65 @@ components:
         isActive: { type: boolean, example: true }
 
 paths:
+  /assets/{assetId}/previews:
+    get:
+      tags: [Content]
+      summary: Get private thumbnail and preview URLs for progressive image loading
+      description: Lazily creates a 32px JPEG thumbnail in the same private object-storage bucket. Existing assets need no migration. Archived or missing assets return 404.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Standard success envelope containing expiring MinIO URLs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required: [previewUrl, thumbnailUrl]
+                    properties:
+                      previewUrl: { type: string, format: uri }
+                      thumbnailUrl: { type: string, format: uri }
+        '401':
+          description: Authentication required
+        '404':
+          description: Asset unavailable
+  /content/counts:
+    get:
+      tags: [Reporting]
+      summary: Count Content tabs by job and current draft status
+      description: Counts use the same date scope as Content lists. Completed jobs are represented by draft review status, not counted twice as ready jobs.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: days
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 365, default: 30 }
+      responses:
+        '200':
+          description: Status counts in the standard success envelope, including zero-count statuses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  statusCode: { type: integer }
+                  message: { type: string }
+                  data:
+                    type: object
+                    additionalProperties: { type: integer, minimum: 0 }
+        '401':
+          description: Authentication required
+        '422':
+          description: Invalid query parameters
   # ── Register ──────────────────────────────────────────────────────────────
   /auth/register:
     parameters:
@@ -622,10 +690,10 @@ paths:
       parameters:
         - name: page
           in: query
-          schema: { type: integer, default: 1 }
+          schema: { type: integer, minimum: 1, maximum: 1000000, default: 1 }
         - name: limit
           in: query
-          schema: { type: integer, default: 10 }
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
         - name: q
           in: query
           description: Search by name, email, or phone
@@ -796,10 +864,10 @@ paths:
       parameters:
         - name: page
           in: query
-          schema: { type: integer, default: 1 }
+          schema: { type: integer, minimum: 1, maximum: 1000000, default: 1 }
         - name: limit
           in: query
-          schema: { type: integer, default: 10 }
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
         - name: q
           in: query
           description: Search by name or email
@@ -1015,29 +1083,1500 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ErrorResponse" }
 
-  # ── Proxy File ───────────────────────────────────────────────────────────
-  /proxy:
+
+  /overview:
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
     get:
-      tags: [Upload]
-      summary: Stream a file stored in MinIO
-      description: Public endpoint (no auth) that streams the raw file content for the given object path, e.g. the `path` returned by `POST /upload`.
-      parameters:
-        - name: path
-          in: query
-          required: true
-          description: Object path/key in the MinIO bucket
-          schema: { type: string }
+      tags:
+        - Reporting
+      summary: Real scoped overview counts
+      security:
+        - bearerAuth:
+            []
       responses:
         "200":
-          description: File stream
-          content:
-            application/octet-stream:
-              schema: { type: string, format: binary }
+          description: ApiResponse envelope or authenticated binary as described
         "400":
-          description: Missing 'path' query parameter
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message: { type: string, example: "Missing 'path' query parameter" }
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: page
+          in: query
+          schema:
+            default: 1
+            type: integer
+            minimum: 1
+            maximum: 1000000
+        - name: limit
+          in: query
+          schema:
+            default: 20
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 150
+        - name: status
+          in: query
+          schema:
+            type: string
+            maxLength: 40
+        - name: days
+          in: query
+          schema:
+            default: 30
+            type: integer
+            minimum: 1
+            maximum: 365
+        - name: batchId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        - name: output
+          in: query
+          schema:
+            type: string
+            enum:
+              - feed
+              - story
+        - name: uploaderId
+          in: query
+          schema:
+            type: integer
+            exclusiveMinimum: true
+            maximum: 9007199254740991
+  /batches/limits:
+    get:
+      tags: [Content]
+      summary: Get upload and job limits from runtime configuration
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: ApiResponse containing maxUploadMb, maxBatchFiles and maxJobFiles
+        "401":
+          description: Authentication required
+
+  /batches:
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    post:
+      tags:
+        - Content
+      summary: Create staging batch
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "201":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: "^[a-zA-Z0-9_-]+$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                projectName:
+                  type: string
+                  minLength: 3
+                  maxLength: 150
+                activity:
+                  type: string
+                  minLength: 3
+                  maxLength: 200
+                location:
+                  type: string
+                  minLength: 3
+                  maxLength: 200
+                documentationDate:
+                  type: string
+                  format: date
+                  pattern: "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                description:
+                  default: ""
+                  type: string
+                  maxLength: 2000
+                clientName:
+                  default: ""
+                  type: string
+                  maxLength: 200
+                publicationPermission:
+                  type: boolean
+                  enum:
+                    - true
+              required:
+                - projectName
+                - activity
+                - location
+                - documentationDate
+                - description
+                - clientName
+                - publicationPermission
+              additionalProperties: false
+  "/batches/{batchId}":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    get:
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set).
+      tags:
+        - Content
+      summary: Get owned batch
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+  "/batches/{batchId}/assets":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    post:
+      tags:
+        - Content
+      summary: "Upload one static JPG, PNG or WEBP"
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+  "/batches/{batchId}/process":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    post:
+      tags:
+        - Content
+      summary: Atomically queue batch and outbox event
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "202":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: "^[a-zA-Z0-9_-]+$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                requestedOutputs:
+                  minItems: 1
+                  maxItems: 2
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - feed
+                      - story
+              required:
+                - requestedOutputs
+              additionalProperties: false
+  /jobs:
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    get:
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set).
+      tags:
+        - AI Jobs
+      summary: List scoped jobs
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: page
+          in: query
+          schema:
+            default: 1
+            type: integer
+            minimum: 1
+            maximum: 1000000
+        - name: limit
+          in: query
+          schema:
+            default: 20
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 150
+        - name: status
+          in: query
+          schema:
+            type: string
+            maxLength: 40
+        - name: days
+          in: query
+          schema:
+            default: 30
+            type: integer
+            minimum: 1
+            maximum: 365
+        - name: batchId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        - name: output
+          in: query
+          schema:
+            type: string
+            enum:
+              - feed
+              - story
+        - name: uploaderId
+          in: query
+          schema:
+            type: integer
+            exclusiveMinimum: true
+            maximum: 9007199254740991
+  "/jobs/{jobId}":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    get:
+      tags:
+        - AI Jobs
+      summary: "Job with immutable AI result, current draft, history and render metadata"
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+  "/jobs/{jobId}/result":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    get:
+      tags:
+        - AI Jobs
+      summary: Job result and revision history
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+    post:
+      tags:
+        - AI Jobs
+      summary: "Atomically persist immutable AI result, render, draft and initial revision"
+      security:
+        - n8nServiceAuth:
+            []
+      responses:
+        "200":
+          description: Flat n8n response; see backend/docs/IMPLEMENTATION.md
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      description: Default N8N_CONTRACT=legacy requires snake_case; camelCase accepted only when configured. Service bearer is distinct from user JWT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  properties:
+                    jobId:
+                      type: string
+                      format: uuid
+                      pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    executionId:
+                      type: string
+                      pattern: "^[a-zA-Z0-9_-]{1,128}$"
+                    resultVersion:
+                      type: integer
+                      minimum: 1
+                      maximum: 1000
+                    status:
+                      type: string
+                      enum:
+                        - READY_FOR_REVIEW
+                    selectedAssetIds:
+                      minItems: 1
+                      maxItems: 5
+                      type: array
+                      items:
+                        type: string
+                        format: uuid
+                        pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    rankings:
+                      minItems: 1
+                      maxItems: 30
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          assetId:
+                            type: string
+                            format: uuid
+                            pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          score:
+                            type: number
+                            minimum: 0
+                            maximum: 100
+                          reason:
+                            type: string
+                            maxLength: 2000
+                        required:
+                          - assetId
+                          - score
+                          - reason
+                        additionalProperties:
+                          {}
+                    title:
+                      type: string
+                      minLength: 1
+                      maxLength: 300
+                    caption:
+                      type: string
+                      minLength: 1
+                      maxLength: 10000
+                    hashtags:
+                      maxItems: 30
+                      type: array
+                      items:
+                        type: string
+                        maxLength: 100
+                    renders:
+                      minItems: 1
+                      maxItems: 2
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          placement:
+                            type: string
+                            enum:
+                              - feed
+                              - story
+                          format:
+                            type: string
+                            enum:
+                              - svg
+                          width:
+                            type: number
+                            enum:
+                              - 1080
+                          height:
+                            anyOf:
+                              - type: number
+                                enum:
+                                  - 1350
+                              - type: number
+                                enum:
+                                  - 1920
+                          svg:
+                            type: string
+                            maxLength: 500000
+                          assetId:
+                            type: string
+                            format: uuid
+                            pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        required:
+                          - placement
+                          - format
+                          - width
+                          - height
+                          - svg
+                          - assetId
+                        additionalProperties: false
+                  required:
+                    - jobId
+                    - executionId
+                    - resultVersion
+                    - status
+                    - selectedAssetIds
+                    - rankings
+                    - title
+                    - caption
+                    - hashtags
+                    - renders
+                  additionalProperties: false
+                - type: object
+                  properties:
+                    job_id:
+                      type: string
+                      format: uuid
+                      pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    execution_id:
+                      type: string
+                      pattern: "^[a-zA-Z0-9_-]{1,128}$"
+                    result_version:
+                      type: integer
+                      minimum: 1
+                      maximum: 1000
+                    status:
+                      type: string
+                      enum:
+                        - READY_FOR_REVIEW
+                    selected_asset_ids:
+                      minItems: 1
+                      maxItems: 5
+                      type: array
+                      items:
+                        type: string
+                        format: uuid
+                        pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    rankings:
+                      minItems: 1
+                      maxItems: 30
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          asset_id:
+                            type: string
+                            format: uuid
+                            pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          score:
+                            type: number
+                            minimum: 0
+                            maximum: 100
+                          reason:
+                            type: string
+                            maxLength: 2000
+                        required:
+                          - asset_id
+                          - score
+                          - reason
+                        additionalProperties:
+                          {}
+                    title:
+                      type: string
+                      minLength: 1
+                      maxLength: 300
+                    caption:
+                      type: string
+                      minLength: 1
+                      maxLength: 10000
+                    hashtags:
+                      maxItems: 30
+                      type: array
+                      items:
+                        type: string
+                        maxLength: 100
+                    renders:
+                      minItems: 1
+                      maxItems: 2
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          placement:
+                            type: string
+                            enum:
+                              - feed
+                              - story
+                          format:
+                            type: string
+                            enum:
+                              - svg
+                          width:
+                            type: number
+                            enum:
+                              - 1080
+                          height:
+                            anyOf:
+                              - type: number
+                                enum:
+                                  - 1350
+                              - type: number
+                                enum:
+                                  - 1920
+                          svg:
+                            type: string
+                            maxLength: 500000
+                          asset_id:
+                            type: string
+                            format: uuid
+                            pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        required:
+                          - placement
+                          - format
+                          - width
+                          - height
+                          - svg
+                          - asset_id
+                        additionalProperties: false
+                  required:
+                    - job_id
+                    - execution_id
+                    - result_version
+                    - status
+                    - selected_asset_ids
+                    - rankings
+                    - title
+                    - caption
+                    - hashtags
+                    - renders
+                  additionalProperties: false
+  "/jobs/{jobId}/retry":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    post:
+      tags:
+        - AI Jobs
+      summary: Create new attempt for failed job
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "202":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: "^[a-zA-Z0-9_-]+$"
+  /review:
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    get:
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set).
+      tags:
+        - Content Review
+      summary: List draft review queue
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: page
+          in: query
+          schema:
+            default: 1
+            type: integer
+            minimum: 1
+            maximum: 1000000
+        - name: limit
+          in: query
+          schema:
+            default: 20
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 150
+        - name: status
+          in: query
+          schema:
+            type: string
+            maxLength: 40
+        - name: days
+          in: query
+          schema:
+            default: 30
+            type: integer
+            minimum: 1
+            maximum: 365
+        - name: batchId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        - name: output
+          in: query
+          schema:
+            type: string
+            enum:
+              - feed
+              - story
+        - name: uploaderId
+          in: query
+          schema:
+            type: integer
+            exclusiveMinimum: true
+            maximum: 9007199254740991
+  "/drafts/{draftId}":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    patch:
+      tags:
+        - Content Review
+      summary: Create immutable draft revision; reject stale expectedRevisionId
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: draftId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expectedRevisionId:
+                  type: string
+                  format: uuid
+                  pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                primaryAssetId:
+                  type: string
+                  format: uuid
+                  pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                caption:
+                  type: string
+                  minLength: 1
+                  maxLength: 10000
+                hashtags:
+                  maxItems: 30
+                  type: array
+                  items:
+                    type: string
+                    maxLength: 100
+                location:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                activity:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+              required:
+                - expectedRevisionId
+                - primaryAssetId
+                - title
+                - caption
+                - hashtags
+                - location
+                - activity
+              additionalProperties: false
+  "/drafts/{draftId}/review":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    post:
+      tags:
+        - Content Review
+      summary: Review exact revision and content hash
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: draftId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                revisionId:
+                  type: string
+                  format: uuid
+                  pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                contentHash:
+                  type: string
+                  minLength: 64
+                  maxLength: 64
+                decision:
+                  type: string
+                  enum:
+                    - IN_REVIEW
+                    - APPROVED_INTERNAL
+                    - REVISION_REQUESTED
+                    - REJECTED
+                notes:
+                  default: ""
+                  type: string
+                  maxLength: 2000
+              required:
+                - revisionId
+                - contentHash
+                - decision
+                - notes
+              additionalProperties: false
+  /media:
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    get:
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set).
+      tags:
+        - Content
+      summary: List scoped private original asset metadata
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: page
+          in: query
+          schema:
+            default: 1
+            type: integer
+            minimum: 1
+            maximum: 1000000
+        - name: limit
+          in: query
+          schema:
+            default: 20
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 150
+        - name: status
+          in: query
+          schema:
+            type: string
+            maxLength: 40
+        - name: days
+          in: query
+          schema:
+            default: 30
+            type: integer
+            minimum: 1
+            maximum: 365
+        - name: batchId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        - name: output
+          in: query
+          schema:
+            type: string
+            enum:
+              - feed
+              - story
+        - name: uploaderId
+          in: query
+          schema:
+            type: integer
+            exclusiveMinimum: true
+            maximum: 9007199254740991
+  "/assets/{assetId}/preview":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    get:
+      tags:
+        - Content
+      summary: Authenticated sanitized JPEG preview
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+  "/assets/{assetId}/download":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    get:
+      tags:
+        - Content
+      summary: Authenticated original download
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+  "/assets/{assetId}":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    delete:
+      tags:
+        - Content
+      summary: Admin archives unused asset
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+  "/renders/{renderId}":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    get:
+      tags:
+        - Content
+      summary: "Authenticated sanitized SVG preview, not publish-ready"
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: renderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+  /audit-logs:
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    get:
+      tags:
+        - Reporting
+      summary: Admin or marketing audit trail
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: page
+          in: query
+          schema:
+            default: 1
+            type: integer
+            minimum: 1
+            maximum: 1000000
+        - name: limit
+          in: query
+          schema:
+            default: 20
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 150
+        - name: status
+          in: query
+          schema:
+            type: string
+            maxLength: 40
+        - name: days
+          in: query
+          schema:
+            default: 30
+            type: integer
+            minimum: 1
+            maximum: 365
+        - name: batchId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        - name: output
+          in: query
+          schema:
+            type: string
+            enum:
+              - feed
+              - story
+        - name: uploaderId
+          in: query
+          schema:
+            type: integer
+            exclusiveMinimum: true
+            maximum: 9007199254740991
+  /settings:
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    get:
+      tags:
+        - Integration
+      summary: Admin integration presence flags; never secrets or claimed health
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+    patch:
+      tags:
+        - Integration
+      summary: Admin enables or pauses dispatch
+      security:
+        - bearerAuth:
+            []
+      responses:
+        "200":
+          description: ApiResponse envelope or authenticated binary as described
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dispatchEnabled:
+                  type: boolean
+              required:
+                - dispatchEnabled
+              additionalProperties: false
+  "/jobs/{jobId}/claim":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    post:
+      tags:
+        - Integration
+      summary: Atomic claim; flat response claimed boolean
+      security:
+        - n8nServiceAuth:
+            []
+      responses:
+        "200":
+          description: Flat n8n response; see backend/docs/IMPLEMENTATION.md
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      description: Default N8N_CONTRACT=legacy requires snake_case; camelCase accepted only when configured. Service bearer is distinct from user JWT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  properties:
+                    executionId:
+                      type: string
+                      pattern: "^[a-zA-Z0-9_-]{1,128}$"
+                    eventId:
+                      type: string
+                      format: uuid
+                      pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  required:
+                    - executionId
+                    - eventId
+                  additionalProperties: false
+                - type: object
+                  properties:
+                    execution_id:
+                      type: string
+                      pattern: "^[a-zA-Z0-9_-]{1,128}$"
+                    event_id:
+                      type: string
+                      format: uuid
+                      pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  required:
+                    - execution_id
+                    - event_id
+                  additionalProperties: false
+  "/jobs/{jobId}/manifest":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    get:
+      tags:
+        - Integration
+      summary: Claimed job manifest with expiring private preview URLs
+      security:
+        - n8nServiceAuth:
+            []
+      responses:
+        "200":
+          description: Flat n8n response; see backend/docs/IMPLEMENTATION.md
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+  "/jobs/{jobId}/failure":
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    post:
+      tags:
+        - Integration
+      summary: Record workflow failure without leaking provider errors
+      security:
+        - n8nServiceAuth:
+            []
+      responses:
+        "200":
+          description: Flat n8n response; see backend/docs/IMPLEMENTATION.md
+        "400":
+          description: Invalid request or unsupported image/render
+        "401":
+          description: Authentication or signature invalid
+        "404":
+          description: Resource absent or outside owner scope
+        "409":
+          description: "State, execution, idempotency or revision conflict"
+        "422":
+          description: Validation error
+        "429":
+          description: Mutation rate limit
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      description: Default N8N_CONTRACT=legacy requires snake_case; camelCase accepted only when configured. Service bearer is distinct from user JWT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  properties:
+                    executionId:
+                      type: string
+                      pattern: "^[a-zA-Z0-9_-]{1,128}$"
+                    stage:
+                      type: string
+                      maxLength: 80
+                    errorCode:
+                      type: string
+                      maxLength: 80
+                    safeMessage:
+                      type: string
+                      maxLength: 1000
+                    retryable:
+                      type: boolean
+                  required:
+                    - executionId
+                    - stage
+                    - errorCode
+                    - safeMessage
+                    - retryable
+                  additionalProperties: false
+                - type: object
+                  properties:
+                    execution_id:
+                      type: string
+                      pattern: "^[a-zA-Z0-9_-]{1,128}$"
+                    stage:
+                      type: string
+                      maxLength: 80
+                    error_code:
+                      type: string
+                      maxLength: 80
+                    safe_message:
+                      type: string
+                      maxLength: 1000
+                    retryable:
+                      type: boolean
+                  required:
+                    - execution_id
+                    - stage
+                    - error_code
+                    - safe_message
+                    - retryable
+                  additionalProperties: false

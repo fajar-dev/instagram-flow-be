@@ -1,9 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { AppDataSource } from './config/database'
-import { serveStatic } from 'hono/bun'
-import { swaggerUI } from '@hono/swagger-ui'
-import api from './routes/api'
+import { registerRoutes } from './routes/api'
 import { ApiResponse } from './core/helpers/response'
 import { BaseException, ValidationException } from './core/exceptions/base'
 import { ZodError } from 'zod'
@@ -20,7 +18,7 @@ app.use('*', requestLogger)
 // CORS
 app.use('*', cors({
     origin: '*',
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 }))
 
 // Language Detection (Accept-Language header)
@@ -31,29 +29,8 @@ AppDataSource.initialize()
     .then(() => logger.info('Database connected successfully'))
     .catch((err) => logger.error('Database connection failed', { err }))
 
-// Health Check (untuk load balancer, K8s, monitoring)
-app.get('/health', async (c) => {
-    const dbConnected = AppDataSource.isInitialized
-    const status = dbConnected ? 'healthy' : 'degraded'
-    const statusCode = dbConnected ? 200 : 503
-
-    return c.json({
-        status,
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: config.app.env,
-        checks: {
-            database: dbConnected ? 'connected' : 'disconnected',
-        }
-    }, statusCode)
-})
-
-// Application Routes
-app.route('/api', api)
-
-// Swagger UI
-app.get('/api/swagger.yaml', serveStatic({ path: './swagger.yaml' }))
-app.get('/api/docs', swaggerUI({ url: '/api/swagger.yaml' }))
+// Application endpoints are declared in routes/api.ts
+registerRoutes(app)
 
 // Global Error Handler
 app.onError((err, c) => {

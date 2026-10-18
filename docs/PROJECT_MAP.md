@@ -55,7 +55,6 @@ hono-be/
 │   │   │
 │   │   └── middlewares/
 │   │       ├── auth.middleware.ts            # 🛡️ JWT Bearer auth
-│   │       ├── api-key.middleware.ts         # 🔐 API key auth
 │   │       ├── token-auth.middleware.ts      # 🎫 JWT via query/header
 │   │       ├── logger.middleware.ts          # 📝 Request access log + X-Request-Id
 │   │       └── language.middleware.ts        # 🌐 Accept-Language detection (en/id)
@@ -152,7 +151,7 @@ src/routes/api.ts
     ├── src/core/helpers/validator.ts
     ├── src/modules/auth/auth.module.ts      → authController
     ├── src/modules/contact/contact.module.ts → contactController
-    └── src/core/helpers/minio.ts            → minio (lazy import for proxy)
+    └── src/core/helpers/minio.ts            → minio (private object storage and presigned URLs)
 ```
 
 ### Auth Module

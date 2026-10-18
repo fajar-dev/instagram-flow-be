@@ -1,7 +1,8 @@
-import { CreateUsers1792022398000 } from "../src/database/migrations/1792022398000-create-users"
-import { CreateContacts1792022399000 } from "../src/database/migrations/1792022399000-create-contacts"
+import { CreateUsers1792195300000 } from "../src/database/migrations/1792195300000-create-users"
+import { CreateContacts1792195300001 } from "../src/database/migrations/1792195300001-create-contacts"
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test"
 import type { Hono } from "hono"
+import { databaseMigrations } from "../src/database/migrations"
 import { AppDataSource } from "../src/config/database"
 import { cleanTestDatabase, createTestApp, destroyTestDatabase, initTestDatabase, registerAndLogin, request } from "./setup"
 
@@ -20,11 +21,29 @@ describe("MySQL database integration", () => {
         expect(AppDataSource.options.synchronize).toBe(false)
         const runner = AppDataSource.createQueryRunner()
         try {
-            for (const table of ["users", "contacts", "password_reset_tokens"]) {
+            for (const table of ["users", "contacts", "password_reset_tokens", "batches", "assets", "jobs", "job_dispatches", "ai_results", "renders", "drafts", "draft_revisions", "reviews", "audit_logs", "settings"]) {
                 expect(await runner.hasTable(table)).toBe(true)
             }
             expect(await AppDataSource.showMigrations()).toBe(false)
             expect(await AppDataSource.runMigrations({ transaction: "each" })).toHaveLength(0)
+        } finally {
+            await runner.release()
+        }
+    })
+
+    test("fresh baseline has no legacy tables, role or inline media and supports rollback", async () => {
+        const runner = AppDataSource.createQueryRunner()
+        try {
+            expect(databaseMigrations).toHaveLength(14)
+            expect(await runner.hasColumn("users", "role")).toBe(false)
+            expect(await runner.hasColumn("renders", "sanitized_svg")).toBe(false)
+            expect(await runner.hasColumn("renders", "storage_key")).toBe(true)
+            const tables = await runner.query("SHOW TABLES")
+            expect(tables.some((row: object) => String(Object.values(row)[0]).startsWith("social_"))).toBe(false)
+            for (const Migration of [...databaseMigrations].reverse()) await new Migration().down(runner)
+            for (const Migration of databaseMigrations) await new Migration().up(runner)
+            expect(await runner.hasTable("password_reset_tokens")).toBe(true)
+            expect(await runner.hasTable("renders")).toBe(true)
         } finally {
             await runner.release()
         }
@@ -38,8 +57,8 @@ describe("MySQL database integration", () => {
         expect(created.status).toBe(201)
         const runner = AppDataSource.createQueryRunner()
         try {
-            await new CreateUsers1792022398000().up(runner)
-            await new CreateContacts1792022399000().up(runner)
+            await new CreateUsers1792195300000().up(runner)
+            await new CreateContacts1792195300001().up(runner)
         } finally {
             await runner.release()
         }

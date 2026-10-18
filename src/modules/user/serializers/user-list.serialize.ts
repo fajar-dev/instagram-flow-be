@@ -5,6 +5,7 @@ export class UserListSerializer {
     static async single(row: UserListRow) {
         return {
             id: row.id,
+
             name: row.name,
             photo: await resolveStorageUrl(row.photo),
             email: row.email || null,

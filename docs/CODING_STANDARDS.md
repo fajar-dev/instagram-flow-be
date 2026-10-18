@@ -49,7 +49,7 @@ src/
 | Middleware | `{nama}.middleware.ts` | `auth.middleware.ts` |
 | Config | `{nama}.ts` | `config.ts`, `database.ts` |
 
-> **PENTING**: Semua nama file menggunakan **kebab-case** untuk multi-word (contoh: `api-key.middleware.ts`, `reset-password.validator.ts`).
+> **PENTING**: Semua nama file menggunakan **kebab-case** untuk multi-word (contoh: `auth.middleware.ts`, `reset-password.validator.ts`).
 
 ---
 
