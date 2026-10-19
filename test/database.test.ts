@@ -1,5 +1,4 @@
-import { CreateUsers1792195300000 } from "../src/database/migrations/1792195300000-create-users"
-import { CreateContacts1792195300001 } from "../src/database/migrations/1792195300001-create-contacts"
+import { CreateUsers1792368000000 } from "../src/database/migrations/1792368000000-create-users"
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test"
 import type { Hono } from "hono"
 import { databaseMigrations } from "../src/database/migrations"
@@ -21,7 +20,7 @@ describe("MySQL database integration", () => {
         expect(AppDataSource.options.synchronize).toBe(false)
         const runner = AppDataSource.createQueryRunner()
         try {
-            for (const table of ["users", "contacts", "password_reset_tokens", "batches", "assets", "jobs", "job_dispatches", "ai_results", "renders", "drafts", "draft_revisions", "reviews", "audit_logs", "settings"]) {
+            for (const table of ["users", "password_reset_tokens", "batches", "assets", "jobs", "job_dispatches", "ai_results", "renders", "drafts", "draft_revisions", "reviews", "audit_logs", "settings"]) {
                 expect(await runner.hasTable(table)).toBe(true)
             }
             expect(await AppDataSource.showMigrations()).toBe(false)
@@ -34,7 +33,10 @@ describe("MySQL database integration", () => {
     test("fresh baseline has no legacy tables, role or inline media and supports rollback", async () => {
         const runner = AppDataSource.createQueryRunner()
         try {
-            expect(databaseMigrations).toHaveLength(14)
+            expect(databaseMigrations).toHaveLength(13)
+            expect(await runner.hasTable("contacts")).toBe(false)
+            const timestamps = databaseMigrations.map(Migration => Number(Migration.name.slice(-13)))
+            expect(timestamps).toEqual(Array.from({ length: 13 }, (_, index) => 1792368000000 + index))
             expect(await runner.hasColumn("users", "role")).toBe(false)
             expect(await runner.hasColumn("renders", "sanitized_svg")).toBe(false)
             expect(await runner.hasColumn("renders", "storage_key")).toBe(true)
@@ -49,25 +51,18 @@ describe("MySQL database integration", () => {
         }
     })
 
-    test("baseline migrations preserve existing users and contacts", async () => {
+    test("baseline user migration preserves existing users", async () => {
         const { user, headers } = await registerAndLogin(app)
-        const created = await request(app, "/api/contact", {
-            method: "POST", headers, body: { name: "Existing contact" },
-        })
-        expect(created.status).toBe(201)
         const runner = AppDataSource.createQueryRunner()
         try {
-            await new CreateUsers1792195300000().up(runner)
-            await new CreateContacts1792195300001().up(runner)
+            await new CreateUsers1792368000000().up(runner)
+            expect(await runner.hasTable("contacts")).toBe(false)
         } finally {
             await runner.release()
         }
         const profile = await request(app, "/api/auth/me", { headers })
         expect(profile.status).toBe(200)
         expect(profile.body.data.id).toBe(user.id)
-        const contact = await request(app, `/api/contact/${created.body.data.id}`, { headers })
-        expect(contact.status).toBe(200)
-        expect(contact.body.data.name).toBe("Existing contact")
     })
 
     test("restores foreign key checks after cleaning test data", async () => {
@@ -76,21 +71,12 @@ describe("MySQL database integration", () => {
         expect(AppDataSource.options.type).toBe("mysql")
     })
 
-    test("persists enum, nullable, and boolean fields through the API", async () => {
+    test("removed contact routes are unavailable to authenticated and anonymous users", async () => {
         const { headers } = await registerAndLogin(app)
-        const created = await request(app, "/api/contact", {
-            method: "POST",
-            headers,
-            body: { name: "MySQL Contact", salutation: "mrs", type: "supplier", isActive: false },
-        })
-        expect(created.status).toBe(201)
-
-        const fetched = await request(app, `/api/contact/${created.body.data.id}`, { headers })
-        expect(fetched.status).toBe(200)
-        expect(fetched.body.data.salutation).toBe("mrs")
-        expect(fetched.body.data.type).toBe("supplier")
-        expect(fetched.body.data.isActive).toBe(false)
-        expect(fetched.body.data.email).toBeNull()
-        expect(fetched.body.data.phone).toBeNull()
+        for (const auth of [undefined, headers]) {
+            for (const [method, path] of [["GET", "/api/contact"], ["POST", "/api/contact"], ["GET", "/api/contact/1"], ["PUT", "/api/contact/1"], ["DELETE", "/api/contact/1"]]) {
+                expect((await app.request(path!, { method, headers: auth })).status).toBe(404)
+            }
+        }
     })
 })

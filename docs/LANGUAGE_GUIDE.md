@@ -1,3 +1,5 @@
+> Tutorial identifiers named Example are illustrative. For an installed CRUD module use `src/modules/user/`; current schema and routes are defined by `src/config/database.ts` and `src/routes/api.ts`.
+
 # 🌐 Panduan Language / i18n
 
 Dokumen ini menjelaskan cara kerja deteksi bahasa dan terjemahan response message di proyek ini, serta cara menambahkan message baru.
@@ -55,7 +57,7 @@ src/core/
     "common": { "Success": "...", "Validation failed": "..." },
     "auth": { "User registered successfully": "..." },
     "user": { "User not found": "..." },
-    "contact": { "Contact not found": "..." },
+    "example": { "Example not found": "..." },
     "validation": { "Name is required": "..." }
 }
 ```

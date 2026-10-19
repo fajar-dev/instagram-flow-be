@@ -5,7 +5,6 @@ import { PasswordResetToken } from "../modules/auth/entities/password-reset-toke
 import "reflect-metadata"
 import { DataSource, type DataSourceOptions } from "typeorm"
 import { User } from "../modules/user/entities/user.entity"
-import { Contact } from "../modules/contact/entities/contact.entity"
 import { config } from "./config"
 
 /**
@@ -25,7 +24,7 @@ export const databaseOptions = {
     database: config.database.name,
     synchronize: config.database.sync,
     timezone: "Z",
-    entities: [User, Contact, PasswordResetToken, ...workflowEntities],
+    entities: [User, PasswordResetToken, ...workflowEntities],
     migrations: databaseMigrations,
     migrationsTransactionMode: "each",
     subscribers: [],

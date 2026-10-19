@@ -86,10 +86,9 @@ describe("Audit regressions", () => {
 
     test("empty and out-of-range pagination uses a zero range", async () => {
         const { headers } = await registerAndLogin(app)
-        const empty = await request(app, "/api/contact", { headers })
+        const empty = await request(app, "/api/user?q=not-a-matching-user", { headers })
         expect(empty.body.meta).toMatchObject({ total: 0, from: 0, to: 0 })
-        await request(app, "/api/contact", { method: "POST", headers, body: { name: "Audit Contact", email: "audit@example.com", phone: "123456", type: "customer" } })
-        const outside = await request(app, "/api/contact?page=99&limit=10", { headers })
+        const outside = await request(app, "/api/user?page=99&limit=10", { headers })
         expect(outside.body.meta).toMatchObject({ total: 1, from: 0, to: 0 })
         expect(outside.body.data).toEqual([])
     })
@@ -128,7 +127,7 @@ describe("Audit regressions", () => {
 
     test("protected routes keep domain errors instead of converting them to 401", async () => {
         const { headers } = await registerAndLogin(app)
-        expect((await request(app, "/api/contact/999999999", { headers })).status).toBe(404)
+        expect((await request(app, "/api/user/999999999", { headers })).status).toBe(404)
     })
 
     test("profile photo null clears the persisted photo", async () => {

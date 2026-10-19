@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from "typeorm"
 
-export class CreateAssets1792195300004 implements MigrationInterface {
+export class CreateAssets1792368000003 implements MigrationInterface {
     transaction = false
 
     async up(queryRunner: QueryRunner): Promise<void> {

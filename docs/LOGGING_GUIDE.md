@@ -1,3 +1,5 @@
+> Tutorial identifiers named Example are illustrative. For an installed CRUD module use `src/modules/user/`; current schema and routes are defined by `src/config/database.ts` and `src/routes/api.ts`.
+
 # 🪵 Panduan Logging
 
 Dokumen ini menjelaskan format log terstruktur (JSON) di proyek ini, cara menambahkan log baru, dan cara menghubungkannya ke Grafana Loki.
@@ -50,7 +52,7 @@ Untuk log `error`, ada field tambahan `error`:
   "message": "Unhandled exception",
   "requestId": "0d4b0aab-ebf9-4d33-8a73-63a95426d442",
   "method": "POST",
-  "path": "/api/contact",
+  "path": "/api/example",
   "statusCode": 500,
   "error": { "name": "TypeError", "message": "...", "stack": "..." }
 }

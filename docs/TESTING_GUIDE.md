@@ -1,3 +1,5 @@
+> Tutorial identifiers named Example are illustrative. For an installed CRUD module use `src/modules/user/`; current schema and routes are defined by `src/config/database.ts` and `src/routes/api.ts`.
+
 # 🧪 Panduan Testing
 
 Dokumen ini menjelaskan cara menjalankan test, menulis test baru, dan konvensi testing di proyek ini.
@@ -28,7 +30,7 @@ bun test
 
 # Jalankan file test tertentu
 bun test test/auth.test.ts
-bun test test/contact.test.ts
+bun test test/audit.test.ts
 bun test test/database.test.ts
 ```
 
@@ -57,7 +59,7 @@ test/
 ├── setup.ts          # Test infrastructure (DB, app factory, helpers)
 ├── helpers.ts        # Data factories & assertion utilities
 ├── auth.test.ts      # Auth module E2E tests
-└── contact.test.ts   # Contact module E2E tests
+└── audit.test.ts   # Shared API regression tests
 ```
 
 ### Dependency Flow
@@ -257,7 +259,7 @@ describe("Full CRUD Lifecycle", () => {
         const { headers } = await registerAndLogin(app)
 
         // Create → Read → Update → Read → Delete → Verify Deleted
-        // ... (lihat contact.test.ts sebagai referensi)
+        // ... (lihat audit.test.ts sebagai referensi)
     })
 })
 ```
@@ -286,7 +288,6 @@ export function createInvoiceData(overrides: Record<string, any> = {}) {
 // Jangan lupa reset di resetCounters():
 export function resetCounters() {
     userCounter = 0
-    contactCounter = 0
     invoiceCounter = 0  // ← Tambahkan
 }
 ```
@@ -311,13 +312,13 @@ export function resetCounters() {
 
 ```typescript
 // ✅ Format: "should {expected behavior}"
-test("should create a contact successfully", ...)
+test("should create a example successfully", ...)
 test("should fail validation without name", ...)
-test("should return 404 for non-existent contact", ...)
+test("should return 404 for non-existent example", ...)
 test("should fail without auth token", ...)
 
 // ❌ JANGAN format yang ambigu
-test("create contact", ...)        // Apa yang ditest?
+test("create example", ...)        // Apa yang ditest?
 test("test validation", ...)       // Validation apa?
 ```
 

@@ -50,14 +50,6 @@
         "Users retrieved successfully": "Daftar pengguna berhasil diambil",
         "User not found": "Pengguna tidak ditemukan"
     },
-    "contact": {
-        "Contact created successfully": "Kontak berhasil dibuat",
-        "Contact updated successfully": "Kontak berhasil diperbarui",
-        "Contact deleted successfully": "Kontak berhasil dihapus",
-        "Contact retrieved successfully": "Data kontak berhasil diambil",
-        "Contacts retrieved successfully": "Daftar kontak berhasil diambil",
-        "Contact not found": "Kontak tidak ditemukan"
-    },
     "validation": {
         "Name is required": "Nama wajib diisi",
         "Invalid email format": "Format email tidak valid",

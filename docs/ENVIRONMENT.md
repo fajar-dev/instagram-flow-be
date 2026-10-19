@@ -1,3 +1,5 @@
+> Tutorial identifiers named Example are illustrative. For an installed CRUD module use `src/modules/user/`; current schema and routes are defined by `src/config/database.ts` and `src/routes/api.ts`.
+
 # ⚙️ Environment & Deployment
 
 Dokumen ini menjelaskan konfigurasi environment, deployment, dan infrastruktur proyek.
@@ -260,7 +262,7 @@ Semua log ditulis sebagai **satu baris JSON per event** ke stdout/stderr — for
 Dicatat ke stdout untuk semua request, termasuk `requestId` (echo dari header `X-Request-Id` client atau digenerate baru):
 
 ```json
-{"timestamp":"2026-06-17T15:00:00.000Z","level":"info","service":"hono-be","environment":"production","message":"HTTP request","requestId":"...","method":"GET","path":"/api/contact","statusCode":200,"durationMs":12}
+{"timestamp":"2026-06-17T15:00:00.000Z","level":"info","service":"hono-be","environment":"production","message":"HTTP request","requestId":"...","method":"GET","path":"/api/example","statusCode":200,"durationMs":12}
 ```
 
 ### File Log
@@ -286,7 +288,7 @@ Dicatat ke stdout untuk semua request, termasuk `requestId` (echo dari header `X
 
 ## Migrasi Database yang Sudah Ada
 
-Hentikan aplikasi, lalu dari checkout backend jalankan `bun run migration:run` sebelum menjalankan versi baru. Runner memakai koneksi MySQL dari config dan selalu menonaktifkan synchronize. Migration dijalankan berurutan: users, contacts, lalu password_reset_tokens. Database kosong maupun database yang sudah memiliki tabel menggunakan perintah yang sama. Schema sync selalu false.
+Hentikan aplikasi, lalu dari checkout backend jalankan `bun run migration:run` sebelum menjalankan versi baru. Runner memakai koneksi MySQL dari config dan selalu menonaktifkan synchronize. Urutan migration mengikuti `src/database/migrations/index.ts`, termasuk seluruh tabel otomasi dan penghapusan tabel yang sudah dipensiunkan. Database kosong maupun database yang sudah memiliki tabel menggunakan perintah yang sama. Schema sync selalu false.
 
 ## Seeder User
 

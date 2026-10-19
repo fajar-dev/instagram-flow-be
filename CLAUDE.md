@@ -82,7 +82,7 @@ Checklist:
 - Test: `{nama}.test.ts`
 
 ### Classes (PascalCase)
-- Enum: nama deskriptif, tanpa prefix nama module (`ContactType`, bukan `ContactTypeEnum`)
+- Enum: nama deskriptif, tanpa prefix nama module (`InvoiceStatus`, bukan `InvoiceStatusEnum`)
 - Entity: `Invoice`
 - Repo interface: `IInvoiceRepository`
 - Repo implementation: `TypeOrmInvoiceRepository`
@@ -239,7 +239,6 @@ bun test
 | File | Tests |
 |------|-------|
 | `test/auth.test.ts` | 28 test — register, login, refresh, me, logout, forgot/reset password |
-| `test/contact.test.ts` | 21 test — CRUD, auth, pagination, search, lifecycle |
 
 ## Production Safety
 
@@ -305,3 +304,7 @@ Persist uploaded/generated media only in MinIO. No local media adapter/fallback 
 ## Baseline reset — 2026-10-16
 
 The user explicitly reset the database and migration history. The current baseline contains 14 per-table migrations without role or social_ table prefixes. Preserve this new history going forward. Read docs/AUDIT-BASELINE-2026-10-16.md before deployment; use jobs:dispatch and the current environment template (obsolete media-signing/Telegram flags have been removed).
+
+## Development migration baseline — 2026-10-19
+
+The user explicitly authorized rebuilding migration files before production. The current baseline contains 13 creation migrations, one per active table, ordered from 1792368000000 to 1792368000012. Contact creation/deletion migrations are removed. This supersedes earlier baseline counts; future changes should use forward migrations unless another development reset is explicitly requested.

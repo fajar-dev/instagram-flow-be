@@ -16,19 +16,6 @@ export function createUserData(overrides: Record<string, any> = {}) {
     }
 }
 
-// ── Contact Test Data ───────────────────────────────────────────────────────
-
-let contactCounter = 0
-
-export function createContactData(overrides: Record<string, any> = {}) {
-    contactCounter++
-    return {
-        name: `Contact ${contactCounter}`,
-        email: `contact${contactCounter}@example.com`,
-        phone: `08123456${String(contactCounter).padStart(4, "0")}`,
-        ...overrides,
-    }
-}
 
 // ── Response Assertions ─────────────────────────────────────────────────────
 
@@ -66,7 +53,6 @@ export function expectPagination(body: any) {
 
 export function resetCounters() {
     userCounter = 0
-    contactCounter = 0
 }
 
 /** Stores a deterministic reset token for API tests without sending email. */

@@ -333,7 +333,7 @@ describe('Content workflow', () => {
     })
     test('shared list validation rejects invalid pagination for baseline and feature routes', async () => {
         const user = await actor('pagination@example.com')
-        for (const path of ['/api/contact', '/api/user', '/api/jobs']) {
+        for (const path of ['/api/user', '/api/jobs']) {
             for (const query of ['page=-1', 'page=1.5', 'limit=101', 'limit=NaN']) {
                 expect((await request(app, `${path}?${query}`, { headers: user.headers })).status).toBe(422)
             }

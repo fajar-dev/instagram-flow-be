@@ -1,3 +1,5 @@
+> Tutorial identifiers named Example are illustrative. For an installed CRUD module use `src/modules/user/`; current schema and routes are defined by `src/config/database.ts` and `src/routes/api.ts`.
+
 # 📏 Standarisasi & Konvensi Kode
 
 Dokumen ini adalah **sumber kebenaran** untuk semua konvensi kode di proyek ini. Setiap developer dan AI agent **WAJIB** mengikuti standar ini.
@@ -38,12 +40,12 @@ src/
 | Jenis File | Pola Nama | Contoh |
 |------------|-----------|--------|
 | Enum | `{nama}.enum.ts` (dalam folder `enum/`) | `type.enum.ts`, `salutation.enum.ts` |
-| Entity | `{nama}.entity.ts` | `user.entity.ts`, `contact.entity.ts` |
+| Entity | `{nama}.entity.ts` | `user.entity.ts`, `example.entity.ts` |
 | Repository Interface | `{nama}.repository.interface.ts` | `user.repository.interface.ts` |
 | Repository Implementation | `{nama}.repository.ts` | `user.repository.ts` |
 | Service | `{nama}.service.ts` | `user.service.ts` |
-| Controller | `{nama}.controller.ts` | `contact.controller.ts` |
-| Module (DI Wiring) | `{nama}.module.ts` | `contact.module.ts` |
+| Controller | `{nama}.controller.ts` | `example.controller.ts` |
+| Module (DI Wiring) | `{nama}.module.ts` | `example.module.ts` |
 | Validator | `{nama}.validator.ts` | `auth.validator.ts` |
 | Serializer | `{nama}.serialize.ts` | `user.serialize.ts` |
 | Middleware | `{nama}.middleware.ts` | `auth.middleware.ts` |
@@ -59,13 +61,13 @@ src/
 
 | Jenis | Pola | Contoh |
 |-------|------|--------|
-| Enum | `PascalCase`, deskriptif, tanpa prefix nama module | `ContactType`, `Salutation` |
-| Entity | `PascalCase` (singular) | `User`, `Contact` |
-| Repository Interface | `I{Nama}Repository` | `IUserRepository`, `IContactRepository` |
+| Enum | `PascalCase`, deskriptif, tanpa prefix nama module | `ExampleType`, `Salutation` |
+| Entity | `PascalCase` (singular) | `User`, `Example` |
+| Repository Interface | `I{Nama}Repository` | `IUserRepository`, `IExampleRepository` |
 | Repository Implementation | `TypeOrm{Nama}Repository` | `TypeOrmUserRepository` |
-| Service | `{Nama}Service` | `UserService`, `ContactService` |
-| Controller | `{Nama}Controller` | `AuthController`, `ContactController` |
-| Serializer | `{Nama}Serializer` | `UserSerializer`, `ContactSerializer` |
+| Service | `{Nama}Service` | `UserService`, `ExampleService` |
+| Controller | `{Nama}Controller` | `AuthController`, `ExampleController` |
+| Serializer | `{Nama}Serializer` | `UserSerializer`, `ExampleSerializer` |
 | Exception | `{Nama}Exception` | `BaseException`, `NotFoundException` |
 | Helper (class) | `{Nama}Helper` atau `{Nama}` | `AuthHelper`, `MinioHelper` |
 
@@ -73,7 +75,7 @@ src/
 
 | Jenis | Pola | Contoh |
 |-------|------|--------|
-| Instance variables | `camelCase` | `userService`, `contactRepository` |
+| Instance variables | `camelCase` | `userService`, `exampleRepository` |
 | Functions/Methods | `camelCase` | `getById`, `hashPassword` |
 | Constants | `camelCase` (config objects), `UPPER_SNAKE_CASE` (primitive) | `config`, `BUCKET` |
 | Exported singletons | `camelCase` | `mail`, `minio` |
@@ -82,10 +84,10 @@ src/
 
 ```typescript
 // Schema: PascalCase (sama dengan type name)
-export const CreateContactValidator = z.object({ ... })
+export const CreateExampleValidator = z.object({ ... })
 
 // Type: nama sama dengan schema (TypeScript type merging)
-export type CreateContactValidator = z.infer<typeof CreateContactValidator>
+export type CreateExampleValidator = z.infer<typeof CreateExampleValidator>
 ```
 
 > **Catatan**: Gunakan nama yang sama untuk Zod schema dan type-nya (TypeScript mendukung type merging).
@@ -129,7 +131,7 @@ export class EntityName {      // Nama class: PascalCase, singular
 
 | Aturan | Detail |
 |--------|--------|
-| Nama tabel | `snake_case`, **plural** (`users`, `contacts`) |
+| Nama tabel | `snake_case`, **plural** (`users`, `examples`) |
 | Nama kolom | `snake_case` (`is_active`, `created_at`) |
 | Property entity | `camelCase` (`isActive`, `createdAt`) |
 | Mapping | Gunakan `{ name: "snake_case" }` jika berbeda |
@@ -140,8 +142,8 @@ export class EntityName {      // Nama class: PascalCase, singular
 ### Enum
 
 ```typescript
-// src/modules/contact/enum/type.enum.ts
-export enum ContactType {
+// src/modules/example/enum/type.enum.ts
+export enum ExampleType {
     CUSTOMER = 'customer',
     VENDOR = 'vendor',
     SUPPLIER = 'supplier',
@@ -153,7 +155,7 @@ export enum ContactType {
 |--------|--------|
 | Folder | `enum/` di dalam module (singular, bukan `enums/`) |
 | Nama file | `{nama}.enum.ts`, deskriptif — tidak harus sama dengan nama module |
-| Nama class | `PascalCase`, deskriptif, **tanpa** prefix nama module (`ContactType`, bukan `ContactTypeEnum`) |
+| Nama class | `PascalCase`, deskriptif, **tanpa** prefix nama module (`ExampleType`, bukan `ExampleTypeEnum`) |
 | Value | String literal `lowercase`, sesuai nilai yang disimpan di database |
 | Isi file | Satu file enum = satu enum |
 | Pemakaian di entity | `@Column({ type: "enum", enum: XxxEnum, ... })` |
