@@ -1,3 +1,4 @@
+import { Publication } from '../publishing/entities/publication.entity';
 import { Batch } from "../content/entities/batch.entity";
 import { Asset } from "../content/media/entities/asset.entity";
 import { Job } from "../ai-job/entities/job.entity";
@@ -10,6 +11,7 @@ import { Review } from "../content-review/entities/review.entity";
 import { AuditLog } from "../reporting/entities/audit-log.entity";
 import { Setting } from "../integration/entities/setting.entity";
 export interface WorkflowRecords {
+    publication: Publication;
     batch: Batch;
     asset: Asset;
     job: Job;
@@ -23,6 +25,7 @@ export interface WorkflowRecords {
     setting: Setting;
 }
 export const workflowEntityMap = {
+    publication: Publication,
     batch: Batch,
     asset: Asset,
     job: Job,

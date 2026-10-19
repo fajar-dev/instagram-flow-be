@@ -1,3 +1,8 @@
+import { ArchivePublicationAttempts1792382399999 } from './1792382399999-archive-publication-attempts'
+import { PublicationProjectUniqueness1792382400000 } from './1792382400000-publication-project-uniqueness'
+import { SimplifyDraftStatus1792382400001 } from './1792382400001-simplify-draft-status'
+import { NormalizeReviewHistory1792382400002 } from './1792382400002-normalize-review-history'
+import { CreatePublications1792371600000 } from './1792371600000-create-publications'
 import { CreateUsers1792368000000 } from "./1792368000000-create-users"
 import { CreatePasswordResetTokens1792368000001 } from "./1792368000001-create-password-reset-tokens"
 import { CreateBatches1792368000002 } from "./1792368000002-create-batches"
@@ -26,4 +31,10 @@ export const databaseMigrations = [
     CreateReviews1792368000010,
     CreateAuditLogs1792368000011,
     CreateSettings1792368000012,
+    CreatePublications1792371600000,
+    ArchivePublicationAttempts1792382399999,
+    PublicationProjectUniqueness1792382400000,
+    SimplifyDraftStatus1792382400001,
+    NormalizeReviewHistory1792382400002,
+
 ]

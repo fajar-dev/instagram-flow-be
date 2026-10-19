@@ -15,7 +15,7 @@ export class MinioMedia implements IContentMedia {
     constructor(private readonly storage: IPrivateObjectStorage, private readonly bucket: string) {}
 
     private validateKey(key: string) {
-        if (!/^renders\/[a-f0-9-]{36}\.svg$/.test(key) && !/^batches\/[a-f0-9-]{36}\/(original|preview|thumbnail)\/[a-f0-9-]{36}\.(jpeg|jpg|png|webp)$/.test(key)) {
+        if (!/^publications\/[a-f0-9-]{36}\.jpg$/.test(key) && !/^renders\/[a-f0-9-]{36}\.svg$/.test(key) && !/^batches\/[a-f0-9-]{36}\/(original|preview|thumbnail)\/[a-f0-9-]{36}\.(jpeg|jpg|png|webp)$/.test(key)) {
             throw new BadRequestException('Invalid media key')
         }
     }

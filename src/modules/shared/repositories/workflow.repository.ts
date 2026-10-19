@@ -23,7 +23,8 @@ export class TypeOrmWorkflowRepository implements IWorkflowRepository {
     find<K extends WorkflowKind>(kind: K, where: Criteria<K>) { return this.store().find(kind, where); }
     save<K extends WorkflowKind>(kind: K, value: Partial<WorkflowRecords[K]>) { return this.store().save(kind, value); }
     transaction<T>(work: (store: WorkflowStore) => Promise<T>): Promise<T> {
-        return AppDataSource.transaction(manager => work(new TransactionStore(manager)));
+        // Project locks serialize writes; subsequent reads must see the committed winner.
+        return AppDataSource.transaction('READ COMMITTED', manager => work(new TransactionStore(manager)));
     }
     async dueDispatchIds() {
         const rows = await AppDataSource.getRepository(workflowEntityMap.dispatch).createQueryBuilder('d')

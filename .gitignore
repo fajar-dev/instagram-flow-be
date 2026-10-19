@@ -6,3 +6,7 @@ public/uploads
 dist
 logs/
 /storage/
+
+# Private Instagram credentials
+secrets/*.json
+!secrets/*.example.json

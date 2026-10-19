@@ -73,15 +73,15 @@ describe('Content workflow', () => {
         await request(app, `/api/jobs/${job.jobId}/result`, { method: 'POST', headers: serviceHeaders, body: toLegacy(result(job)) })
         expect((await counts()).READY_FOR_REVIEW).toBe(1)
         const detail = (await request(app, `/api/jobs/${job.jobId}`, { headers: user.headers })).body.data
-        await request(app, `/api/drafts/${detail.draft.id}/review`, { method: 'POST', headers: user.headers, body: {
-            revisionId: detail.revision.id, contentHash: detail.revision.contentHash, decision: 'APPROVED_INTERNAL', notes: ''
+        await request(app, `/api/drafts/${detail.draft.id}/reject`, { method: 'POST', headers: user.headers, body: {
+            revisionId: detail.revision.id, contentHash: detail.revision.contentHash, notes: ''
         } })
         expect((await counts()).READY_FOR_REVIEW).toBe(0)
-        expect((await counts()).APPROVED_INTERNAL).toBe(1)
-        const listed = await request(app, '/api/review?status=APPROVED_INTERNAL&days=30', { headers: user.headers })
-        expect(listed.body.meta.total).toBe((await counts()).APPROVED_INTERNAL)
+        expect((await counts()).REJECTED).toBe(1)
+        const listed = await request(app, '/api/review?status=REJECTED&days=30', { headers: user.headers })
+        expect(listed.body.meta.total).toBe((await counts()).REJECTED)
         await AppDataSource.getRepository(workflowEntityMap.draft).update(detail.draft.id, { createdAt: new Date(Date.now() - 31 * 86400000) })
-        expect((await counts()).APPROVED_INTERNAL).toBe(0)
+        expect((await counts()).REJECTED).toBe(0)
     })
     test('gallery previews authorize access and backfill private thumbnails for existing assets', async () => {
         const user = await actor('gallery@example.com')
@@ -227,7 +227,7 @@ describe('Content workflow', () => {
         const replay = await request(app, `/api/jobs/${jobId}/claim`, { method: 'POST', headers: serviceHeaders, body: { execution_id: owner, event_id: d.eventId } })
         expect(replay.body.claimed).toBe(true)
     })
-    test('legacy callback, signed manifest, revisions and stale approval', async () => {
+    test('legacy callback, signed manifest, revisions and stale rejection', async () => {
         const user = await actor('review@example.com')
         const job = await queued(user.headers)
         await claim(job)
@@ -251,11 +251,10 @@ describe('Content workflow', () => {
         const svg = await (await app.request(`/api/renders/${detail.renders[0].id}`, { headers: user.headers })).text()
         expect(svg).toContain('data:image/jpeg;base64,')
         expect(svg).not.toContain('token=')
-        const approval = { revisionId: detail.revision.id, contentHash: detail.revision.contentHash, decision: 'APPROVED_INTERNAL', notes: 'Checked' }
-        expect((await request(app, `/api/drafts/${detail.draft.id}/review`, { method: 'POST', headers: user.headers, body: approval })).status).toBe(200)
+        const rejection = { revisionId: detail.revision.id, contentHash: detail.revision.contentHash, notes: 'Checked' }
         const current = detail.revision
         expect((await request(app, `/api/drafts/${detail.draft.id}`, { method: 'PATCH', headers: user.headers, body: { expectedRevisionId: current.id, primaryAssetId: job.assetId, title: 'Edited title', caption: current.caption, hashtags: current.hashtags, location: current.location, activity: current.activity } })).status).toBe(200)
-        expect((await request(app, `/api/drafts/${detail.draft.id}/review`, { method: 'POST', headers: user.headers, body: approval })).status).toBe(409)
+        expect((await request(app, `/api/drafts/${detail.draft.id}/reject`, { method: 'POST', headers: user.headers, body: rejection })).status).toBe(409)
         detail = (await request(app, `/api/jobs/${job.jobId}`, { headers: user.headers })).body.data
         expect(detail.draft.reviewStatus).toBe('READY_FOR_REVIEW')
         expect(detail.renders[0].renderState).toBe('OUTDATED')

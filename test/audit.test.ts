@@ -33,7 +33,7 @@ describe("Audit regressions", () => {
         }
         for (const [method, path] of [
             ["POST", "batches"], ["POST", "batches/example/assets"], ["POST", "batches/example/process"],
-            ["POST", "jobs/example/retry"], ["PATCH", "drafts/example"], ["POST", "drafts/example/review"],
+            ["POST", "jobs/example/retry"], ["PATCH", "drafts/example"], ["POST", "drafts/example/reject"],
             ["DELETE", "assets/example"], ["PATCH", "settings"],
             ["POST", "jobs/example/claim"], ["POST", "jobs/example/result"], ["POST", "jobs/example/failure"]
         ]) {

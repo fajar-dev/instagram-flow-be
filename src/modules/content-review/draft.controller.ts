@@ -10,8 +10,8 @@ export class DraftController {
         const result = await this.service.edit(actor(c), id(c, 'draftId'), c.req.valid('json' as never));
         return ApiResponse.success(c, RevisionSerializer.single(result));
     }
-    async review(c: Context) {
-        const result = await this.service.review(actor(c), id(c, 'draftId'), c.req.valid('json' as never));
+    async reject(c: Context) {
+        const result = await this.service.reject(actor(c), id(c, 'draftId'), c.req.valid('json' as never));
         return ApiResponse.success(c, DraftSerializer.single(result));
     }
 }
