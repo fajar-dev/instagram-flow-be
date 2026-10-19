@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from "typeorm"
 
-export class CreatePasswordResetTokens1792195300002 implements MigrationInterface {
+export class CreatePasswordResetTokens1792368000001 implements MigrationInterface {
     transaction = false
 
     async up(queryRunner: QueryRunner): Promise<void> {
