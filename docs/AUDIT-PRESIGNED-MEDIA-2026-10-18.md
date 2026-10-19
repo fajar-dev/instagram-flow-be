@@ -1,3 +1,5 @@
+> **Arsip audit.** Catatan ini merekam implementasi dan hasil uji pada tanggalnya; beberapa keputusan telah digantikan. Gunakan [indeks dokumentasi aktif](README.md) untuk perilaku, konfigurasi, dan prosedur saat ini.
+
 # MinIO presigned media — 2026-10-18
 
 - Reuse the existing MinIO helper, credentials and private bucket for n8n preview URLs.

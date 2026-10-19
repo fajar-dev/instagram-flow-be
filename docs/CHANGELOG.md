@@ -1,4 +1,13 @@
-# 📝 Changelog
+# Riwayat perubahan IG Flow — backend
+
+> Entri lama adalah riwayat pada tanggalnya, bukan panduan aktif. Lihat [indeks dokumentasi](README.md) untuk implementasi saat ini.
+
+## 2026-10-19 — Dokumentasi produk
+
+- Mengganti panduan template dengan dokumentasi produk IG Flow berdasarkan source aktif.
+- Menyelaraskan setup, peta fitur/halaman, API, storage, migration, UI, dan aturan kontribusi.
+- Menandai audit/PRD lama sebagai arsip; membedakan batas fitur, konfigurasi dan hasil uji nyata.
+- Tidak mengubah runtime, environment, schema database atau workflow deployment.
 
 ## 2026-10-18 — Live n8n integration
 
