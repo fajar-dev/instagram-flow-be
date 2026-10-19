@@ -53,6 +53,7 @@ export function createConfig(environment: Record<string, string | undefined>) {
             contract,
             timeoutMs: number('N8N_WEBHOOK_TIMEOUT_MS', 15000),
         },
+        instagram: { credentialsFile: environment.INSTAGRAM_CREDENTIALS_FILE || 'secrets/instagram-accounts.json' },
         database: {
             type: 'mysql' as const,
             host: environment.DB_HOST || '127.0.0.1',

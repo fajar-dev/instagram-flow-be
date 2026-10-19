@@ -30,3 +30,10 @@ Each module wires dependencies in its `*.module.ts` file. Controllers delegate t
 - `integrations/n8n/`: workflow builder, nodes, generated JSON and deployment instructions.
 - `test/`: isolated MySQL tests with mocked external storage and mail.
 - `swagger.yaml`: public API documentation.
+
+## Instagram
+
+- `src/modules/instagram/`: credential JSON privat dan adapter Graph API.
+- `src/modules/publishing/`: snapshot dan antrean satu publikasi per project ke satu akun.
+- `src/commands/publication-dispatch.ts`: worker `posts:dispatch`.
+- `secrets/instagram-accounts.example.json`: contoh tanpa credential asli.

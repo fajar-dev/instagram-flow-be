@@ -1,6 +1,6 @@
 # IG Flow — Backend
 
-API dan worker untuk IG Flow, dashboard AMTI (Asset Monitoring Teknologi Indonesia) untuk menyiapkan konten Instagram dari dokumentasi kegiatan. Backend mengelola unggahan, proses AI melalui n8n, hasil render, revisi, dan review internal.
+API dan worker untuk IG Flow, dashboard AMTI (Asset Monitoring Teknologi Indonesia) untuk menyiapkan konten Instagram dari dokumentasi kegiatan. Backend mengelola unggahan, proses AI melalui n8n, hasil render, revisi, review internal, dan publikasi Instagram multi-account.
 
 ## Cakupan saat ini
 
@@ -10,7 +10,7 @@ API dan worker untuk IG Flow, dashboard AMTI (Asset Monitoring Teknologi Indones
 - Caption, pemilihan foto, preview feed/story, revisi, dan keputusan review dengan pemeriksaan revisi aktif.
 - Overview, media library, audit log, dan kontrol dispatcher di dashboard.
 
-Semua pengguna aktif yang terautentikasi memiliki akses aplikasi yang sama. Persetujuan `APPROVED_INTERNAL` adalah persetujuan internal. Publishing/scheduling Instagram, Meta account linking, analytics Instagram, dan notifikasi/approval Telegram belum diimplementasikan.
+Semua pengguna aktif yang terautentikasi memiliki akses aplikasi yang sama. Ready for review langsung menuju Publish atau Reject. Satu project hanya memiliki satu postingan ke satu akun, langsung atau terjadwal. OAuth account linking, analytics Instagram, dan Telegram belum diimplementasikan.
 
 ## Menjalankan
 
@@ -49,4 +49,8 @@ bun run test
 bun run build
 ```
 
-Test memakai database MySQL khusus yang dapat dihapus dan adapter eksternal terkontrol. Baca [panduan pengujian](docs/TESTING_GUIDE.md) sebelum menjalankannya. Sync schema selalu nonaktif; baseline development saat ini terdiri dari 13 migration per tabel.
+Test memakai database MySQL khusus yang dapat dihapus dan adapter eksternal terkontrol. Baca [panduan pengujian](docs/TESTING_GUIDE.md) sebelum menjalankannya. Sync schema selalu nonaktif; baseline development terdiri dari 13 migration ditambah migration publications; total 14 tabel aplikasi.
+
+## Instagram publishing
+
+Credential multi-account berada di JSON privat. Jalankan `bun run posts:dispatch` untuk publikasi langsung/terjadwal. Ikuti [panduan publishing](docs/INSTAGRAM_PUBLISHING.md) untuk konfigurasi Meta, MinIO dan pemulihan kegagalan.

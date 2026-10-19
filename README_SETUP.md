@@ -9,7 +9,7 @@
 5. Jalankan `bun run dev`; periksa `GET /health` dan `/api/docs`.
 6. Jalankan frontend mengikuti [README frontend](../frontend/README.md).
 
-Baseline 19 Oktober 2026 berisi 13 migration. Database dengan history lama memerlukan rekonsiliasi eksplisit atau pembuatan ulang database development; lihat [database](docs/DATABASE_GUIDE.md). Aplikasi tidak menjalankan migration/seeder otomatis saat startup.
+Baseline 19 Oktober 2026 berisi 13 migration; migration tambahan publications membawa total menjadi 14. Database dengan history lama memerlukan rekonsiliasi eksplisit atau pembuatan ulang database development; lihat [database](docs/DATABASE_GUIDE.md). Aplikasi tidak menjalankan migration/seeder otomatis saat startup.
 
 ## Pemrosesan AI
 
@@ -34,3 +34,7 @@ Satu bucket privat menyimpan avatar, original, preview JPEG, thumbnail, dan rend
 Saat job gagal, periksa safe error di dashboard, log backend, dan execution n8n. Untuk 504 pada claim, periksa backend dan tunnel sebelum mengubah prompt AI. Retry dari dashboard setelah penyebab pulih. Jangan mengubah status atau execution ID langsung di database.
 
 Setup tunnel lokal bergantung pada MacBook dan koneksinya. Deployment selalu aktif, retensi objek, serta latihan pemulihan backup memerlukan pengaturan operasional tersendiri. Persetujuan review tidak memublikasikan konten ke Instagram.
+
+## Publikasi Instagram
+
+Jalankan migration baru, isi JSON privat dari contoh di secrets/, lalu jalankan `bun run posts:dispatch` terpisah dari dispatcher AI. Lihat [panduan lengkap](docs/INSTAGRAM_PUBLISHING.md). Tidak diperlukan webhook Instagram untuk alur publish ini.

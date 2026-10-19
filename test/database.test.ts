@@ -20,7 +20,7 @@ describe("MySQL database integration", () => {
         expect(AppDataSource.options.synchronize).toBe(false)
         const runner = AppDataSource.createQueryRunner()
         try {
-            for (const table of ["users", "password_reset_tokens", "batches", "assets", "jobs", "job_dispatches", "ai_results", "renders", "drafts", "draft_revisions", "reviews", "audit_logs", "settings"]) {
+            for (const table of ["users", "password_reset_tokens", "batches", "assets", "jobs", "job_dispatches", "ai_results", "renders", "drafts", "draft_revisions", "reviews", "audit_logs", "settings", "publications"]) {
                 expect(await runner.hasTable(table)).toBe(true)
             }
             expect(await AppDataSource.showMigrations()).toBe(false)
@@ -33,9 +33,9 @@ describe("MySQL database integration", () => {
     test("fresh baseline has no legacy tables, role or inline media and supports rollback", async () => {
         const runner = AppDataSource.createQueryRunner()
         try {
-            expect(databaseMigrations).toHaveLength(13)
+            expect(databaseMigrations).toHaveLength(18)
             expect(await runner.hasTable("contacts")).toBe(false)
-            const timestamps = databaseMigrations.map(Migration => Number(Migration.name.slice(-13)))
+            const timestamps = databaseMigrations.slice(0, 13).map(Migration => Number(Migration.name.slice(-13)))
             expect(timestamps).toEqual(Array.from({ length: 13 }, (_, index) => 1792368000000 + index))
             expect(await runner.hasColumn("users", "role")).toBe(false)
             expect(await runner.hasColumn("renders", "sanitized_svg")).toBe(false)

@@ -58,7 +58,7 @@ Daftar ini dicocokkan dengan registrasi route pada 19 Oktober 2026. Perbarui saa
 | POST | `/api/jobs/:jobId/retry` | JWT user aktif |
 | GET | `/api/review` | JWT user aktif |
 | PATCH | `/api/drafts/:draftId` | JWT user aktif |
-| POST | `/api/drafts/:draftId/review` | JWT user aktif |
+| POST | `/api/drafts/:draftId/reject` | JWT user aktif |
 | GET | `/api/media` | JWT user aktif |
 | GET | `/api/assets/:assetId/previews` | JWT user aktif |
 | GET | `/api/assets/:assetId/preview` | JWT user aktif |
@@ -68,7 +68,14 @@ Daftar ini dicocokkan dengan registrasi route pada 19 Oktober 2026. Perbarui saa
 | GET | `/api/audit-logs` | JWT user aktif |
 | GET | `/api/settings` | JWT user aktif |
 | PATCH | `/api/settings` | JWT user aktif |
+| GET | `/api/instagram/accounts` | JWT user aktif |
+| POST | `/api/instagram/accounts/:accountKey/verify` | JWT user aktif |
+| GET | `/api/drafts/:draftId/publications` | JWT user aktif |
+| POST | `/api/drafts/:draftId/publications` | JWT user aktif |
+| POST | `/api/publications/:publicationId/cancel` | JWT user aktif |
+| POST | `/api/publications/:publicationId/retry` | JWT user aktif |
+| GET | `/api/publications/:publicationId/image` | JWT user aktif |
 | GET | `/api/swagger.yaml` | Publik |
 | GET | `/api/docs` | Publik |
 
-Health mengembalikan state inisialisasi DataSource, timestamp, uptime, environment dan checks.database. Response 200/503 tidak membuktikan koneksi MinIO/SMTP/n8n. Tidak ada endpoint publish Instagram atau Contact.
+Health mengembalikan state inisialisasi DataSource, timestamp, uptime, environment dan checks.database. Response 200/503 tidak membuktikan koneksi MinIO/SMTP/n8n. Endpoint publishing memerlukan JWT pengguna aktif; tidak ada endpoint Contact.

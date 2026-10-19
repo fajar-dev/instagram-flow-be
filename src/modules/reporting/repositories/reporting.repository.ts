@@ -60,16 +60,16 @@ export class TypeOrmReportingRepository implements IReportingRepository {
         ]);
         const counts: Record<string, number> = Object.fromEntries([
             'QUEUED', 'DISPATCHED', 'PROCESSING', 'FAILED', 'READY_FOR_REVIEW',
-            'IN_REVIEW', 'REVISION_REQUESTED', 'APPROVED_INTERNAL', 'REJECTED'
+            'PUBLISH', 'REJECTED'
         ].map(status => [status, 0]));
         for (const row of groups.flat()) counts[row.status] = Number(row.count);
         return counts;
     }
     async overview(days: number) {
         const count = (kind: 'job' | 'asset' | 'draft' | 'batch', status?: string) => this.query(kind, { days, status }).getCount();
-        const [batches, assets, queued, dispatched, processing, ready, failed, approved] = await Promise.all([
-            count('batch'), count('asset'), count('job', 'QUEUED'), count('job', 'DISPATCHED'), count('job', 'PROCESSING'), count('draft', 'READY_FOR_REVIEW'), count('job', 'FAILED'), count('draft', 'APPROVED_INTERNAL'),
+        const [batches, assets, queued, dispatched, processing, ready, failed, publish] = await Promise.all([
+            count('batch'), count('asset'), count('job', 'QUEUED'), count('job', 'DISPATCHED'), count('job', 'PROCESSING'), count('draft', 'READY_FOR_REVIEW'), count('job', 'FAILED'), count('draft', 'PUBLISH'),
         ]);
-        return { batches, assets, processing: queued + dispatched + processing, ready, failed, approved };
+        return { batches, assets, processing: queued + dispatched + processing, ready, failed, publish };
     }
 }

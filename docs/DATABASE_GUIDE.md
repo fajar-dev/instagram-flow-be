@@ -58,3 +58,9 @@ Token disimpan sebagai SHA-256 di `password_reset_tokens`, terpisah dari users. 
 ## Penyimpanan media
 
 Original, preview, thumbnail, avatar dan render berada di satu bucket privat MinIO. Database menyimpan key serta metadata. Backup database tanpa bucket tidak cukup untuk memulihkan konten. Tidak ada command yang otomatis membersihkan semua objek yatim setelah reset database.
+
+## Migration publishing
+
+`1792371600000-create-publications.ts` menambahkan tabel publications sebagai migration ke-14. Tabel menyimpan accountKey, snapshot revisi, key JPEG MinIO, jadwal UTC, lease, container/media ID, status dan safe error. Credential tetap hanya di file JSON privat. Ini migration tambahan; 13 file baseline tidak diubah.
+
+Migration 1792382399999–1792382400002 menambahkan pengarsipan percobaan gagal yang telah digantikan post berhasil, constraint unique publications.batch_id, normalisasi status draft, dan normalisasi riwayat review. Total 18 migration untuk 14 tabel. Setiap file memutasi satu tabel. Arsip menyimpan seluruh percobaan lama di audit_logs; snapshot backup dibuat sebelum migrasi lokal. Rollback normalisasi pada database berisi data memerlukan backup.

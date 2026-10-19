@@ -13,7 +13,8 @@
     "seed": "bun run src/database/seeders/index.ts",
     "seed:users": "bun run src/database/seeders/user.seeder.ts",
     "typecheck": "tsc --noEmit",
-    "jobs:dispatch": "bun run src/commands/job-dispatch.ts"
+    "jobs:dispatch": "bun run src/commands/job-dispatch.ts",
+    "posts:dispatch": "bun run src/commands/publication-dispatch.ts"
   },
   "dependencies": {
     "@hono/swagger-ui": "^0.6.1",

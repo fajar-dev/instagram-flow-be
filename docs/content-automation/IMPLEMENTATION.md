@@ -9,13 +9,13 @@ Dokumen ini menjelaskan perilaku aktif pada 19 Oktober 2026 dan menggantikan des
 3. Pilih output feed/story dan proses batch. Backend mengunci batch, membuat job dan outbox secara atomik.
 4. Worker menyampaikan event ke n8n. n8n mengklaim execution, mengambil manifest, menganalisis semua aset, membuat caption serta render, lalu memanggil result/failure.
 5. Buka Content Detail untuk melihat foto, summary, error/status dan timeline. Editor mempunyai Caption, Photos, Review dan History.
-6. Simpan revisi sebelum memberi keputusan review. History merekam keputusan/catatan, bukan diff caption. APPROVED_INTERNAL tetap approval internal.
+6. Simpan revisi sebelum memberi keputusan review. History merekam keputusan/catatan, bukan diff caption. Ready for review langsung menuju Publish atau Reject; tidak ada tahap approval tambahan.
 
 ## Data dan transaksi
 
 Status job dan status review adalah dua state berbeda; tab Content memetakan keduanya ke list terpadu. Backend melindungi idempotency process/retry, claim execution, duplicate callback, revision aktif dan content hash. Edit mengubah revision serta membuat render lama outdated; belum ada re-render otomatis setelah setiap edit.
 
-Baseline database memakai 13 tabel. Domain konten memakai UUID, user tetap integer. Modul dipisah menjadi content, ai-job, content-review, reporting dan integration dengan shared repository transaksi. Tidak ada role atau modul social.
+Baseline database memakai 13 tabel, ditambah tabel publications melalui migration baru. Domain konten memakai UUID, user tetap integer. Modul dipisah menjadi content, ai-job, content-review, reporting dan integration dengan shared repository transaksi. Tidak ada role atau modul social.
 
 ## Media
 
@@ -27,6 +27,6 @@ Satu bucket privat menyimpan seluruh media; database hanya key/metadata. n8n men
 
 Workflow repo menggunakan kontrak camelCase dengan format API AI OpenAI-compatible. Backend tetap mendukung adapter legacy untuk kontrak lama. Pengaturan dispatcher ada di dashboard; URL dan secret tetap di environment/n8n credential.
 
-Belum ada Meta OAuth, publikasi atau penjadwalan Instagram, analytics akun, Telegram, dan re-render otomatis hasil edit. Data overview adalah aktivitas aplikasi, bukan engagement Instagram.
+Publikasi dan penjadwalan gambar feed/story tersedia melalui Graph API dengan credential JSON. Belum ada Meta OAuth onboarding, analytics akun, Telegram, dan re-render otomatis hasil edit. Data overview adalah aktivitas aplikasi, bukan engagement Instagram.
 
 Uji nyata yang pernah dilakukan dicatat di [audit n8n](../AUDIT-N8N-2026-10-18.md); itu bukti pada tanggal pengujian, bukan jaminan layanan selalu aktif. Setup backend lokal memerlukan worker dan tunnel yang hidup. Ikuti [runbook](../../integrations/n8n/README.md) untuk operasi dan pemulihan.

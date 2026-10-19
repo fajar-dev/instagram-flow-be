@@ -23,6 +23,9 @@ describe('deployable n8n workflow', () => {
     test('all manifest assets are included and all analysis IDs are validated', () => {
         expect(run('prepare-analysis', manifest).messages[0].content).toHaveLength(3)
         expect(run('parse-analysis', response(analysis))).toEqual(analysis)
+        expect(run('prepare-analysis', manifest).messages[0].content[1].text).toBe('assetId: image-1')
+        expect(run('parse-analysis', response({ rankings: [{ assetId: 'image-1', score: 90, reason: 'Suitable' }], selectedAssetIds: ['image-1'] }))).toEqual(analysis)
+        expect(() => run('parse-analysis', response({ rankings: [{ assetId: 'image-2', score: 90, reason: 'Suitable' }], selectedAssetIds: ['image-2'] }))).toThrow()
         expect(() => run('parse-analysis', response({ ...analysis, rankings: [] }))).toThrow()
         expect(() => run('parse-analysis', response({ ...analysis, selectedAssetIds: [jobId] }))).toThrow()
     })
