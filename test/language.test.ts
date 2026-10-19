@@ -29,13 +29,13 @@ beforeEach(async () => {
 
 describe("Language detection", () => {
     test("defaults to English when Accept-Language header is not sent", async () => {
-        const { headers } = await request(app, "/api/contact")
+        const { headers } = await request(app, "/api/user")
 
         expect(headers.get("Content-Language")).toBe("en")
     })
 
     test("uses Indonesian when Accept-Language: id is sent", async () => {
-        const { headers } = await request(app, "/api/contact", {
+        const { headers } = await request(app, "/api/user", {
             headers: { "Accept-Language": "id" },
         })
 
@@ -43,7 +43,7 @@ describe("Language detection", () => {
     })
 
     test("uses English when Accept-Language: en is sent", async () => {
-        const { headers } = await request(app, "/api/contact", {
+        const { headers } = await request(app, "/api/user", {
             headers: { "Accept-Language": "en" },
         })
 
@@ -51,7 +51,7 @@ describe("Language detection", () => {
     })
 
     test("resolves regional variants to the base language (id-ID -> id)", async () => {
-        const { headers } = await request(app, "/api/contact", {
+        const { headers } = await request(app, "/api/user", {
             headers: { "Accept-Language": "id-ID,id;q=0.9" },
         })
 
@@ -59,7 +59,7 @@ describe("Language detection", () => {
     })
 
     test("falls back to English when the requested language is unsupported", async () => {
-        const { headers } = await request(app, "/api/contact", {
+        const { headers } = await request(app, "/api/user", {
             headers: { "Accept-Language": "fr-FR,fr;q=0.9" },
         })
 
@@ -94,7 +94,7 @@ describe("Localized response messages", () => {
     })
 
     test("exception message is translated to Indonesian", async () => {
-        const { status, body } = await request(app, "/api/contact", {
+        const { status, body } = await request(app, "/api/user", {
             headers: { "Accept-Language": "id" },
         })
 
