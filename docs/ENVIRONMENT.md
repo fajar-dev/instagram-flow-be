@@ -66,3 +66,7 @@ Parser angka menerima integer positif; input tidak valid menghentikan startup. B
 Sakelar dispatchEnabled tetap berada di tabel settings dan dapat diubah di dashboard. Ready memeriksa webhook HTTPS/token, service token, dan kelengkapan storage; bukan ping atau bukti kesehatan layanan. Worker tetap harus dijalankan terpisah.
 
 Panduan setup/tunnel ada di [README_SETUP](../README_SETUP.md) dan [runbook n8n](../integrations/n8n/README.md).
+
+## Credential Instagram
+
+INSTAGRAM_CREDENTIALS_FILE menunjuk JSON privat, default secrets/instagram-accounts.json. Token dan app secret hanya ada di file ini; jangan letakkan dalam database atau frontend. JSON memuat graphVersion dan array akun. Lihat [publishing](INSTAGRAM_PUBLISHING.md). Tidak ada environment token Instagram kedua.

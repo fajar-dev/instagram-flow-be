@@ -28,7 +28,7 @@ Repository workflow bersama saat ini melayani transaksi beberapa entitas konten;
 
 Batch dibuat, foto dikirim satu per request, lalu process mengunci batch dan membuat job/outbox secara atomik. Dispatcher menyampaikan event. n8n mengklaim job memakai event/execution ID, mengambil manifest berisi preview presigned, menganalisis seluruh foto dan membuat caption/render yang diminta. Backend memvalidasi hasil, menyaring SVG, dan menyimpan hasil/draft/revision serta metadata render.
 
-Review memakai revision ID dan content hash. Edit membuat revision baru dan membuat preview lama outdated. Approval tidak memicu publish Instagram. Idempotency, claim dan transaksi melindungi request ganda; lihat [kontrak API](API_CONVENTIONS.md).
+Review memakai revision ID dan content hash. Edit membuat revision baru dan membuat preview lama outdated. Publish membuat antrean Instagram; Reject mengakhiri review. Idempotency, claim dan transaksi melindungi request ganda; lihat [kontrak API](API_CONVENTIONS.md).
 
 ## Media dan akses
 
@@ -39,3 +39,7 @@ Satu bucket privat digunakan untuk avatar dan konten. MySQL hanya menyimpan meta
 ## Entry point dan operasi
 
 `src/index.ts` memasang middleware, startup database, dan error handler. Semua endpoint didaftarkan melalui `src/routes/api.ts`. Worker berada di `src/commands/job-dispatch.ts`; migration/seeder adalah CLI terpisah. `/health` memeriksa apakah DataSource terinisialisasi, bukan probe penuh SMTP/MinIO/n8n.
+
+## Instagram publishing
+
+Modul instagram membaca JSON credential dan menyediakan adapter Graph API; modul publishing memiliki entity publications, repository transaksi, snapshot media, service, controller dan worker. Keduanya berada di top-level sesuai fitur. Aksi Publish langsung membuat antrean dari READY_FOR_REVIEW. Worker `posts:dispatch` tidak bergantung pada webhook n8n. Lihat [publishing](INSTAGRAM_PUBLISHING.md).

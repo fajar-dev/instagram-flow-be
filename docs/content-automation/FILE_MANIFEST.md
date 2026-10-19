@@ -8,7 +8,7 @@ Peta ini menunjuk direktori pemilik fitur, bukan salinan daftar semua file yang 
 | Job dan workflow | src/modules/ai-job/ | app/services/ai-job/, app/pages/content/[jobId]/ |
 | Editor/review | src/modules/content-review/ | app/components/content-review/, app/composables/content-review/, app/services/content-review/ |
 | Overview/list/audit | src/modules/reporting/ | app/components/reporting/, app/composables/reporting/, app/services/reporting/ |
-| Dispatcher settings | src/modules/integration/ | app/pages/integration-settings.vue, app/services/integration/ |
+| Dispatcher settings | src/modules/integration/ | app/pages/settings.vue, app/services/integration/ |
 | Transaksi bersama | src/modules/shared/ | app/types/, app/util/ |
 | Worker | src/commands/job-dispatch.ts | Tidak berjalan di browser |
 | Workflow deploy | integrations/n8n/ | Tidak menyimpan credential n8n |

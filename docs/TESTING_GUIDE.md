@@ -27,3 +27,7 @@ Gunakan helper di `test/helpers.ts` dan `test/setup.ts`. Uji perilaku yang dapat
 Pada lingkungan pengujian, pastikan backend, worker, MinIO, n8n dan callback tunnel aktif. Uji upload beberapa gambar termasuk satu invalid, proses output feed/story, tunggu completion, ubah caption, simpan, lalu review. Periksa bahwa request gagal tidak menghapus upload lain, render outdated tidak dianggap final, dan review memakai revision terbaru.
 
 Periksa juga kegagalan tunnel/claim, retry setelah pemulihan, serta URL MinIO kedaluwarsa. Langkah yang memanggil AI membutuhkan gateway nyata; jangan menyatakan E2E live berhasil hanya karena suite mock lolos. Catat waktu dan batas verifikasi pada hasil pengujian.
+
+## Regresi publishing
+
+`test/publishing.test.ts` menguji API terautentikasi, credential redaction, JPEG snapshot, konkurensi/idempotency, jadwal, cancellation dan rekonsiliasi hasil Meta yang ambigu. Adapter Meta dipalsukan; test tidak memublikasikan konten ke akun nyata.

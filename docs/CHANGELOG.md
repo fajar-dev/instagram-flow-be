@@ -1,5 +1,13 @@
 # Riwayat perubahan IG Flow — backend
 
+## 2026-10-19 — Instagram multi-account publishing
+
+- Credential JSON privat, daftar akun di Settings, dan pemeriksaan koneksi.
+- Publikasi langsung/terjadwal untuk gambar feed/story dengan snapshot revisi/JPEG di MinIO.
+- Worker terpisah dengan lease, idempotency, cancellation, retry dan rekonsiliasi outcome ambigu.
+- Migration publications, kontrak API, terjemahan dan test regresi.
+- Belum diuji ke akun Instagram nyata karena credential belum diisi.
+
 > Entri lama adalah riwayat pada tanggalnya, bukan panduan aktif. Lihat [indeks dokumentasi](README.md) untuk implementasi saat ini.
 
 ## 2026-10-19 — Dokumentasi produk
@@ -237,3 +245,19 @@ Backend migration `1792368000000-drop-contacts` removes the retired table. Appli
 ## 2026-10-19 — Rebuild development migration baseline
 
 At explicit user request before production, replaced the previous migration chain with 13 ordered create-table files, one per active table. Removed both Contact creation and deletion migrations. DDL for retained tables is unchanged. Local migration metadata is reconciled only when the applied history matches the complete previous baseline; application data is preserved. Other development databases must be explicitly reconciled or recreated.
+
+## Instagram Login
+
+Publishing memakai graph.instagram.com dan Instagram User access token. Kebutuhan Facebook Page serta pageId/pageAccessToken dihapus dari konfigurasi dan kontrak akun. Token lama tidak dikonversi otomatis; isi accessToken Instagram Login di JSON privat.
+
+## 2026-10-19 — AI analysis identifier recovery
+
+Execution 12 failed in Parse Analysis because one model-returned asset ID was absent from the five-image manifest. Analysis prompts now use short deterministic aliases, resolved back to exact manifest IDs before validation. Unknown/duplicate IDs remain rejected. Workflow regenerated, backed up and deployed to n8n; regression tests cover alias mapping and rejection.
+
+## 2026-10-19 — Live Instagram publishing
+
+Fixed an unnecessary HTTPS-only validation that blocked the existing public HTTP MinIO endpoint. Publication URLs continue to use MinIO presigned access with a private bucket; other URL protocols remain rejected. Added a regression test for both HTTP/HTTPS and unsupported protocols. Live tests use explicitly synthetic content, with immediate and scheduled publication through the existing worker.
+
+## 2026-10-19 — Ready → Publish / Reject
+
+Removed intermediate review decisions. One project now targets one account and one publication, enforced with a unique project constraint and serialized decisions. Publish starts delivery directly; Reject preserves the revision/hash guard. The editor locks after either decision, and failed delivery retries the same publication. Content tabs, counts, overview, API contracts, translations and migration history are aligned.
