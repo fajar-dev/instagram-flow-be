@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
-  title: Hono BE API
+  title: IG Flow API
   description: >-
-    API Documentation for Hono BE Backend Service.
+    API for AMTI IG Flow content preparation, AI processing, and internal review.
     Language is detected from the `Accept-Language` header (`en` default, `id` supported)
     and echoed back via the `Content-Language` response header on every response.
   version: 2.0.0
@@ -21,7 +21,7 @@ tags:
   - name: Auth
     description: Registration, login, session, and password management
   - name: User
-    description: User CRUD (admin/management)
+    description: User management for authenticated active users
   - name: Upload
     description: File upload & retrieval via MinIO object storage
 
@@ -1983,7 +1983,7 @@ paths:
     delete:
       tags:
         - Content
-      summary: Admin archives unused asset
+      summary: Archive an unused asset
       security:
         - bearerAuth:
             []
@@ -2047,7 +2047,7 @@ paths:
     get:
       tags:
         - Reporting
-      summary: Admin or marketing audit trail
+      summary: Application activity audit trail
       security:
         - bearerAuth:
             []
@@ -2123,7 +2123,7 @@ paths:
     get:
       tags:
         - Integration
-      summary: Admin integration presence flags; never secrets or claimed health
+      summary: Dispatcher configuration presence; no secrets or live health claim
       security:
         - bearerAuth:
             []
@@ -2145,7 +2145,7 @@ paths:
     patch:
       tags:
         - Integration
-      summary: Admin enables or pauses dispatch
+      summary: Enable or pause dispatch
       security:
         - bearerAuth:
             []
