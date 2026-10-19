@@ -1,3 +1,5 @@
+> Tutorial identifiers named Example are illustrative. For an installed CRUD module use `src/modules/user/`; current schema and routes are defined by `src/config/database.ts` and `src/routes/api.ts`.
+
 # 🔌 Konvensi API
 
 Dokumen ini mendefinisikan standar untuk semua API endpoints, format response, error handling, dan validasi.
@@ -231,11 +233,11 @@ GET /api/resource?token=<jwt_token>
 
 | Operasi | Message Pattern | Contoh |
 |---------|----------------|--------|
-| List | `"{Resources} retrieved successfully"` | `"Contacts retrieved successfully"` |
-| Detail | `"{Resource} retrieved successfully"` | `"Contact retrieved successfully"` |
-| Create | `"{Resource} created successfully"` | `"Contact created successfully"` |
-| Update | `"{Resource} updated successfully"` | `"Contact updated successfully"` |
-| Delete | `"{Resource} deleted successfully"` | `"Contact deleted successfully"` |
+| List | `"{Resources} retrieved successfully"` | `"Examples retrieved successfully"` |
+| Detail | `"{Resource} retrieved successfully"` | `"Example retrieved successfully"` |
+| Create | `"{Resource} created successfully"` | `"Example created successfully"` |
+| Update | `"{Resource} updated successfully"` | `"Example updated successfully"` |
+| Delete | `"{Resource} deleted successfully"` | `"Example deleted successfully"` |
 | Auth | Deskriptif | `"Logged in successfully"`, `"Token refreshed successfully"` |
 | Error | Deskriptif | `"Email already in use"`, `"Invalid credentials"` |
 
@@ -258,4 +260,4 @@ GET /api/resource?token=<jwt_token>
 - Setiap endpoint baru **harus** ditambahkan ke `swagger.yaml`
 - Gunakan `$ref` untuk reuse schema
 - Response selalu wrapped dalam `BaseResponse` via `allOf`
-- Tag per module (contoh: `Auth`, `Contact`)
+- Tag per module (contoh: `Auth`, `Example`)

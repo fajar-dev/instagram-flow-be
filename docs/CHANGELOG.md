@@ -218,3 +218,13 @@ Added authenticated `/assets/:assetId/previews` returning existing MinIO presign
 ## 2026-10-18 — Date picker and uploader avatars
 
 Reporting lists include uploaderPhoto using the existing private MinIO URL resolver, alongside uploaderName. Controller awaits serialization; tests cover absent and signed profile photos.
+
+## 2026-10-19 — Remove Contact
+
+Removed the Contact application feature, endpoints, entities, UI, types, client, translations and dedicated tests. Shared auth, logging, language and pagination tests now use supported User endpoints. User is the active CRUD reference. Historical audit records remain unchanged.
+
+Backend migration `1792368000000-drop-contacts` removes the retired table. Applied migration history is preserved; reverting restores only the empty schema, not deleted data.
+
+## 2026-10-19 — Rebuild development migration baseline
+
+At explicit user request before production, replaced the previous migration chain with 13 ordered create-table files, one per active table. Removed both Contact creation and deletion migrations. DDL for retained tables is unchanged. Local migration metadata is reconciled only when the applied history matches the complete previous baseline; application data is preserved. Other development databases must be explicitly reconciled or recreated.

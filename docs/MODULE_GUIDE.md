@@ -1,3 +1,5 @@
+> Tutorial identifiers named Example are illustrative. For an installed CRUD module use `src/modules/user/`; current schema and routes are defined by `src/config/database.ts` and `src/routes/api.ts`.
+
 # 🧩 Panduan Membuat Module Baru
 
 Dokumen ini menjelaskan langkah-langkah **lengkap** untuk menambahkan feature module baru ke proyek. Ikuti setiap langkah secara berurutan.
@@ -33,10 +35,10 @@ src/modules/invoice/
 
 Buat hanya jika entity memiliki field bertipe enum (mis. `status`, `type`, `salutation`).
 
-**File**: `src/modules/contact/enum/type.enum.ts`
+**File**: `src/modules/example/enum/type.enum.ts`
 
 ```typescript
-export enum ContactType {
+export enum ExampleType {
     CUSTOMER = 'customer',
     VENDOR = 'vendor',
     SUPPLIER = 'supplier',
@@ -47,12 +49,12 @@ export enum ContactType {
 ### Aturan Enum
 
 - Folder: `enum/` (singular, bukan `enums/`)
-- File: `{nama}.enum.ts` (kebab-case) — nama file deskriptif sesuai isinya, **tidak harus** sama dengan nama module (contoh: `type.enum.ts`, `salutation.enum.ts` di dalam module `contact`)
-- Class: **PascalCase**, noun deskriptif — **tidak** diprefix nama module (`ContactType`, bukan `ContactTypeEnum` atau `Type`)
+- File: `{nama}.enum.ts` (kebab-case) — nama file deskriptif sesuai isinya, **tidak harus** sama dengan nama module (contoh: `type.enum.ts`, `salutation.enum.ts` di dalam module `example`)
+- Class: **PascalCase**, noun deskriptif — **tidak** diprefix nama module (`ExampleType`, bukan `ExampleTypeEnum` atau `Type`)
 - Value: string literal **lowercase**, merepresentasikan nilai yang disimpan di database (`'customer'`, bukan `CUSTOMER` atau angka)
 - Satu file enum hanya berisi **satu** enum
-- Import dan pakai di entity: `@Column({ type: "enum", enum: ContactType, ... })`
-- Import dan pakai di validator: `z.enum(ContactType)`
+- Import dan pakai di entity: `@Column({ type: "enum", enum: ExampleType, ... })`
+- Import dan pakai di validator: `z.enum(ExampleType)`
 - JANGAN duplikasi definisi enum di file lain — selalu import dari `enum/`
 
 ---
@@ -441,7 +443,7 @@ import { Invoice } from "../modules/invoice/entities/invoice.entity"
 
 export const AppDataSource = new DataSource({
     // ... config
-    entities: [User, Contact, Invoice],  // ← Tambahkan di sini
+    entities: [User, Example, Invoice],  // ← Tambahkan di sini
 })
 ```
 
@@ -485,7 +487,7 @@ Tambahkan definisi di `swagger.yaml`:
 
 1. Tambahkan schemas baru di `components.schemas`
 2. Tambahkan paths baru di `paths`
-3. Ikuti pola yang sudah ada (lihat Contact sebagai contoh CRUD)
+3. Ikuti pola yang sudah ada (lihat Example sebagai contoh CRUD)
 
 ---
 

@@ -1,3 +1,5 @@
+> Tutorial identifiers named Example are illustrative. For an installed CRUD module use `src/modules/user/`; current schema and routes are defined by `src/config/database.ts` and `src/routes/api.ts`.
+
 # 🗄️ Panduan Database
 
 Dokumen ini menjelaskan standar dan panduan untuk entity, repository, TypeORM, dan manajemen database.
@@ -27,7 +29,7 @@ export const AppDataSource = new DataSource({
     password: config.database.pass,
     database: config.database.name,
     synchronize: false,                // schema dikelola migration
-    entities: [User, Contact, PasswordResetToken],          // ← Daftarkan semua entity di sini
+    entities: [User, PasswordResetToken, ...workflowEntities],          // ← Daftarkan semua entity di sini
     migrations: databaseMigrations,
     subscribers: [],
 })
@@ -261,19 +263,6 @@ query.orderBy(finalSort, finalOrder)
 | `created_at` | timestamp | ❌ | auto | |
 | `updated_at` | timestamp | ❌ | auto | |
 
-### Contact Entity
-
-| Kolom | Tipe | Nullable | Default | Notes |
-|-------|------|----------|---------|-------|
-| `id` | int (PK, auto) | ❌ | auto | |
-| `name` | varchar | ❌ | - | |
-| `email` | varchar | ✅ | null | |
-| `phone` | varchar | ✅ | null | |
-| `created_at` | timestamp | ❌ | auto | |
-| `updated_at` | timestamp | ❌ | auto | |
-
----
-
 ### PasswordResetToken Entity
 
 Tabel `password_reset_tokens` terpisah dari `users` dan hanya diakses secara internal oleh auth.
@@ -289,7 +278,7 @@ Tabel `password_reset_tokens` terpisah dari `users` dan hanya diakses secara int
 
 Setiap request/resend membuat token baru dan mengirim email lagi; token sebelumnya tetap valid hingga kedaluwarsa. Satu reset yang berhasil menghapus seluruh token user tersebut, termasuk yang kedaluwarsa, dalam transaksi yang sama dengan perubahan password. Row lock memastikan dua token user yang sama tidak dapat berhasil bersamaan. Akun harus masih aktif dan emailnya tetap cocok.
 
-Migrasi `1792022400000-separate-password-reset-tokens.ts` membuat tabel, menyalin token lama yang belum kedaluwarsa sebagai hash, lalu menghapus kedua kolom reset dari `users`. Jalankan saat aplikasi dihentikan agar tidak ada permintaan reset bersamaan dengan migrasi. Rollback schema tidak memulihkan token mentah: user harus meminta tautan baru.
+Migration `1792368000001-create-password-reset-tokens.ts` membuat tabel reset token pada baseline saat ini.
 
 ## 7. Relasi
 
@@ -316,31 +305,12 @@ userId!: number
 - `@JoinColumn` wajib dengan `{ name: "fk_column" }`
 - Gunakan **eager loading** secara default hanya jika diperlukan
 
-## 8. Satu Tabel per File Migration
+## 8. Migration history
 
-| Tabel aplikasi | File migration |
-|---|---|
-| users | `1792022398000-create-users.ts` |
-| contacts | `1792022399000-create-contacts.ts` |
-| password_reset_tokens | `1792022400000-separate-password-reset-tokens.ts` |
+Daftar resmi dan urutan migration ada di `src/database/migrations/index.ts`. Setiap tabel dibuat dalam satu file baseline; perubahan berikutnya memakai migration baru. Sync selalu false.
 
-Urutan timestamp memastikan users tersedia sebelum foreign key reset token dibuat. Migration reset token yang sudah pernah dijalankan tetap memakai nama/class yang sama untuk menjaga history; file tersebut juga menangani pemindahan kolom reset lama dari users. Tabel internal `migrations` dibuat otomatis oleh TypeORM.
+Tabel aktif: users, password_reset_tokens, batches, assets, jobs, job_dispatches, ai_results, renders, drafts, draft_revisions, reviews, audit_logs, settings.
 
-Jalankan `bun run migration:run` untuk database baru atau existing. Migration users dan contacts memakai CREATE TABLE IF NOT EXISTS agar tabel/data existing tidak ditimpa. Ini tidak memperbaiki schema existing yang berbeda; perubahan schema berikutnya harus menggunakan migration ALTER tersendiri. Jangan memakai synchronize atau mengedit migration yang sudah diterapkan. Untuk rollback database existing, perhatikan urutan foreign key, bukan hanya urutan pencatatan migration baseline.
+Baseline development 19 Oktober 2026 berisi 13 file create-table berurutan (1792368000000–1792368000012). Tidak ada migration pembuatan/penghapusan Contact. History lokal diselaraskan tanpa mengubah tabel/data fitur aktif; database development lain yang masih memakai baseline lama harus direkonsiliasi secara eksplisit atau dibuat ulang sebelum memakai baseline ini.
 
-Migration `1792022401000-allow-multiple-password-reset-tokens.ts` mengubah unique user_id menjadi index biasa tanpa menghapus token existing. Rollback ditolak MySQL bila satu user masih memiliki beberapa token; tidak ada token yang dihapus otomatis.
-
-Command migration memakai CLI TypeORM: `migration:run`, `migration:revert`, `migration:show`. Untuk membuat file: `bun run migration:create src/database/migrations/<nama>`; untuk generate: `bun run migration:generate src/database/migrations/<nama> -d src/config/database.ts`. Daftarkan class migration baru di `databaseMigrations`. Mode transaksi `each` mendukung migration DDL MySQL dengan `transaction = false`.
-
-## Struktur seeder
-
-- Satu seeder satu file `src/database/seeders/<nama>.seeder.ts`: implementasi, dependency dari module aplikasi, dan entrypoint CLI berada di file yang sama.
-- Seeder CLI merupakan composition root khusus command, sehingga boleh membuat instance seeder di file tersebut; service/repository aplikasi tetap diwiring di `*.module.ts`.
-- `index.ts` hanya mengoordinasikan command `seed`, bukan memisahkan implementasi seeder. Tidak perlu `user-seeder.ts` atau `seeder.module.ts` tambahan.
-- Gunakan `import.meta.main` agar mengimpor seeder dari test/koordinator tidak otomatis menjalankan CLI.
-
-## Social tables
-
-Historical migrations created a role column; `RemoveUserRole1792195200000` removes it without rewriting applied history. There are no roles in the current schema. Feature tables retain one creation migration each for social_batches, social_assets, social_jobs, social_job_dispatches, social_ai_results, social_renders, social_drafts, social_draft_revisions, social_reviews, social_audit_logs and social_settings. UUID strings identify social records; integer user foreign keys retain the existing schema. MySQL UTC timezone is explicit. Outbox and result/revision updates use transaction-scoped repositories; schema synchronization remains false.
-
-Render media now uses `social_renders.storage_key`. `StoreRendersInObjectStorage1792195201000` copies existing SVG bytes into the private MinIO bucket and verifies bytes before removing `sanitized_svg`. The migration requires working MinIO only when existing render rows need copying. Failed verification keeps legacy bytes available; rerunning handles partial MySQL DDL. Down migration reads objects back before removing the key column and preserves remote objects.
+Jalankan `bun run migration:run` sebelum menjalankan aplikasi versi baru. Gunakan `migration:show` untuk melihat status dan `migration:revert` hanya dengan memahami dampak rollback. Seeder dijalankan terpisah dengan `bun run seed:users`.
