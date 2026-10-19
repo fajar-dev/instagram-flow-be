@@ -1,6 +1,6 @@
-# IG Flow n8n integration
+# Integrasi n8n — IG Flow
 
-The backend remains on the MacBook, as requested. n8n runs in Docker on `festrack`; private media uses the existing MinIO bucket. The workflow implements upload event → claim → manifest → OpenAI-compatible photo analysis → caption → feed/story SVG → backend result → internal review. It does not publish to Instagram: Meta account linking, access tokens and a publish adapter are not implemented in this application.
+The documented testing topology keeps the backend on the MacBook. This runbook describes configuration; it does not assert that the remote services or tunnel are currently online. n8n runs in Docker on `festrack`; private media uses the existing MinIO bucket. The workflow implements upload event → claim → manifest → OpenAI-compatible photo analysis → caption → feed/story SVG → backend result → internal review. It does not publish to Instagram: Meta account linking, access tokens and a publish adapter are not implemented in this application.
 
 ## Source and build
 
@@ -10,7 +10,7 @@ The backend remains on the MacBook, as requested. n8n runs in Docker on `festrac
 bun run integrations/n8n/build-workflow.ts
 ```
 
-Keep configuration in the `Configuration` node and secrets in encrypted n8n credentials. Three **Header Auth** credentials are required, with header name `Authorization` and value `Bearer <secret>`:
+The builder currently supplies the testing backend URL, gateway endpoint and model in the `Configuration` node. For another environment, update those non-secret values in `build-workflow.ts`, rebuild the JSON and inspect it before import; editing only the generated JSON is overwritten by the next build. Keep secrets in encrypted n8n credentials. Three **Header Auth** credentials are required, with header name `Authorization` and value `Bearer <secret>`:
 
 | Credential ID | Name | Secret source |
 | --- | --- | --- |
@@ -45,6 +45,8 @@ Enable dispatcher in the dashboard's integration settings. Find the background t
 Back up existing workflows and nginx config first. Import using n8n's CLI inside its container, as user `node`, then publish the new workflow ID `igFlowContentV3`. CLI publishing requires a container restart. Preserve unrelated workflows and avoid restarting during active work. Never commit plaintext credential exports; remove temporary credential import files after successful import.
 
 ```sh
+# Run on the n8n server after copying the generated JSON there.
+docker cp ig-flow.workflow.json n8n:/tmp/ig-flow.workflow.json
 docker exec -u node n8n n8n import:workflow --input=/tmp/ig-flow.workflow.json
 docker exec -u node n8n n8n publish:workflow --id=igFlowContentV3
 docker restart n8n

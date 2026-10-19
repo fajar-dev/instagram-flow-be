@@ -1,3 +1,5 @@
+> **Arsip audit.** Catatan ini merekam implementasi dan hasil uji pada tanggalnya; beberapa keputusan telah digantikan. Gunakan [indeks dokumentasi aktif](README.md) untuk perilaku, konfigurasi, dan prosedur saat ini.
+
 # Equal-access and object-storage audit — 2026-10-16
 
 ## Current contract

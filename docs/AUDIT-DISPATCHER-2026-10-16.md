@@ -1,3 +1,5 @@
+> **Arsip audit.** Catatan ini merekam implementasi dan hasil uji pada tanggalnya; beberapa keputusan telah digantikan. Gunakan [indeks dokumentasi aktif](README.md) untuk perilaku, konfigurasi, dan prosedur saat ini.
+
 # Audit dispatcher dan notifikasi — 2026-10-16
 
 Pengguna memilih mempertahankan kontrol dispatcher di dashboard. Tabel settings bukan dead code: nilai dispatch.enabled dibaca worker dan perubahan disimpan bersama audit log. Tidak ada reset database pada audit ini.

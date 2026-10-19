@@ -1,3 +1,5 @@
+> **Arsip audit.** Catatan ini merekam implementasi dan hasil uji pada tanggalnya; beberapa keputusan telah digantikan. Gunakan [indeks dokumentasi aktif](README.md) untuk perilaku, konfigurasi, dan prosedur saat ini.
+
 # Audit struktur dan reset baseline — 2026-10-16
 
 Reset database dan migration dilakukan atas instruksi eksplisit pengguna. Baseline ini menggantikan seluruh migration sebelumnya; jangan menerapkannya sebagai upgrade pada database lama yang masih berisi data.

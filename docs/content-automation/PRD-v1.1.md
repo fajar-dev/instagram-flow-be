@@ -1,3 +1,5 @@
+> **Arsip referensi awal.** Dokumen ini dipertahankan untuk riwayat, bukan spesifikasi aktif. Role, route, storage, dan menu dapat berbeda dari aplikasi sekarang. Lihat [implementasi saat ini](IMPLEMENTATION.md) dan [database aktif](../DATABASE_GUIDE.md).
+
 # PRODUCT REQUIREMENTS DOCUMENT (PRD)
 
 # AMTI Social Media Agent Dashboard V1.1 (camelCase)
