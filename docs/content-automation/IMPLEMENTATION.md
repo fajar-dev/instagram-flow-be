@@ -1,39 +1,32 @@
-# Social Agent implementation
+# Implementasi konten IG Flow
 
-## Assessment and decisions
+Dokumen ini menjelaskan perilaku aktif pada 19 Oktober 2026 dan menggantikan deskripsi implementasi awal yang sudah usang. [PRD v1.1](PRD-v1.1.md) tetap tersedia sebagai spesifikasi awal yang diarsipkan.
 
-Reuse Bun/Hono + TypeORM/MySQL, JWT auth, Nuxt 4/NuxtUI and en/id. Do not add Flask, PostgreSQL, AI SDK or Instagram publishing. Physical table/column names use existing snake_case convention, JSON and TS use camelCase. Social UUID IDs coexist with existing integer user IDs.
+## Alur pengguna
 
-New backend files: social entities, repository interface/implementation, service/controller/module, validators, serializers, private media adapter, n8n adapter, dispatcher command; one migration per new table plus users role migration. Existing database/config/routes/auth serializers/user management require integration. Frontend: social service/types/composables/components and overview/upload/jobs/studio/review/media/logs/settings pages, navigation and en/id strings. Tests: DB lifecycle, concurrency, permissions, uploads, sanitizer and integration fixtures. Docs: API, setup and limitations.
+1. Login dengan akun aktif; semua user memiliki akses setara.
+2. Isi metadata kegiatan dan unggah foto di Content Upload. UI memvalidasi per file; backend memeriksa bytes, format, dimensi dan batas batch. File yang sudah berhasil tidak diulang hanya karena file lain gagal.
+3. Pilih output feed/story dan proses batch. Backend mengunci batch, membuat job dan outbox secara atomik.
+4. Worker menyampaikan event ke n8n. n8n mengklaim execution, mengambil manifest, menganalisis semua aset, membuat caption serta render, lalu memanggil result/failure.
+5. Buka Content Detail untuk melihat foto, summary, error/status dan timeline. Editor mempunyai Caption, Photos, Review dan History.
+6. Simpan revisi sebelum memberi keputusan review. History merekam keputusan/catatan, bukan diff caption. APPROVED_INTERNAL tetap approval internal.
 
-Private content files reuse the existing MinIO helper with one private bucket shared with avatars; the generic avatar proxy is removed. Original images remain immutable; sharp decodes and re-encodes an EXIF-free JPEG for AI. SVG is parsed with an allowlist, remote image references are replaced only with the known selected safe asset embedded locally; no arbitrary fetch. UI renders SVG as an image blob, never inline HTML.
+## Data dan transaksi
 
-JWT header auth is retained (no cookies, so cookie-CSRF does not apply); role comes from database. Existing user management becomes ADMIN-only to prevent privilege escalation. New/Google users default UPLOADER. Explicit CLI bootstrap assigns an admin; no automatic elevation of all existing users.
+Status job dan status review adalah dua state berbeda; tab Content memetakan keduanya ke list terpadu. Backend melindungi idempotency process/retry, claim execution, duplicate callback, revision aktif dan content hash. Edit mengubah revision serta membuat render lama outdated; belum ada re-render otomatis setelah setiap edit.
 
-Use header Idempotency-Key. Upload staged batches then process atomically creates job/outbox. Default legacy workflow max 20 assets/job, upload supports 30; process rejects larger batches explicitly until operator upgrades workflow and configured limit. No silent truncation.
+Baseline database memakai 13 tabel. Domain konten memakai UUID, user tetap integer. Modul dipisah menjadi content, ai-job, content-review, reporting dan integration dengan shared repository transaksi. Tidak ada role atau modul social.
 
-Workflow JSON/real callback fixtures and deployment credentials were not supplied initially. Legacy adapter coverage uses PRD fixtures, not a claim of proven V0.2 compatibility. Do not claim external n8n/AI/Telegram UAT complete without live evidence.
+## Media
 
-## Actual workflow inspection
+JPG/JPEG, PNG dan WEBP statis didukung; backend membatasi gambar sampai 40 megapixel dan memeriksa kecocokan ekstensi, MIME serta hasil decode. Original immutable disimpan ke MinIO; preview JPEG menghapus metadata dan thumbnail mendukung tampilan blur-to-sharp. SVG dari AI disanitasi dengan allowlist dan foto terpilih dari storage, lalu disimpan sebagai objek render.
 
-The supplied V0.2 sends snake_case including execution_id/event_id on claim; its IF node reads claimed at root and manifest fields at root. The adapter supports this exactly. AI photo node slices 20; renderer consumes selected_asset_ids[0]. The upstream parser clamps scores and may filter incomplete rankings: backend independently requires complete valid rankings. No raw workflow export (potential credentials) copied into repo.
+Satu bucket privat menyimpan seluruh media; database hanya key/metadata. n8n menggunakan URL preview presigned MinIO. Tidak ada media lokal persisten, proxy generik, secret media tambahan atau inline SVG database.
 
-Approval roles follow the more restrictive API table: ADMIN/REVIEWER; MARKETING edits and requests review but cannot approve. New tables use local UUIDs and existing user integer IDs. Original and generated preview are separate storage objects. Sanitized SVG is stored transactionally as mediumtext rather than an external SVG object, so result/draft/render atomicity has no object-store commit gap.
+## Integrasi dan batas produk
 
-## Verification 2026-10-16
+Workflow repo menggunakan kontrak camelCase dengan format API AI OpenAI-compatible. Backend tetap mendukung adapter legacy untuk kontrak lama. Pengaturan dispatcher ada di dashboard; URL dan secret tetap di environment/n8n credential.
 
-- MySQL development migrations: no pending migrations; synchronize remains false.
-- Backend typecheck/build pass. Full MySQL suite: 134 passed; final social-specific suite after additional limit/Telegram checks: 12 passed, 62 assertions. Initial full-suite attempt hit the default 5-second database hook timeout; rerun with documented 30-second timeout passed.
-- Frontend typecheck, ESLint, 16 tests (66 assertions), and production build pass.
-- OpenAPI YAML and internal references parsed successfully.
-- Browser visual UAT could not be completed: localhost browser origin permission was declined. No alternate browser workaround was attempted.
-- Live n8n/vision/Telegram UAT is pending deployment configuration. Only schema inspection of the provided workflow and synthetic callbacks/mock transport were exercised.
-- Test fixtures live in `test/content-workflow.test.ts` and `test/helpers.ts`; no real project photos or workflow credentials are committed.
+Belum ada Meta OAuth, publikasi atau penjadwalan Instagram, analytics akun, Telegram, dan re-render otomatis hasil edit. Data overview adalah aktivitas aplikasi, bukan engagement Instagram.
 
-## Remaining external prerequisites
-
-Provide reachable HTTPS backend/webhook origins and dedicated integration secrets; configure webhook authentication in n8n; verify gateway vision and Telegram on the deployed workflow. Supply an approved AMTI raster template for publication-ready rendering in a future step. Current V1 approval is internal, and stored SVG remains a preview. The original workflow JSON stays in Downloads.
-
-## Current structure and storage
-
-The final feature boundaries, MinIO reuse, verified legacy-media import and updated frontend routes are documented in [REFACTOR-2026-10-16.md](REFACTOR-2026-10-16.md). These decisions supersede the earlier grouped-social/local-storage implementation.
+Uji nyata yang pernah dilakukan dicatat di [audit n8n](../AUDIT-N8N-2026-10-18.md); itu bukti pada tanggal pengujian, bukan jaminan layanan selalu aktif. Setup backend lokal memerlukan worker dan tunnel yang hidup. Ikuti [runbook](../../integrations/n8n/README.md) untuk operasi dan pemulihan.

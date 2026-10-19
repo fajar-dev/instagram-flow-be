@@ -1,166 +1,41 @@
-> Tutorial identifiers named Example are illustrative. For an installed CRUD module use `src/modules/user/`; current schema and routes are defined by `src/config/database.ts` and `src/routes/api.ts`.
+# Arsitektur backend IG Flow
 
-# 🏗️ Arsitektur Proyek
+Frontend Nuxt mengakses API Hono dengan JWT. API menyimpan state di MySQL dan media di MinIO. Worker outbox mengirim event ke n8n; n8n menghubungi gateway AI berformat OpenAI dan mengembalikan hasil melalui callback service-authenticated.
 
-## Prinsip Desain
+## Batas tanggung jawab
 
-Proyek ini menggunakan **Clean Architecture** dengan prinsip:
+| Modul | Tanggung jawab |
+| --- | --- |
+| `auth` | Login, Google, refresh, profil, password dan reset token |
+| `user` | CRUD pengguna aktif/nonaktif dan serialisasi avatar |
+| `storage` | Upload objek umum melalui helper MinIO |
+| `content` | Batch dan child `media`: upload, validasi, thumbnail, preview, render |
+| `ai-job` | Job, retry, dispatch; child `workflow`: claim, manifest, result, failure dan adapter n8n |
+| `content-review` | Draft, revision, keputusan review dan optimistic concurrency |
+| `integration` | Sakelar dispatcher dan pemeriksaan konfigurasi aman |
+| `reporting` | List, counts, overview, audit log dan serializer reporting |
+| `shared` | Konteks, validator dan repository transaksi lintas fitur konten |
 
-- **SOLID Principles** — Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion
-- **Dependency Injection (Manual)** — Wiring dilakukan di `*.module.ts` (Composition Root)
-- **Repository Pattern** — Abstraksi akses data melalui interface
-- **Separation of Concerns** — Setiap layer memiliki tanggung jawab yang jelas
+Tidak ada modul payung social. `*.module.ts` merupakan composition root: file ini menyusun dependency dan mengekspor controller/service yang dipakai route atau command. Workflow adalah child dari ai-job, bukan layanan aplikasi yang berdiri sendiri.
 
----
+## Layer
 
-## Layer Architecture
+Controller menerima input tervalidasi, memanggil service, lalu serializer/ApiResponse. Service menjalankan aturan bisnis melalui interface repository atau adapter I/O. Repository mengakses TypeORM dan mengelola transaksi/lock. Jangan membuka koneksi database atau memanggil ORM dari service/controller.
 
-```
-┌──────────────────────────────────────────────────────────┐
-│  Presentation Layer                                      │
-│  Controller → Menerima HTTP request, mengembalikan       │
-│               response via ApiResponse                   │
-├──────────────────────────────────────────────────────────┤
-│  Application Layer                                       │
-│  Service → Business logic, orchestration, use cases      │
-├──────────────────────────────────────────────────────────┤
-│  Domain Layer                                            │
-│  Interface → Kontrak repository (IXxxRepository)         │
-│  Entity → TypeORM entity model                           │
-├──────────────────────────────────────────────────────────┤
-│  Infrastructure Layer                                    │
-│  TypeORM Repository → Implementasi akses database        │
-│  Helpers → Auth, Mail, MinIO, Hash, Logger               │
-└──────────────────────────────────────────────────────────┘
-```
+Repository workflow bersama saat ini melayani transaksi beberapa entitas konten; itu bukan alasan membuat duplikasi repository atau menyatukan seluruh fitur ke satu service. Referensi CRUD konkret: `src/modules/user/`. Referensi alur lintas entitas: `src/modules/ai-job/job.service.ts` dan `src/modules/content-review/draft.service.ts`.
 
----
+## Proses konten
 
-## Dependency Flow
+Batch dibuat, foto dikirim satu per request, lalu process mengunci batch dan membuat job/outbox secara atomik. Dispatcher menyampaikan event. n8n mengklaim job memakai event/execution ID, mengambil manifest berisi preview presigned, menganalisis seluruh foto dan membuat caption/render yang diminta. Backend memvalidasi hasil, menyaring SVG, dan menyimpan hasil/draft/revision serta metadata render.
 
-```
-src/index.ts                          ← Entry point, konfigurasi Hono app
-    │
-    ├─ src/routes/api.ts              ← Definisi seluruh route
-    │       │
-    │       ├─ Validators             ← Zod schema untuk validasi request body
-    │       ├─ Middlewares            ← Auth guard (JWT / API Key)
-    │       └─ Controllers            ← Di-import dari *.module.ts
-    │
-    └─ src/modules/{module}/
-            │
-            ├─ {module}.module.ts     ← Composition Root (wiring DI)
-            │       │
-            │       ├─ Repository     ← new TypeOrmXxxRepository()
-            │       ├─ Service        ← new XxxService(repository)
-            │       └─ Controller     ← new XxxController(service)
-            │
-            ├─ entities/              ← TypeORM entity
-            ├─ interfaces/            ← Repository interface
-            ├─ repositories/          ← TypeORM implementation
-            ├─ validators/            ← Zod validation schemas
-            └─ serializers/           ← Response data transformation
-```
+Review memakai revision ID dan content hash. Edit membuat revision baru dan membuat preview lama outdated. Approval tidak memicu publish Instagram. Idempotency, claim dan transaksi melindungi request ganda; lihat [kontrak API](API_CONVENTIONS.md).
 
----
+## Media dan akses
 
-## Alur Request
+Seluruh pengguna aktif terautentikasi memiliki akses aplikasi yang sama. Uploader/reviewer ID tetap disimpan sebagai jejak aktivitas. Callback n8n memakai service token terpisah, bukan JWT pengguna.
 
-```
-HTTP Request
-    │
-    ▼
-[CORS Middleware]
-    │
-    ▼
-[Route Matching] (src/routes/api.ts)
-    │
-    ▼
-[Validation Middleware] (zValidator + validationHook)
-    │   → Jika gagal: throw ValidatorException → 422
-    │
-    ▼
-[Auth Middleware] (opsional, per-route)
-    │   → authMiddleware:     JWT Bearer token
-    │   → tokenAuthMiddleware: JWT via query param atau header
-    │
-    ▼
-[Controller] → Menerima Context, memanggil Service
-    │
-    ▼
-[Service] → Business logic, memanggil Repository
-    │
-    ▼
-[Repository] → Akses database via TypeORM
-    │
-    ▼
-[Serializer] → Transform entity ke response shape
-    │
-    ▼
-[ApiResponse] → Format JSON response standar
-    │
-    ▼
-HTTP Response
-```
+Satu bucket privat digunakan untuk avatar dan konten. MySQL hanya menyimpan metadata/key media. SVG disanitasi, foto dipasangkan dengan aset yang diketahui dari MinIO, dan frontend menampilkan SVG sebagai image, bukan markup HTML. Tidak ada fallback media lokal.
 
----
+## Entry point dan operasi
 
-## Global Error Handling
-
-Error ditangani di `src/index.ts` → `app.onError()`:
-
-| Error Type | Status | Handling |
-|------------|--------|----------|
-| `ZodError` | 422 | Di-wrap ke `ValidatorException`, mengembalikan array field errors |
-| `BaseException` (dan subclass) | Sesuai subclass | Mengembalikan `message`, `status`, dan `context` |
-| Unknown Error | 500 | Log JSON ke `logs/app-{date}.log`, tampilkan stack trace hanya di `development` |
-
----
-
-## Module yang Tersedia
-
-| Module | Path | Deskripsi | Memiliki Controller |
-|--------|------|-----------|---------------------|
-| `auth` | `src/modules/auth/` | Register, login, Google OAuth, refresh token, reset password | ✅ |
-| `user` | `src/modules/user/` | User entity, repository, service (digunakan oleh auth) | ❌ (dipakai internal) |
-
----
-
-## Infrastruktur Bersama (core/)
-
-| Komponen | Path | Fungsi |
-|----------|------|--------|
-| **Exceptions** | `core/exceptions/base.ts` | Hierarki custom exception (400, 401, 403, 404, 409, 422, 429) |
-| **ApiResponse** | `core/helpers/response.ts` | Format response standar (success, paginate, error) |
-| **AuthHelper** | `core/helpers/auth.ts` | JWT token generation & Google OAuth verification |
-| **Hash** | `core/helpers/hash.ts` | bcrypt password hashing & comparison |
-| **Mail** | `core/helpers/mail.ts` | Singleton Nodemailer wrapper (sendText, sendHtml) |
-| **MinIO** | `core/helpers/minio.ts` | Singleton MinIO wrapper (upload, delete, presignedUrl) |
-| **Logger** | `core/helpers/logger.ts` | Structured JSON logger (stdout/stderr + `logs/app-{date}.log`, semua level), lihat `LOGGING_GUIDE.md` |
-| **Validator** | `core/helpers/validator.ts` | Zod validation hook untuk Hono |
-| **Auth Middleware** | `core/middlewares/auth.middleware.ts` | JWT Bearer token verification |
-| **Token Auth Middleware** | `core/middlewares/token-auth.middleware.ts` | JWT via query param atau header |
-
----
-
-## Konfigurasi
-
-| File | Fungsi |
-|------|--------|
-| `src/config/config.ts` | Centralized environment config object |
-| `src/config/database.ts` | TypeORM DataSource configuration |
-| `src/config/smtp.ts` | Nodemailer transporter configuration |
-
-## Penyimpanan Reset Password
-
-AuthService menerima `IPasswordResetTokenRepository` melalui auth.module.ts. Implementasi TypeORM di `modules/auth/repositories/password-reset-token.repository.ts` menangani penerbitan token dan transaksi perubahan password + konsumsi token. Entity `PasswordResetToken` disimpan pada tabel `password_reset_tokens`, terpisah dari `User`, dengan FK cascade. Tidak ada endpoint CRUD publik atau serializer yang mengekspos token hash.
-
-Lihat [audit 2026-10-15](./AUDIT-2026-10-15.md) untuk keputusan arsitektur, batas pengujian layanan eksternal, dan temuan yang ditindaklanjuti.
-
-## Content automation
-
-Feature controllers call services through their module composition roots. Shared IWorkflowRepository provides atomic cross-feature persistence; IReportingRepository owns reporting queries. Feature serializers explicitly select response fields. MinioMedia uses the existing MinIO helper. JobDispatcher runs through the supervised CLI and locks batch, job, then dispatch. See [current audit](AUDIT-2026-10-16.md) and [feature map](content-automation/REFACTOR-2026-10-16.md).
-
-## Content automation modules
-
-Features live directly under the existing module/service/component roots: content, AI Job, Content Review, Integration and Reporting. Related children remain together. Backend persistence and HTTP contracts remain compatible. See [feature map](content-automation/REFACTOR-2026-10-16.md).
+`src/index.ts` memasang middleware, startup database, dan error handler. Semua endpoint didaftarkan melalui `src/routes/api.ts`. Worker berada di `src/commands/job-dispatch.ts`; migration/seeder adalah CLI terpisah. `/health` memeriksa apakah DataSource terinisialisasi, bukan probe penuh SMTP/MinIO/n8n.

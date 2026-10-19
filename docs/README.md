@@ -1,54 +1,22 @@
-# 📚 Hono BE — Dokumentasi Proyek
+# Dokumentasi backend IG Flow
 
-Dokumentasi lengkap untuk **Hono BE Backend Boilerplate** — panduan standarisasi, konvensi kode, dan referensi bagi developer maupun AI agent yang melanjutkan proyek ini.
+Panduan aktif menjelaskan implementasi IG Flow saat ini. Source route, validator, migration, dan konfigurasi menjadi acuan ketika mengubah kontrak. Audit bertanggal dan PRD awal adalah riwayat keputusan, bukan petunjuk deployment terbaru.
 
----
+| Kebutuhan | Dokumen |
+| --- | --- |
+| Menjalankan API dan worker | [Setup](../README_SETUP.md) |
+| Alur produk dan batas fitur | [Implementasi konten](content-automation/IMPLEMENTATION.md) |
+| Layer dan pembagian fitur | [Arsitektur](ARCHITECTURE.md), [peta proyek](PROJECT_MAP.md) |
+| Mengubah fitur | [Panduan modul](MODULE_GUIDE.md), [konvensi kode](CODING_STANDARDS.md) |
+| API dan autentikasi | [Kontrak API](API_CONVENTIONS.md), [OpenAPI](SWAGGER_GUIDE.md) |
+| MySQL, migration, seeder | [Database](DATABASE_GUIDE.md) |
+| Environment | [Konfigurasi](ENVIRONMENT.md) |
+| Test dan verifikasi | [Pengujian](TESTING_GUIDE.md) |
+| Bahasa dan logging | [i18n](LANGUAGE_GUIDE.md), [log](LOGGING_GUIDE.md) |
+| n8n dan tunnel | [Runbook integrasi](../integrations/n8n/README.md) |
+| Kontribusi agent | [AGENTS](../AGENTS.md), [alur kerja agent](AI_AGENT_RULES.md) |
+| Perubahan | [Changelog](CHANGELOG.md) |
 
-## Daftar Dokumen
+## Arsip
 
-| No | Dokumen | Deskripsi |
-|----|---------|-----------|
-| 1 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Arsitektur, prinsip desain, dan dependency flow |
-| 2 | [CODING_STANDARDS.md](./CODING_STANDARDS.md) | Standarisasi kode: naming, struktur file, konvensi |
-| 3 | [MODULE_GUIDE.md](./MODULE_GUIDE.md) | Panduan langkah-per-langkah membuat module baru |
-| 4 | [API_CONVENTIONS.md](./API_CONVENTIONS.md) | Konvensi API: response format, error handling, validasi |
-| 5 | [DATABASE_GUIDE.md](./DATABASE_GUIDE.md) | Panduan entity, repository, dan manajemen database |
-| 6 | [CHANGELOG.md](./CHANGELOG.md) | Riwayat perubahan proyek |
-| 7 | [AI_AGENT_RULES.md](./AI_AGENT_RULES.md) | Aturan khusus untuk AI agent yang melanjutkan proyek |
-| 8 | [ENVIRONMENT.md](./ENVIRONMENT.md) | Panduan konfigurasi environment & deployment |
-| 9 | [PROJECT_MAP.md](./PROJECT_MAP.md) | Peta lengkap seluruh file dan dependensi antar file |
-| 10 | [TESTING_GUIDE.md](./TESTING_GUIDE.md) | Panduan E2E testing, template, dan konvensi |
-
----
-
-## Quick Start
-
-```bash
-# Install dependencies
-bun install
-
-# Setup environment
-cp .env.dist .env
-
-# Development (hot-reload)
-bun run dev
-
-# Production build
-bun run build
-bun run start
-```
-
-## Tech Stack
-
-- **Runtime**: Bun
-- **Framework**: Hono
-- **ORM**: TypeORM
-- **Database**: MySQL
-- **Validation**: Zod + @hono/zod-validator
-- **Auth**: JWT (HS256) via hono/jwt
-- **Email**: Nodemailer (SMTP)
-- **Object Storage**: MinIO
-- **Process Manager**: PM2
-- **Containerization**: Docker + Docker Compose
-
-Lihat [audit 2026-10-15](./AUDIT-2026-10-15.md) untuk keputusan arsitektur, batas pengujian layanan eksternal, dan temuan yang ditindaklanjuti.
+Dokumen `AUDIT-*.md`, [PRD v1.1](content-automation/PRD-v1.1.md), dan [catatan refactor](content-automation/REFACTOR-2026-10-16.md) menyimpan keputusan pada tanggalnya. Sebagian keputusan sudah digantikan: aplikasi kini tanpa role, tanpa Contact, memakai 13 migration dan satu bucket MinIO. Indeks berkas aktif ada di [FILE_MANIFEST](content-automation/FILE_MANIFEST.md).
