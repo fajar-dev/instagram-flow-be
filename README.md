@@ -1,13 +1,13 @@
 # IG Flow — Backend
 
-API dan worker untuk IG Flow, dashboard AMTI (Asset Monitoring Teknologi Indonesia) untuk menyiapkan konten Instagram dari dokumentasi kegiatan. Backend mengelola unggahan, proses AI melalui n8n, hasil render, revisi, review internal, dan publikasi Instagram multi-account.
+API dan worker untuk IG Flow, dashboard AMTI (Asset Monitoring Teknologi Indonesia) untuk menyiapkan konten Instagram dari dokumentasi kegiatan. Backend mengelola unggahan, proses AI melalui n8n, hasil render, review internal, dan publikasi Instagram multi-account.
 
 ## Cakupan saat ini
 
 - Login email/password dan Google, profil, reset password, dan pengelolaan pengguna.
 - Batch foto dengan metadata kegiatan, validasi gambar per file, preview aman, dan penyimpanan privat MinIO.
 - Job AI dengan outbox, claim execution, retry, watchdog, serta callback hasil/failure dari n8n.
-- Caption, pemilihan foto, preview feed/story, revisi, dan keputusan review dengan pemeriksaan revisi aktif.
+- Review langsung menuju Publish atau Reject. Caption dan foto disesuaikan saat publish, lalu disimpan atomik bersama snapshot postingan.
 - Overview, media library, audit log, dan kontrol dispatcher di dashboard.
 
 Semua pengguna aktif yang terautentikasi memiliki akses aplikasi yang sama. Ready for review langsung menuju Publish atau Reject. Satu project hanya memiliki satu postingan ke satu akun, langsung atau terjadwal. OAuth account linking, analytics Instagram, dan Telegram belum diimplementasikan.

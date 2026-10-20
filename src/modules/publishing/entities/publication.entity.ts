@@ -4,7 +4,6 @@ export interface PublicationSnapshot {
     title: string
     caption: string
     hashtags: string[]
-    revisionNo: number
     contentHash: string
     source: "photo" | "design"
     placement: "feed" | "story"
@@ -29,8 +28,6 @@ export class Publication {
     @Column({ name: "batch_id", type: "varchar", length: 36, unique: true }) batchId!: string
 
     @Column({ name: "draft_id", type: "varchar", length: 36 }) draftId!: string
-
-    @Column({ name: "revision_id", type: "varchar", length: 36 }) revisionId!: string
 
     @Column({ name: "account_key", type: "varchar", length: 64 }) accountKey!: string
 

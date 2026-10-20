@@ -1,8 +1,7 @@
 import { z } from "zod"
 import { resourceId } from "../../shared/validators/shared.validator"
 
-export const revisionSchema = z.object({
-    expectedRevisionId: resourceId,
+export const publishContentSchema = z.object({
     primaryAssetId: resourceId,
     title: z.string().trim().min(1).max(300),
     caption: z.string().trim().min(1).max(10000),
@@ -13,12 +12,11 @@ export const revisionSchema = z.object({
 
 export const rejectSchema = z
     .object({
-        revisionId: resourceId,
         contentHash: z.string().length(64),
         notes: z.string().max(2000).default("")
     })
     .strict()
 
-export type RevisionInput = z.infer<typeof revisionSchema>
+export type PublishContentInput = z.infer<typeof publishContentSchema>
 
 export type RejectInput = z.infer<typeof rejectSchema>

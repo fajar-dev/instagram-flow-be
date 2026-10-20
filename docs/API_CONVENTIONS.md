@@ -14,7 +14,7 @@ Callback sukses n8n memakai format flat sesuai adapter legacy/camelCase. Respons
 
 Validator list bersama menerima page integer >=1, limit 1–100, q, sortBy dan order ASC/DESC. Default limit user 10 dan reporting 20. Reporting juga memvalidasi days 1–365 serta filter status/batch/output/uploader. Gunakan allowlist sorting repository.
 
-Process dan retry memakai header Idempotency-Key; validator menerima 8–128 karakter alfanumerik, underscore atau dash. Callback menggunakan event ID, execution ID dan validasi hasil untuk mencegah claim bersaing serta duplikasi hasil. Edit draft mengirim expectedRevisionId; review mengirim revisionId dan contentHash. Konflik revision harus ditampilkan ke pengguna, bukan ditimpa diam-diam.
+Process dan retry memakai header Idempotency-Key; validator menerima 8–128 karakter alfanumerik, underscore atau dash. Callback menggunakan event ID, execution ID dan validasi hasil untuk mencegah claim bersaing serta duplikasi hasil. Publish mengirim expectedContentHash dan object content (primaryAssetId, title, caption, hashtags, location, activity), bersama accountKey, source, placement, scheduledAt. Reject mengirim contentHash dan notes. Konflik konten/status menghasilkan 409. Tidak ada endpoint PATCH draft.
 
 Body divalidasi Zod; validasi schema umumnya 422, input domain invalid 400, auth 401, resource tidak ditemukan 404, konflik 409, batas body 413 dan rate limit 429. Pesan diterjemahkan melalui Accept-Language; properti dan status domain tetap camelCase/nilai kontrak tetap.
 
@@ -57,7 +57,6 @@ Daftar ini dicocokkan dengan registrasi route pada 19 Oktober 2026. Perbarui saa
 | GET | `/api/jobs/:jobId/result` | JWT user aktif |
 | POST | `/api/jobs/:jobId/retry` | JWT user aktif |
 | GET | `/api/review` | JWT user aktif |
-| PATCH | `/api/drafts/:draftId` | JWT user aktif |
 | POST | `/api/drafts/:draftId/reject` | JWT user aktif |
 | GET | `/api/media` | JWT user aktif |
 | GET | `/api/assets/:assetId/previews` | JWT user aktif |

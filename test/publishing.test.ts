@@ -14,8 +14,7 @@ import {
 } from "./setup"
 import {
     publishingRepository as repo,
-    publicationMedia,
-    publishingService
+    publicationMedia
 } from "../src/modules/publishing/publishing.module"
 import { instagramService } from "../src/modules/instagram/instagram.module"
 import { InstagramService } from "../src/modules/instagram/instagram.service"
@@ -65,8 +64,7 @@ async function fixture() {
     const batchId = crypto.randomUUID(),
         assetId = crypto.randomUUID(),
         jobId = crypto.randomUUID(),
-        draftId = crypto.randomUUID(),
-        revisionId = crypto.randomUUID()
+        draftId = crypto.randomUUID()
     const key = `batches/${batchId}/preview/${assetId}.jpg`
     await contentMedia.put(
         key,
@@ -111,27 +109,24 @@ async function fixture() {
         createdBy: auth.user.id,
         idempotencyKey: crypto.randomUUID()
     })
-    await repo.save("draft", {
-        id: draftId,
-        jobId,
-        currentRevisionId: revisionId,
-        reviewStatus: "READY_FOR_REVIEW"
-    })
-    await repo.save("revision", {
-        id: revisionId,
-        draftId,
-        revisionNo: 1,
+    const content = {
         primaryAssetId: assetId,
         title: "Inspection",
         caption: "AMTI inspection",
         hashtags: ["#AMTI"],
         location: "Jakarta",
-        activity: "Inspection",
-        contentHash: contentHash("test"),
-        createdBy: auth.user.id
+        activity: "Inspection"
+    }
+    await repo.save("draft", {
+        id: draftId,
+        jobId,
+        reviewStatus: "READY_FOR_REVIEW",
+        ...content,
+        contentHash: contentHash(content)
     })
     const payload = {
-        revisionId,
+        expectedContentHash: contentHash(content),
+        content,
         accountKey: "one",
         source: "photo",
         placement: "feed",
@@ -143,7 +138,7 @@ async function fixture() {
             headers: { ...auth.headers, "Idempotency-Key": requestKey },
             body
         })
-    return { ...auth, draftId, revisionId, batchId, payload, enqueue }
+    return { ...auth, draftId, batchId, payload, enqueue }
 }
 
 class FakeGraph implements IInstagramApi {
@@ -331,7 +326,7 @@ describe("Instagram publishing", () => {
         expect(image.status).toBe(200)
         const metadata = await sharp(Buffer.from(await image.arrayBuffer())).metadata()
         expect([metadata.format, metadata.width, metadata.height]).toEqual(["jpeg", 1080, 1350])
-        await repo.save("revision", { id: f.revisionId, caption: "changed later" })
+        await repo.save("draft", { id: f.draftId, caption: "changed later" })
         expect((await repo.get("publication", rows[0]!.id))!.snapshot.caption).toBe(
             "AMTI inspection\n\n#AMTI"
         )
@@ -351,36 +346,22 @@ describe("Instagram publishing", () => {
         const counts = await request(app, "/api/content/counts?days=30", { headers: f.headers })
         expect(counts.body.data.PUBLISH).toBe(1)
         expect(counts.body.data.READY_FOR_REVIEW).toBe(0)
-        const revision = (await repo.get("revision", f.revisionId))!
+        const draft = (await repo.get("draft", f.draftId))!
         expect(
             (
                 await request(app, `/api/drafts/${f.draftId}/reject`, {
                     method: "POST",
                     headers: f.headers,
-                    body: { revisionId: revision.id, contentHash: revision.contentHash, notes: "" }
+                    body: { contentHash: draft.contentHash, notes: "" }
                 })
             ).status
         ).toBe(409)
         expect(
-            (
-                await request(app, `/api/drafts/${f.draftId}`, {
-                    method: "PATCH",
-                    headers: f.headers,
-                    body: {
-                        expectedRevisionId: revision.id,
-                        primaryAssetId: revision.primaryAssetId,
-                        title: revision.title,
-                        caption: revision.caption,
-                        hashtags: revision.hashtags,
-                        activity: revision.activity,
-                        location: revision.location
-                    }
-                })
-            ).status
-        ).toBe(409)
+            (await app.request(`/api/drafts/${f.draftId}`, { method: "PATCH", headers: f.headers }))
+                .status
+        ).toBe(404)
         // Even another draft/job belonging to this project cannot publish again.
         const secondDraft = crypto.randomUUID(),
-            secondRevision = crypto.randomUUID(),
             secondJob = crypto.randomUUID()
         const originalJob = (await repo.get("job", (await repo.get("draft", f.draftId))!.jobId))!
         await repo.save("job", {
@@ -389,33 +370,31 @@ describe("Instagram publishing", () => {
             idempotencyKey: crypto.randomUUID()
         })
         await repo.save("draft", {
+            ...draft,
             id: secondDraft,
             jobId: secondJob,
             reviewStatus: "READY_FOR_REVIEW"
         })
-        await repo.save("revision", { ...revision, id: secondRevision, draftId: secondDraft })
-        await repo.save("draft", { id: secondDraft, currentRevisionId: secondRevision })
         expect(
             (
                 await request(app, `/api/drafts/${secondDraft}/publications`, {
                     method: "POST",
                     headers: { ...f.headers, "Idempotency-Key": crypto.randomUUID() },
-                    body: { ...f.payload, revisionId: secondRevision }
+                    body: f.payload
                 })
             ).status
         ).toBe(409)
     })
     test("reject and publish serialize their decision and never both succeed", async () => {
         const f = await fixture(),
-            revision = (await repo.get("revision", f.revisionId))!
+            draft = (await repo.get("draft", f.draftId))!
         const results = await Promise.all([
             f.enqueue(),
             request(app, `/api/drafts/${f.draftId}/reject`, {
                 method: "POST",
                 headers: f.headers,
                 body: {
-                    revisionId: revision.id,
-                    contentHash: revision.contentHash,
+                    contentHash: draft.contentHash,
                     notes: "Rejected"
                 }
             })
@@ -433,15 +412,109 @@ describe("Instagram publishing", () => {
         await repo.save("draft", { id: f.draftId, reviewStatus: "REJECTED" })
         expect((await f.enqueue()).status).toBe(409)
         await repo.save("draft", { id: f.draftId, reviewStatus: "READY_FOR_REVIEW" })
-        expect((await f.enqueue({ ...f.payload, revisionId: crypto.randomUUID() })).status).toBe(
-            409
-        )
+        expect(
+            (await f.enqueue({ ...f.payload, expectedContentHash: "b".repeat(64) })).status
+        ).toBe(409)
         await repo.save("batch", { id: f.batchId, publicationPermission: false })
         expect((await f.enqueue()).status).toBe(400)
         await repo.save("batch", { id: f.batchId, publicationPermission: true })
-        await repo.save("revision", { id: f.revisionId, revisionNo: 2 })
         expect((await f.enqueue({ ...f.payload, source: "design" })).status).toBe(400)
         expect(await repo.find("publication", { draftId: f.draftId })).toHaveLength(0)
+    })
+    test("publish atomically saves final edits and rejects invalid content or foreign photos", async () => {
+        const f = await fixture()
+        expect(
+            (await f.enqueue({ ...f.payload, content: { ...f.payload.content, title: "" } })).status
+        ).toBe(422)
+        expect(
+            (
+                await f.enqueue({
+                    ...f.payload,
+                    content: { ...f.payload.content, primaryAssetId: crypto.randomUUID() }
+                })
+            ).status
+        ).toBe(400)
+        expect((await repo.get("draft", f.draftId))!.caption).toBe(f.payload.content.caption)
+        expect(await repo.find("publication", { draftId: f.draftId })).toHaveLength(0)
+        const finalContent = {
+            ...f.payload.content,
+            title: "Final title",
+            caption: "Ready to post",
+            hashtags: ["#Final"]
+        }
+        const response = await f.enqueue({ ...f.payload, content: finalContent })
+        expect(response.status).toBe(202)
+        expect(response.body.data.caption).toBe("Ready to post\n\n#Final")
+        const saved = (await repo.get("draft", f.draftId))!
+        expect(saved.caption).toBe("Ready to post")
+        expect(saved.contentHash).toBe(contentHash(finalContent))
+        expect(saved.reviewStatus).toBe("PUBLISH")
+    })
+    test("media preparation failure leaves content ready and unchanged", async () => {
+        const f = await fixture()
+        const prepare = spyOn(publicationMedia, "prepare").mockRejectedValueOnce(
+            new Error("storage unavailable")
+        )
+        try {
+            expect(
+                (
+                    await f.enqueue({
+                        ...f.payload,
+                        content: { ...f.payload.content, caption: "Not saved" }
+                    })
+                ).status
+            ).toBe(500)
+            const saved = (await repo.get("draft", f.draftId))!
+            expect(saved.caption).toBe(f.payload.content.caption)
+            expect(saved.reviewStatus).toBe("READY_FOR_REVIEW")
+            expect(await repo.find("publication", { draftId: f.draftId })).toHaveLength(0)
+        } finally {
+            prepare.mockRestore()
+        }
+    })
+    test("design publishing requires the unchanged AI content and matching render", async () => {
+        const f = await fixture()
+        const draft = (await repo.get("draft", f.draftId))!
+        const asset = (await repo.get("asset", draft.primaryAssetId))!
+        const resultId = crypto.randomUUID()
+        await repo.save("aiResult", {
+            id: resultId,
+            jobId: draft.jobId,
+            executionId: "test",
+            resultVersion: 1,
+            rankings: [],
+            selectedAssetIds: [asset.id],
+            rawTitle: draft.title,
+            rawCaption: draft.caption,
+            rawHashtags: draft.hashtags,
+            rawPayloadHash: "a".repeat(64)
+        })
+        await repo.save("render", {
+            id: crypto.randomUUID(),
+            aiResultId: resultId,
+            assetId: asset.id,
+            placement: "feed",
+            format: "jpeg",
+            width: 24,
+            height: 40,
+            storageKey: asset.safePreviewStorageKey,
+            renderState: "READY"
+        })
+        expect(
+            (
+                await f.enqueue({
+                    ...f.payload,
+                    source: "design",
+                    content: { ...f.payload.content, caption: "Edited" }
+                })
+            ).status
+        ).toBe(400)
+        expect(
+            (await f.enqueue({ ...f.payload, source: "design", placement: "story" })).status
+        ).toBe(400)
+        const response = await f.enqueue({ ...f.payload, source: "design" })
+        expect(response.status).toBe(202)
+        expect(response.body.data.source).toBe("design")
     })
     test("schedule stays queued until due and can be cancelled without calling Meta", async () => {
         const f = await fixture()

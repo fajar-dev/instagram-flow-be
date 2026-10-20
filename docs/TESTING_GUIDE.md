@@ -16,7 +16,7 @@ Script test memberi timeout 30 detik. Untuk satu suite: `bun test test/content-w
 
 `test/setup.ts` memasang DataSource MySQL test, menerapkan migration yang sama, dan mendaftarkan route melalui `registerRoutes`. SMTP, storage dan transport eksternal dikendalikan test; suite tidak membuktikan bahwa server n8n, Google, SMTP atau gateway AI deployment sedang sehat.
 
-Test mencakup auth/reset password, user, upload/storage, pagination/bahasa/logging, fresh migration dan rollback/reapply, job/outbox/claim, hasil callback duplikat, sanitasi SVG, edit/review revision, dispatcher settings dan reporting. `test/database.test.ts` juga memastikan route Contact sudah tidak tersedia.
+Test mencakup auth/reset password, user, upload/storage, pagination/bahasa/logging, fresh migration dan migrasi draft berisi data, job/outbox/claim, hasil callback duplikat, sanitasi SVG, edit atomik saat publish dan reject, dispatcher settings dan reporting. `test/database.test.ts` juga memastikan route Contact sudah tidak tersedia.
 
 ## Menulis regresi
 
@@ -24,7 +24,7 @@ Gunakan helper di `test/helpers.ts` dan `test/setup.ts`. Uji perilaku yang dapat
 
 ## Uji integrasi nyata
 
-Pada lingkungan pengujian, pastikan backend, worker, MinIO, n8n dan callback tunnel aktif. Uji upload beberapa gambar termasuk satu invalid, proses output feed/story, tunggu completion, ubah caption, simpan, lalu review. Periksa bahwa request gagal tidak menghapus upload lain, render outdated tidak dianggap final, dan review memakai revision terbaru.
+Pada lingkungan pengujian, pastikan backend, worker, MinIO, n8n dan callback tunnel aktif. Uji upload beberapa gambar termasuk satu invalid, proses output feed/story, tunggu completion, buka review, pilih Publish, ubah caption, lalu posting atau jadwalkan. Periksa bahwa request gagal tidak menghapus upload lain, desain AI tidak dipakai setelah konten berubah, serta publish/reject bersamaan hanya menghasilkan satu keputusan.
 
 Periksa juga kegagalan tunnel/claim, retry setelah pemulihan, serta URL MinIO kedaluwarsa. Langkah yang memanggil AI membutuhkan gateway nyata; jangan menyatakan E2E live berhasil hanya karena suite mock lolos. Catat waktu dan batas verifikasi pada hasil pengujian.
 

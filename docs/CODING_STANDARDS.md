@@ -15,7 +15,7 @@ Gunakan gaya file yang sedang diedit; jangan menggabungkan perubahan perilaku de
 - Config runtime berasal dari `src/config/config.ts`. Jangan membaca environment tersebar di service.
 - Gunakan `logger`; jangan mencetak credential, authorization, reset token, atau URL bertanda tangan.
 - Null adalah pengosongan field nullable; undefined berarti field tidak diperbarui.
-- Transaksi/lock harus tetap melindungi process, claim, reset password, revision, dan review yang bersaing.
+- Transaksi/lock harus tetap melindungi process, claim, reset password, publish, dan reject yang bersaing.
 
 ## Aturan domain
 

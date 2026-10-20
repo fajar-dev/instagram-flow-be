@@ -1,39 +1,29 @@
-import { ArchivePublicationAttempts1792382399999 } from "./1792382399999-archive-publication-attempts"
-import { PublicationProjectUniqueness1792382400000 } from "./1792382400000-publication-project-uniqueness"
-import { SimplifyDraftStatus1792382400001 } from "./1792382400001-simplify-draft-status"
-import { NormalizeReviewHistory1792382400002 } from "./1792382400002-normalize-review-history"
-import { CreatePublications1792371600000 } from "./1792371600000-create-publications"
-import { CreateUsers1792368000000 } from "./1792368000000-create-users"
-import { CreatePasswordResetTokens1792368000001 } from "./1792368000001-create-password-reset-tokens"
-import { CreateBatches1792368000002 } from "./1792368000002-create-batches"
-import { CreateAssets1792368000003 } from "./1792368000003-create-assets"
-import { CreateJobs1792368000004 } from "./1792368000004-create-jobs"
-import { CreateJobDispatches1792368000005 } from "./1792368000005-create-job-dispatches"
-import { CreateAiResults1792368000006 } from "./1792368000006-create-ai-results"
-import { CreateRenders1792368000007 } from "./1792368000007-create-renders"
-import { CreateDrafts1792368000008 } from "./1792368000008-create-drafts"
-import { CreateDraftRevisions1792368000009 } from "./1792368000009-create-draft-revisions"
-import { CreateReviews1792368000010 } from "./1792368000010-create-reviews"
-import { CreateAuditLogs1792368000011 } from "./1792368000011-create-audit-logs"
-import { CreateSettings1792368000012 } from "./1792368000012-create-settings"
+import { CreateUsers1792490400000 } from "./1792490400000-create-users"
+import { CreatePasswordResetTokens1792490400001 } from "./1792490400001-create-password-reset-tokens"
+import { CreateBatches1792490400002 } from "./1792490400002-create-batches"
+import { CreateAssets1792490400003 } from "./1792490400003-create-assets"
+import { CreateJobs1792490400004 } from "./1792490400004-create-jobs"
+import { CreateJobDispatches1792490400005 } from "./1792490400005-create-job-dispatches"
+import { CreateAiResults1792490400006 } from "./1792490400006-create-ai-results"
+import { CreateRenders1792490400007 } from "./1792490400007-create-renders"
+import { CreateDrafts1792490400008 } from "./1792490400008-create-drafts"
+import { CreateReviews1792490400009 } from "./1792490400009-create-reviews"
+import { CreateAuditLogs1792490400010 } from "./1792490400010-create-audit-logs"
+import { CreateSettings1792490400011 } from "./1792490400011-create-settings"
+import { CreatePublications1792490400012 } from "./1792490400012-create-publications"
 
 export const databaseMigrations = [
-    CreateUsers1792368000000,
-    CreatePasswordResetTokens1792368000001,
-    CreateBatches1792368000002,
-    CreateAssets1792368000003,
-    CreateJobs1792368000004,
-    CreateJobDispatches1792368000005,
-    CreateAiResults1792368000006,
-    CreateRenders1792368000007,
-    CreateDrafts1792368000008,
-    CreateDraftRevisions1792368000009,
-    CreateReviews1792368000010,
-    CreateAuditLogs1792368000011,
-    CreateSettings1792368000012,
-    CreatePublications1792371600000,
-    ArchivePublicationAttempts1792382399999,
-    PublicationProjectUniqueness1792382400000,
-    SimplifyDraftStatus1792382400001,
-    NormalizeReviewHistory1792382400002
+    CreateUsers1792490400000,
+    CreatePasswordResetTokens1792490400001,
+    CreateBatches1792490400002,
+    CreateAssets1792490400003,
+    CreateJobs1792490400004,
+    CreateJobDispatches1792490400005,
+    CreateAiResults1792490400006,
+    CreateRenders1792490400007,
+    CreateDrafts1792490400008,
+    CreateReviews1792490400009,
+    CreateAuditLogs1792490400010,
+    CreateSettings1792490400011,
+    CreatePublications1792490400012
 ]

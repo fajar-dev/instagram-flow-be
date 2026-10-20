@@ -1,6 +1,5 @@
 import { databaseMigrations } from "../database/migrations"
 
-export { databaseMigrations } from "../database/migrations"
 import { workflowEntities } from "../modules/shared/entities"
 import { PasswordResetToken } from "../modules/auth/entities/password-reset-token.entity"
 import "reflect-metadata"
@@ -44,14 +43,7 @@ export function setDataSource(ds: DataSource): void {
     activeDataSource = ds
 }
 
-/** Reset to default DataSource */
-export function resetDataSource(): void {
-    activeDataSource = defaultDataSource
-}
-
-/**
- * Backward-compatible export.
- */
+/** Resolve the active connection for repositories and integration tests. */
 export const AppDataSource = new Proxy({} as DataSource, {
     get(_target, prop: string | symbol) {
         const value = (activeDataSource as any)[prop]

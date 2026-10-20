@@ -11,7 +11,7 @@ Frontend Nuxt mengakses API Hono dengan JWT. API menyimpan state di MySQL dan me
 | `storage` | Upload objek umum melalui helper MinIO |
 | `content` | Batch dan child `media`: upload, validasi, thumbnail, preview, render |
 | `ai-job` | Job, retry, dispatch; child `workflow`: claim, manifest, result, failure dan adapter n8n |
-| `content-review` | Draft, revision, keputusan review dan optimistic concurrency |
+| `content-review` | Draft konten dan keputusan Reject |
 | `integration` | Sakelar dispatcher dan pemeriksaan konfigurasi aman |
 | `reporting` | List, counts, overview, audit log dan serializer reporting |
 | `shared` | Konteks, validator dan repository transaksi lintas fitur konten |
@@ -26,9 +26,9 @@ Repository workflow bersama saat ini melayani transaksi beberapa entitas konten;
 
 ## Proses konten
 
-Batch dibuat, foto dikirim satu per request, lalu process mengunci batch dan membuat job/outbox secara atomik. Dispatcher menyampaikan event. n8n mengklaim job memakai event/execution ID, mengambil manifest berisi preview presigned, menganalisis seluruh foto dan membuat caption/render yang diminta. Backend memvalidasi hasil, menyaring SVG, dan menyimpan hasil/draft/revision serta metadata render.
+Batch dibuat, foto dikirim satu per request, lalu process mengunci batch dan membuat job/outbox secara atomik. Dispatcher menyampaikan event. n8n mengklaim job memakai event/execution ID, mengambil manifest berisi preview presigned, menganalisis seluruh foto dan membuat caption/render yang diminta. Backend memvalidasi hasil, menyaring SVG, dan menyimpan hasil/draft serta metadata render.
 
-Review memakai revision ID dan content hash. Edit membuat revision baru dan membuat preview lama outdated. Publish membuat antrean Instagram; Reject mengakhiri review. Idempotency, claim dan transaksi melindungi request ganda; lihat [kontrak API](API_CONVENTIONS.md).
+Review langsung menuju Publish atau Reject. Publish mengirim konten final dan expectedContentHash, lalu menyimpan draft final serta snapshot publikasi dalam transaksi yang sama. Reject menggunakan contentHash. Tidak ada endpoint edit terpisah atau riwayat revisi aktif. Idempotency, claim dan transaksi melindungi request ganda; lihat [kontrak API](API_CONVENTIONS.md).
 
 ## Media dan akses
 

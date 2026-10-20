@@ -14,4 +14,4 @@ Jangan commit `.env`, token, credential export n8n atau data pribadi. Jangan men
 
 ## Format source
 
-`bun run format` menjalankan Prettier lalu ESLint dan membangun ulang workflow JSON n8n dari source. `bun run lint` memeriksa jarak fungsi/method, batas statement per baris dan braces. Gunakan bersama typecheck, test dan build sebelum menyerahkan perubahan. Backend mengikuti indentasi empat spasi dan double quote seperti modul User; secrets, hasil build dan media tidak termasuk target formatter.
+`bun run format` menjalankan ESLint, Prettier, lalu ESLint dan membangun ulang workflow JSON n8n dari source. `bun run lint` memeriksa jarak fungsi/method, batas statement per baris dan braces. Gunakan bersama typecheck, test dan build sebelum menyerahkan perubahan. Backend mengikuti indentasi empat spasi dan double quote seperti modul User; secrets, hasil build dan media tidak termasuk target formatter.

@@ -95,15 +95,12 @@
         "Job is not processing": "Job tidak sedang diproses",
         "Render not found": "Render tidak ditemukan",
         "Draft not found": "Draf tidak ditemukan",
-        "Revision is stale; reload before saving": "Revisi sudah berubah; muat ulang sebelum menyimpan",
-        "Invalid primary asset": "Aset utama tidak valid",
         "Asset is referenced by a job": "Aset sedang dirujuk oleh job",
         "Webhook is not configured": "Webhook belum dikonfigurasi",
         "Request too large": "Ukuran permintaan terlalu besar",
         "Stored media checksum mismatch": "Checksum media tersimpan tidak cocok",
         "Configure HTTPS webhook, object storage and integration secrets first": "Konfigurasikan webhook HTTPS, object storage, dan secret integrasi terlebih dahulu",
-        "Image resolution exceeds 40 megapixels": "Resolusi gambar melebihi 40 megapiksel",
-        "Cannot reject a stale revision": "Tidak dapat menolak revisi yang sudah berubah"
+        "Image resolution exceeds 40 megapixels": "Resolusi gambar melebihi 40 megapiksel"
     },
     "publishing": {
         "Instagram credential file is invalid": "File credential Instagram tidak valid",
@@ -129,9 +126,9 @@
         "Instagram media container failed or expired": "Container media Instagram gagal atau kedaluwarsa",
         "Instagram is temporarily unavailable; retrying": "Instagram sementara tidak tersedia; akan dicoba ulang",
         "Instagram publishing failed; check the account credentials, permissions and media": "Publikasi Instagram gagal; periksa credential akun, izin, dan media",
-        "Only the current ready revision can be published": "Hanya revisi terbaru yang siap direview yang dapat dipublikasikan",
         "Project already has a publication": "Project ini sudah memiliki publikasi",
-        "Only ready content can be edited": "Hanya konten yang siap direview yang dapat diubah",
-        "Only ready content can be rejected": "Hanya konten yang siap direview yang dapat ditolak"
+        "Only ready content can be rejected": "Hanya konten yang siap direview yang dapat ditolak",
+        "Only current ready content can be published": "Hanya konten terbaru yang siap ditinjau yang dapat dipublikasikan",
+        "Content has changed; reload before deciding": "Konten berubah; muat ulang sebelum mengambil keputusan"
     }
 }

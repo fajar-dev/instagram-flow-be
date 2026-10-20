@@ -18,7 +18,7 @@ Each module wires dependencies in its `*.module.ts` file. Controllers delegate t
 - `storage`: authenticated object-storage operations.
 - `content`: batches and private MinIO media, including thumbnails.
 - `ai-job`: processing lifecycle, dispatch command and n8n workflow contracts.
-- `content-review`: revisions, edits and review decisions.
+- `content-review`: draft content and rejection decisions; final edits are saved by publishing.
 - `integration`: dashboard dispatcher controls.
 - `reporting`: list queries, counts, overview and audit data.
 - `shared`: transactional persistence and context shared across automation modules.

@@ -187,8 +187,7 @@ describe("Content workflow", () => {
             method: "POST",
             headers: user.headers,
             body: {
-                revisionId: detail.revision.id,
-                contentHash: detail.revision.contentHash,
+                contentHash: detail.draft.contentHash,
                 notes: ""
             }
         })
@@ -483,7 +482,7 @@ describe("Content workflow", () => {
         })
         expect(replay.body.claimed).toBe(true)
     })
-    test("legacy callback, signed manifest, revisions and stale rejection", async () => {
+    test("legacy callback, signed manifest and direct rejection", async () => {
         const user = await actor("review@example.com")
         const job = await queued(user.headers)
         await claim(job)
@@ -495,7 +494,7 @@ describe("Content workflow", () => {
             headers: serviceHeaders
         })
         expect(manifest.body.assets[0].asset_id).toBe(job.assetId)
-        expect(manifest.body.review_url).toBe(`${config.app.frontendUrl}/content/${job.jobId}/edit`)
+        expect(manifest.body.review_url).toBe(`${config.app.frontendUrl}/content/${job.jobId}`)
         const signed = new URL(manifest.body.assets[0].ai_image_url)
         expect(signed.origin).toBe("http://storage.test")
         expect(signed.pathname).toBe(
@@ -535,29 +534,17 @@ describe("Content workflow", () => {
         ).text()
         expect(svg).toContain("data:image/jpeg;base64,")
         expect(svg).not.toContain("token=")
-        const rejection = {
-            revisionId: detail.revision.id,
-            contentHash: detail.revision.contentHash,
-            notes: "Checked"
-        }
-        const current = detail.revision
+        expect(detail.revision).toBeUndefined()
+        expect(detail.draft.title).toBe(result(job).title)
         expect(
             (
-                await request(app, `/api/drafts/${detail.draft.id}`, {
+                await app.request(`/api/drafts/${detail.draft.id}`, {
                     method: "PATCH",
-                    headers: user.headers,
-                    body: {
-                        expectedRevisionId: current.id,
-                        primaryAssetId: job.assetId,
-                        title: "Edited title",
-                        caption: current.caption,
-                        hashtags: current.hashtags,
-                        location: current.location,
-                        activity: current.activity
-                    }
+                    headers: user.headers
                 })
             ).status
-        ).toBe(200)
+        ).toBe(404)
+        const rejection = { contentHash: "b".repeat(64), notes: "Checked" }
         expect(
             (
                 await request(app, `/api/drafts/${detail.draft.id}/reject`, {
@@ -567,10 +554,18 @@ describe("Content workflow", () => {
                 })
             ).status
         ).toBe(409)
+        rejection.contentHash = detail.draft.contentHash
+        expect(
+            (
+                await request(app, `/api/drafts/${detail.draft.id}/reject`, {
+                    method: "POST",
+                    headers: user.headers,
+                    body: rejection
+                })
+            ).status
+        ).toBe(200)
         detail = (await request(app, `/api/jobs/${job.jobId}`, { headers: user.headers })).body.data
-        expect(detail.draft.reviewStatus).toBe("READY_FOR_REVIEW")
-        expect(detail.renders[0].renderState).toBe("OUTDATED")
-        expect(detail.revisions).toHaveLength(2)
+        expect(detail.draft.reviewStatus).toBe("REJECTED")
     })
     test("wrong execution, partial ranking and malicious SVG cannot finalize a job", async () => {
         const user = await actor("badcallback@example.com")

@@ -95,15 +95,12 @@
         "Job is not processing": "Job is not processing",
         "Render not found": "Render not found",
         "Draft not found": "Draft not found",
-        "Revision is stale; reload before saving": "Revision is stale; reload before saving",
-        "Invalid primary asset": "Invalid primary asset",
         "Asset is referenced by a job": "Asset is referenced by a job",
         "Webhook is not configured": "Webhook is not configured",
         "Request too large": "Request too large",
         "Stored media checksum mismatch": "Stored media checksum mismatch",
         "Configure HTTPS webhook, object storage and integration secrets first": "Configure HTTPS webhook, object storage and integration secrets first",
-        "Image resolution exceeds 40 megapixels": "Image resolution exceeds 40 megapixels",
-        "Cannot reject a stale revision": "Cannot reject a stale revision"
+        "Image resolution exceeds 40 megapixels": "Image resolution exceeds 40 megapixels"
     },
     "publishing": {
         "Instagram credential file is invalid": "Instagram credential file is invalid",
@@ -129,9 +126,9 @@
         "Instagram media container failed or expired": "Instagram media container failed or expired",
         "Instagram is temporarily unavailable; retrying": "Instagram is temporarily unavailable; retrying",
         "Instagram publishing failed; check the account credentials, permissions and media": "Instagram publishing failed; check the account credentials, permissions and media",
-        "Only the current ready revision can be published": "Only the current ready revision can be published",
         "Project already has a publication": "Project already has a publication",
-        "Only ready content can be edited": "Only ready content can be edited",
-        "Only ready content can be rejected": "Only ready content can be rejected"
+        "Only ready content can be rejected": "Only ready content can be rejected",
+        "Only current ready content can be published": "Only current ready content can be published",
+        "Content has changed; reload before deciding": "Content has changed; reload before deciding"
     }
 }

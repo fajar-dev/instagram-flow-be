@@ -98,27 +98,17 @@ export class JobService {
         )
         const aiResult = (await this.repository.find("aiResult", { jobId }))[0] || null
         const draft = (await this.repository.find("draft", { jobId }))[0] || null
-        const revisions = draft ? await this.repository.find("revision", { draftId: draft.id }) : []
         const renders = aiResult
             ? await this.repository.find("render", { aiResultId: aiResult.id })
             : []
-        const revision = revisions.find((r) => r.id === draft?.currentRevisionId) || null
         return {
             job,
             batch,
             assets,
             aiResult,
             draft,
-            revision,
-            revisions,
             reviews: draft ? await this.repository.find("review", { draftId: draft.id }) : [],
-            renders: renders.map((render) => ({
-                ...render,
-                renderState:
-                    revision && revisions[0]?.contentHash !== revision.contentHash
-                        ? "OUTDATED"
-                        : render.renderState
-            }))
+            renders
         }
     }
 }

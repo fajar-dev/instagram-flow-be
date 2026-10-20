@@ -57,7 +57,6 @@ describe("Audit regressions", () => {
             ["POST", "batches/example/assets"],
             ["POST", "batches/example/process"],
             ["POST", "jobs/example/retry"],
-            ["PATCH", "drafts/example"],
             ["POST", "drafts/example/reject"],
             ["DELETE", "assets/example"],
             ["PATCH", "settings"],

@@ -14,7 +14,7 @@ import { reportingController } from "../modules/reporting/reporting.module"
 import { serviceOnly, workflowMutationLimit } from "../modules/shared/workflow.middleware"
 import { batchSchema } from "../modules/content/validators/batch.validator"
 import { processSchema } from "../modules/ai-job/validators/job.validator"
-import { revisionSchema, rejectSchema } from "../modules/content-review/validators/draft.validator"
+import { rejectSchema } from "../modules/content-review/validators/draft.validator"
 import { settingsSchema } from "../modules/integration/validators/settings.validator"
 import { serveStatic } from "hono/bun"
 import { swaggerUI } from "@hono/swagger-ui"
@@ -177,14 +177,6 @@ routes.post("/jobs/:jobId/retry", authMiddleware, workflowMutationLimit, content
 // Content review
 routes.get("/review", authMiddleware, zValidator("query", querySchema, validationHook), (c) =>
     reportingController.browse(c, "draft")
-)
-routes.patch(
-    "/drafts/:draftId",
-    authMiddleware,
-    workflowMutationLimit,
-    contentBodyLimit,
-    json(revisionSchema),
-    (c) => draftController.edit(c)
 )
 routes.post(
     "/drafts/:draftId/reject",

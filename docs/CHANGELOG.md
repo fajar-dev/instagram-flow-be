@@ -1,3 +1,15 @@
+## 20 Oktober 2026 — Baseline final dan pembersihan alur lama
+
+Migration disusun ulang menjadi 13 file untuk 13 tabel (1792490400000–1792490400012), langsung memakai schema Review → Publish/Reject. Migration transisi dan tabel revisi tidak lagi disertakan. Setiap file memiliki up/down untuk satu tabel; dependency diuji melalui rollback dan reapply. Schema lokal dibandingkan dengan database test yang dibuat dari baseline sebelum ledger diselaraskan, setelah backup SQL privat; data aplikasi dipertahankan.
+
+Alias URL editor, AI Jobs, Studio, dan Integration Settings beserta penanganan navigasinya dihapus. Teks UI serta import yang tidak dipakai dibersihkan. Formatter kini menormalkan struktur dengan ESLint sebelum Prettier agar perbaikan braces tidak meninggalkan indentasi yang rusak. Adapter n8n legacy tetap digunakan karena merupakan kontrak integrasi aktif, bukan sisa alur editor.
+
+## 20 Oktober 2026 — Review langsung ke Publish atau Reject
+
+Menghapus langkah simpan revisi. Detail menampilkan hasil dan keputusan; form Publish menyatukan caption, foto, akun dan waktu posting. Backend menerima konten final dalam request publish, menyimpan draft dan snapshot atomik, serta mempertahankan idempotency dan satu postingan per project. History database lama diarsipkan sebelum konsolidasi. Endpoint PATCH draft, entity revisi, nomor revisi dan UI editor lama dihapus. URL editor lama hanya alias menuju Publish.
+
+Validasi: 160 tes backend dan 44 tes frontend lulus; typecheck, lint, dan build kedua project lulus. Lima migration telah diterapkan pada database development lokal setelah backup SQL privat. Pengujian visual browser terhalang saved origin permission; tidak ada publikasi nyata ke Instagram pada refactor ini.
+
 ## 2026-10-20 — Keterbacaan kode
 
 ## 20 Oktober 2026 — audit struktur lanjutan
