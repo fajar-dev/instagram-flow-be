@@ -6,13 +6,11 @@ export class StorageService {
     constructor(private readonly storage: IStorage) {}
 
     async upload(file: File) {
-        const extension =
-            file.name
-                .split(".")
-                .pop()
-                ?.replace(/[^a-zA-Z0-9]/g, "") || "bin"
-        const objectName = `users/${crypto.randomUUID()}.${extension}`
-        await this.storage.upload(objectName, Buffer.from(await file.arrayBuffer()), file.type)
+        const { preview } = await readUploadImage(file, config.media.maxUploadMb)
+        const objectName = `users/${crypto.randomUUID()}.jpg`
+        await this.storage.upload(objectName, preview, "image/jpeg")
         return { path: objectName }
     }
 }
+import { config } from "../../config/config"
+import { readUploadImage } from "../../core/helpers/upload-image"

@@ -40,7 +40,8 @@
         "Invalid old password": "Kata sandi lama salah",
         "Authentication token is required": "Token autentikasi wajib disertakan",
         "Missing or invalid authorization header": "Header otorisasi tidak ada atau tidak valid",
-        "Missing or invalid API key": "API key tidak ada atau tidak valid"
+        "Missing or invalid API key": "API key tidak ada atau tidak valid",
+        "Invalid Google credentials": "Kredensial Google tidak valid"
     },
     "user": {
         "User created successfully": "Pengguna berhasil dibuat",
@@ -100,7 +101,12 @@
         "Request too large": "Ukuran permintaan terlalu besar",
         "Stored media checksum mismatch": "Checksum media tersimpan tidak cocok",
         "Configure HTTPS webhook, object storage and integration secrets first": "Konfigurasikan webhook HTTPS, object storage, dan secret integrasi terlebih dahulu",
-        "Image resolution exceeds 40 megapixels": "Resolusi gambar melebihi 40 megapiksel"
+        "Image resolution exceeds 40 megapixels": "Resolusi gambar melebihi 40 megapiksel",
+        "Instagram insights are unavailable; check account access and permissions": "Insight Instagram tidak tersedia; periksa akses akun dan izin",
+        "Invalid Instagram media ID": "ID media Instagram tidak valid",
+        "Insights are available only for published content": "Insight hanya tersedia untuk konten yang sudah dipublikasikan",
+        "Instagram account no longer matches this publication": "Akun Instagram tidak lagi sesuai dengan publikasi ini",
+        "Instagram media does not belong to this account": "Media Instagram bukan milik akun ini"
     },
     "publishing": {
         "Instagram credential file is invalid": "File credential Instagram tidak valid",

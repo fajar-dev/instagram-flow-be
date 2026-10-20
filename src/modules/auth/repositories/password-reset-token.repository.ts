@@ -5,7 +5,9 @@ import { PasswordResetToken } from "../entities/password-reset-token.entity"
 import { IPasswordResetTokenRepository } from "../interfaces/password-reset-token.repository.interface"
 
 export class TypeOrmPasswordResetTokenRepository implements IPasswordResetTokenRepository {
-    private readonly repository = AppDataSource.getRepository(PasswordResetToken)
+    private get repository() {
+        return AppDataSource.getRepository(PasswordResetToken)
+    }
 
     async createForUser(userId: number, email: string, tokenHash: string, expiresAt: Date) {
         await AppDataSource.transaction(async (manager) => {

@@ -1,26 +1,30 @@
 # Dokumentasi backend IG Flow
 
-Panduan aktif menjelaskan implementasi IG Flow saat ini. Source route, validator, migration, dan konfigurasi menjadi acuan ketika mengubah kontrak. Audit bertanggal dan PRD awal adalah riwayat keputusan, bukan petunjuk deployment terbaru.
+Mulai dari [README project](../README.md) untuk menjalankan aplikasi dan [AGENTS.md](../AGENTS.md) untuk aturan kontribusi.
 
-| Kebutuhan | Dokumen |
+## Panduan aktif
+
+| Kategori | Isi |
 | --- | --- |
-| Menjalankan API dan worker | [Setup](../README_SETUP.md) |
-| Alur produk dan batas fitur | [Implementasi konten](content-automation/IMPLEMENTATION.md) |
-| Layer dan pembagian fitur | [Arsitektur](ARCHITECTURE.md), [peta proyek](PROJECT_MAP.md) |
-| Mengubah fitur | [Panduan modul](MODULE_GUIDE.md), [konvensi kode](CODING_STANDARDS.md) |
-| API dan autentikasi | [Kontrak API](API_CONVENTIONS.md), [OpenAPI](SWAGGER_GUIDE.md) |
-| MySQL, migration, seeder | [Database](DATABASE_GUIDE.md) |
-| Environment | [Konfigurasi](ENVIRONMENT.md) |
-| Test dan verifikasi | [Pengujian](TESTING_GUIDE.md) |
-| Bahasa dan logging | [i18n](LANGUAGE_GUIDE.md), [log](LOGGING_GUIDE.md) |
-| n8n dan tunnel | [Runbook integrasi](../integrations/n8n/README.md) |
-| Kontribusi agent | [AGENTS](../AGENTS.md), [alur kerja agent](AI_AGENT_RULES.md) |
-| Perubahan | [Changelog](CHANGELOG.md) |
+| [Aturan pengembangan](rules/README.md) | Standar yang berlaku saat mengubah kode dan menjalankan audit. |
+| [Arsitektur](architecture/README.md) | Struktur aplikasi, tanggung jawab layer, dan peta fitur. |
+| [Fitur](features/README.md) | Perilaku produk dan kontrak integrasi per fitur. |
+| [Operasional](operations/README.md) | Setup, konfigurasi, database, pengujian, logging, dan n8n. |
+| [Referensi](reference/README.md) | Konvensi API dan dokumentasi OpenAPI. |
+| [Arsip](archive/README.md) | Laporan audit dan keputusan historis; bukan aturan aktif. |
+| [Changelog](changelog.md) | Ringkasan perubahan lintas fitur. |
 
-## Arsip
+## Penempatan dokumentasi
 
-Dokumen `AUDIT-*.md`, [PRD v1.1](content-automation/PRD-v1.1.md), dan [catatan refactor](content-automation/REFACTOR-2026-10-16.md) menyimpan keputusan pada tanggalnya. Sebagian keputusan sudah digantikan: aplikasi kini tanpa role, tanpa Contact, memakai 13 migration baseline untuk 13 tabel, termasuk publications dan satu bucket MinIO. Indeks berkas aktif ada di [FILE_MANIFEST](content-automation/FILE_MANIFEST.md).
+- Aturan yang harus diikuti masuk `rules/`; laporan hasil audit masuk `archive/audits/`.
+- Penjelasan struktur dan batas layer masuk `architecture/`; perilaku fitur masuk `features/`.
+- Referensi komponen atau kontrak masuk `reference/`. Runbook backend berada di `operations/`.
+- Perbarui panduan aktif ketika implementasi berubah; jangan menyalin runbook ke laporan audit.
+- Gunakan nama file kebab-case dan tautan relatif. Tambahkan dokumen baru ke indeks kategorinya.
+- Simpan credential di konfigurasi privat, bukan dokumentasi.
 
-## Publishing
+## Acuan implementasi
 
-[Panduan publikasi Instagram](INSTAGRAM_PUBLISHING.md) mencakup credential JSON, worker, jadwal, snapshot media dan rekonsiliasi timeout.
+Source, validator, konfigurasi dan tes menjelaskan perilaku yang berjalan; dokumentasi aktif harus diselaraskan dengannya. Jika perubahan menyentuh aturan, perbarui AGENTS.md dan CLAUDE.md secara identik. Riwayat audit tidak menggantikan aturan aktif.
+
+[Dokumentasi frontend](../../frontend/docs/README.md).

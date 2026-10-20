@@ -1,6 +1,6 @@
 # IG Flow — Aturan proyek backend
 
-Backend IG Flow menyediakan API dan worker konten AMTI. Baca [panduan kontribusi](docs/AI_AGENT_RULES.md) dan [arsitektur](docs/ARCHITECTURE.md) sebelum perubahan implementasi. AGENTS.md dan CLAUDE.md harus tetap identik.
+Backend IG Flow menyediakan API dan worker konten AMTI. Baca [panduan kontribusi](docs/rules/agent-workflow.md) dan [arsitektur](docs/architecture/overview.md) sebelum perubahan implementasi. AGENTS.md dan CLAUDE.md harus tetap identik.
 
 ## Stack dan sumber acuan
 
@@ -10,7 +10,7 @@ Bun, Hono, TypeORM/MySQL (mysql2), Zod, JWT hono/jwt, Nodemailer, MinIO dan Shar
 
 - Controller → Service → Repository melalui interface. Query/TypeORM dan transaksi berada di repository; jangan import AppDataSource ke service.
 - Wiring dependency berada di *.module.ts. Jangan instantiate service/repository di controller.
-- Semua endpoint berada di src/routes/api.ts; index.ts memasang middleware dan startup/error handling.
+- Semua endpoint berada di src/routes/api.ts; app.ts memasang middleware/error handling; index.ts menangani startup.
 - Environment hanya dibaca parser src/config/config.ts untuk runtime aplikasi.
 - Body JSON memakai Zod dan c.req.valid; query memakai validator bersama. Gunakan exception aplikasi, ApiResponse dan serializer, bukan response ad hoc atau entity sensitif mentah.
 - Gunakan logger; jangan mencetak credential, password, reset token atau signed URL. Pesan source English, terjemahan en/id di src/core/i18n.
@@ -28,7 +28,7 @@ Reset password memakai tabel terpisah; request/resend membuat token baru. Satu r
 
 ## Database dan command
 
-Sync selalu false, termasuk test. Baseline development 20 Oktober 2026 berisi 13 migration untuk 13 tabel pada src/database/migrations (1792490400000–1792490400012). Ini menggantikan baseline sebelumnya. Perubahan berikutnya menggunakan migration baru kecuali reset development diminta eksplisit. Lihat docs/DATABASE_GUIDE.md sebelum mengubah history.
+Sync selalu false, termasuk test. Baseline development 20 Oktober 2026 berisi 13 migration untuk 13 tabel pada src/database/migrations (1792490400000–1792490400012). Ini menggantikan baseline sebelumnya. Perubahan berikutnya menggunakan migration baru kecuali reset development diminta eksplisit. Lihat docs/operations/database.md sebelum mengubah history.
 
 Seeder satu file per seeder pada src/database/seeders; index.ts hanya koordinator, import.meta.main menjaga entrypoint CLI. Migration dan seeder memakai script package, bukan job. Worker AI menjalankan dispatch/recovery konten; worker publishing menangani publikasi Instagram.
 

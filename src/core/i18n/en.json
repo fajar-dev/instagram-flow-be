@@ -40,7 +40,8 @@
         "Invalid old password": "Invalid old password",
         "Authentication token is required": "Authentication token is required",
         "Missing or invalid authorization header": "Missing or invalid authorization header",
-        "Missing or invalid API key": "Missing or invalid API key"
+        "Missing or invalid API key": "Missing or invalid API key",
+        "Invalid Google credentials": "Invalid Google credentials"
     },
     "user": {
         "User created successfully": "User created successfully",
@@ -100,7 +101,12 @@
         "Request too large": "Request too large",
         "Stored media checksum mismatch": "Stored media checksum mismatch",
         "Configure HTTPS webhook, object storage and integration secrets first": "Configure HTTPS webhook, object storage and integration secrets first",
-        "Image resolution exceeds 40 megapixels": "Image resolution exceeds 40 megapixels"
+        "Image resolution exceeds 40 megapixels": "Image resolution exceeds 40 megapixels",
+        "Instagram insights are unavailable; check account access and permissions": "Instagram insights are unavailable; check account access and permissions",
+        "Invalid Instagram media ID": "Invalid Instagram media ID",
+        "Insights are available only for published content": "Insights are available only for published content",
+        "Instagram account no longer matches this publication": "Instagram account no longer matches this publication",
+        "Instagram media does not belong to this account": "Instagram media does not belong to this account"
     },
     "publishing": {
         "Instagram credential file is invalid": "Instagram credential file is invalid",

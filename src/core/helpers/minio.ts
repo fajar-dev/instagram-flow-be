@@ -67,7 +67,7 @@ class MinioHelper {
         contentType: string,
         bucket: string = BUCKET
     ): Promise<string> {
-        await this.ensureBucket(bucket)
+        await this.ensurePrivateBucket(bucket)
 
         await minioClient.putObject(bucket, objectName, buffer, buffer.length, {
             "Content-Type": contentType
@@ -118,20 +118,6 @@ class MinioHelper {
     async delete(objectName: string, bucket: string = BUCKET): Promise<void> {
         await minioClient.removeObject(bucket, objectName)
         logger.info("MinIO object deleted", { bucket, objectName })
-    }
-
-    /**
-     * Check if an object exists in the bucket
-     * @param objectName - The object key in the bucket
-     * @param bucket - Optional bucket override
-     */
-    async exists(objectName: string, bucket: string = BUCKET): Promise<boolean> {
-        try {
-            await minioClient.statObject(bucket, objectName)
-            return true
-        } catch {
-            return false
-        }
     }
 
     /**

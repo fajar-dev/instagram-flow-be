@@ -42,6 +42,12 @@ export class InternalServerException extends BaseException {
     }
 }
 
+export class BadGatewayException extends BaseException {
+    constructor(message: string = "Upstream service is unavailable") {
+        super(message, 502)
+    }
+}
+
 export class ForbiddenException extends BaseException {
     constructor(message: string = "Forbidden") {
         super(message, 403)
@@ -61,7 +67,7 @@ export class TooManyRequestsException extends BaseException {
 }
 
 export class ValidationException extends BaseException {
-    constructor(errors: ZodError) {
+    constructor(errors: Pick<ZodError, "issues">) {
         super(
             "Validation failed",
             422,

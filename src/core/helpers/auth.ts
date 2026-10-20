@@ -1,3 +1,4 @@
+import { UnauthorizedException } from "../exceptions/base"
 import { sign } from "hono/jwt"
 import { OAuth2Client } from "google-auth-library"
 import { config } from "../../config/config"
@@ -35,14 +36,24 @@ export class AuthHelper {
         return oAuth2Client
     }
 
-    static async verifyGoogleCode(code: string): Promise<any> {
-        const oAuth2Client = this.getOauth2Client()
-        const result = await oAuth2Client.getToken(code)
-        const ticket = await oAuth2Client.verifyIdToken({
-            idToken: result.tokens.id_token!,
-            audience: config.google.clientId
-        })
-        const payload = ticket.getPayload()
-        return payload
+    static async verifyGoogleCode(code: string): Promise<{ email: string }> {
+        try {
+            const client = this.getOauth2Client()
+            const result = await client.getToken(code)
+            if (!result.tokens.id_token) {
+                throw new Error("Missing ID token")
+            }
+            const ticket = await client.verifyIdToken({
+                idToken: result.tokens.id_token,
+                audience: config.google.clientId
+            })
+            const payload = ticket.getPayload()
+            if (!payload?.email || payload.email_verified !== true) {
+                throw new Error("Unverified email")
+            }
+            return { email: payload.email }
+        } catch {
+            throw new UnauthorizedException("Invalid Google credentials")
+        }
     }
 }

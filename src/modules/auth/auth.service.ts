@@ -50,7 +50,7 @@ export class AuthService {
 
     async googleLogin(data: GoogleLoginValidator) {
         const payload = await AuthHelper.verifyGoogleCode(data.code)
-        let user = await this.userService.getByEmailWithPassword(payload.email!)
+        let user = await this.userService.getByEmailWithPassword(payload.email)
 
         if (!user) {
             throw new BadRequestException("User not registered")
