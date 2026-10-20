@@ -1,4 +1,4 @@
-import { EntityManager, Repository } from "typeorm"
+import { Repository } from "typeorm"
 import { AppDataSource } from "../../../config/database"
 import { User } from "../entities/user.entity"
 import {
@@ -16,10 +16,8 @@ const SORTABLE_COLUMNS: Record<string, string> = {
 }
 
 export class TypeOrmUserRepository implements IUserRepository {
-    private readonly repository: Repository<User>
-
-    constructor() {
-        this.repository = AppDataSource.getRepository(User)
+    private get repository(): Repository<User> {
+        return AppDataSource.getRepository(User)
     }
 
     async findAll(
@@ -90,9 +88,8 @@ export class TypeOrmUserRepository implements IUserRepository {
             .getOne()
     }
 
-    async save(data: Partial<User>, manager?: EntityManager): Promise<User> {
-        const repo = manager ? manager.getRepository(User) : this.repository
-        return await repo.save(data)
+    async save(data: Partial<User>): Promise<User> {
+        return await this.repository.save(data)
     }
 
     merge(entity: User, data: Partial<User>): User {

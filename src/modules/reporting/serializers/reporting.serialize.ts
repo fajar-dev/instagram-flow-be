@@ -18,6 +18,9 @@ export class ReportingSerializer {
         return Promise.all(
             values.map(async (value) => {
                 const item = value as Parameters<(typeof serializers)[typeof kind]["single"]>[0] & {
+                    projectLocation?: string
+                    photoCount?: number
+                    requestedOutputs?: string[]
                     projectName?: string
                     uploaderName?: string
                     uploaderPhoto?: string | null
@@ -27,6 +30,13 @@ export class ReportingSerializer {
                     ? serialized
                     : {
                           ...serialized,
+                          ...(kind === "job" || kind === "draft"
+                              ? {
+                                    projectLocation: item.projectLocation,
+                                    photoCount: item.photoCount,
+                                    requestedOutputs: item.requestedOutputs
+                                }
+                              : {}),
                           projectName: item.projectName,
                           uploaderName: item.uploaderName,
                           uploaderPhoto: await resolveStorageUrl(item.uploaderPhoto)

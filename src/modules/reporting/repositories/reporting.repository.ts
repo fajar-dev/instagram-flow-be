@@ -71,6 +71,16 @@ export class TypeOrmReportingRepository implements IReportingRepository {
                 since: new Date(Date.now() - filters.days * 86400000)
             })
         }
+        if (kind === "job" || kind === "draft") {
+            const job = kind === "job" ? "item" : "job"
+            query
+                .addSelect("batch.location", "projectLocation")
+                .addSelect(`${job}.requested_outputs`, "requestedOutputs")
+                .addSelect(
+                    "(SELECT COUNT(*) FROM assets photo WHERE photo.batch_id = batch.id AND photo.deleted_at IS NULL)",
+                    "photoCount"
+                )
+        }
         const total = await query.getCount()
         const { entities, raw } = await query
             .orderBy("item.createdAt", "DESC")
@@ -84,6 +94,16 @@ export class TypeOrmReportingRepository implements IReportingRepository {
                 ? item
                 : {
                       ...item,
+                      ...(kind === "job" || kind === "draft"
+                          ? {
+                                projectLocation: metadata.get(item.id)?.projectLocation,
+                                photoCount: Number(metadata.get(item.id)?.photoCount ?? 0),
+                                requestedOutputs:
+                                    typeof metadata.get(item.id)?.requestedOutputs === "string"
+                                        ? JSON.parse(metadata.get(item.id)!.requestedOutputs)
+                                        : (metadata.get(item.id)?.requestedOutputs ?? [])
+                            }
+                          : {}),
                       projectName: metadata.get(item.id)?.projectName,
                       uploaderName: metadata.get(item.id)?.uploaderName,
                       uploaderPhoto: metadata.get(item.id)?.uploaderPhoto

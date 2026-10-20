@@ -1,6 +1,6 @@
 import type { ThumbnailService } from "./thumbnail.service"
 import { createHash } from "node:crypto"
-import sharp, { type Metadata } from "sharp"
+import { readUploadImage } from "../../../core/helpers/upload-image"
 import { logger } from "../../../core/helpers/logger"
 import { config } from "../../../config/config"
 import {
@@ -24,46 +24,10 @@ export class MediaService {
 
     async upload(actor: User, batchId: string, file: File) {
         await this.context.batch(batchId)
-        if (!file || file.size === 0 || file.size > config.media.maxUploadMb * 1024 * 1024) {
-            throw new BadRequestException("Invalid file size")
-        }
-        const original = Buffer.from(await file.arrayBuffer())
-        let metadata: Metadata
-        let preview: Buffer
-        try {
-            metadata = await sharp(original, { limitInputPixels: false }).metadata()
-            if ((metadata.width || 0) * (metadata.height || 0) > 40000000) {
-                throw new BadRequestException("Image resolution exceeds 40 megapixels")
-            }
-            const image = sharp(original, { limitInputPixels: 40000000, failOn: "warning" })
-            const mime = (
-                { jpeg: "image/jpeg", png: "image/png", webp: "image/webp" } as Record<
-                    string,
-                    string
-                >
-            )[metadata.format || ""]
-            const ext = file.name.split(".").pop()?.toLowerCase()
-            if (
-                !mime ||
-                mime !== file.type ||
-                !(metadata.format === "jpeg" ? ["jpg", "jpeg"] : [metadata.format]).includes(
-                    ext || ""
-                ) ||
-                (metadata.pages || 1) > 1
-            ) {
-                throw new BadRequestException("Only static JPG, PNG and WEBP images are supported")
-            }
-            preview = await image
-                .rotate()
-                .resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true })
-                .jpeg({ quality: 88 })
-                .toBuffer()
-        } catch (error) {
-            if (error instanceof BadRequestException) {
-                throw error
-            }
-            throw new BadRequestException("Invalid or unsupported image")
-        }
+        const { original, metadata, preview } = await readUploadImage(
+            file,
+            config.media.maxUploadMb
+        )
         const assetId = id()
         const originalStorageKey = `batches/${batchId}/original/${assetId}.${metadata.format}`
         const safePreviewStorageKey = `batches/${batchId}/preview/${assetId}.jpg`

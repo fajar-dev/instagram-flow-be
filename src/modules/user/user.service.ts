@@ -1,6 +1,5 @@
 import { User } from "./entities/user.entity"
 import { NotFoundException, BadRequestException } from "../../core/exceptions/base"
-import { EntityManager } from "typeorm"
 import {
     IUserRepository,
     UserListFilters,
@@ -48,8 +47,8 @@ export class UserService {
         return await this.repository.findByEmailWithPassword(email)
     }
 
-    async save(data: Partial<User>, manager?: EntityManager): Promise<User> {
-        return await this.repository.save(data, manager)
+    async save(data: Partial<User>): Promise<User> {
+        return await this.repository.save(data)
     }
 
     async saveInTransaction(data: Partial<User>): Promise<User> {

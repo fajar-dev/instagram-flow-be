@@ -10,7 +10,7 @@ import { config } from "./config"
 /**
  * TypeORM Database Configuration
  *
- * Access via `AppDataSource` (default) atau `getDataSource()`.
+ * Access via `AppDataSource`, resolved at operation time.
  * Untuk testing, gunakan `setDataSource()` untuk override ke test database.
  */
 
@@ -33,11 +33,6 @@ const defaultDataSource = new DataSource(databaseOptions)
 
 let activeDataSource: DataSource = defaultDataSource
 
-/** Get the active DataSource (default or test-overridden) */
-export function getDataSource(): DataSource {
-    return activeDataSource
-}
-
 /** Override DataSource for testing */
 export function setDataSource(ds: DataSource): void {
     activeDataSource = ds
@@ -46,7 +41,7 @@ export function setDataSource(ds: DataSource): void {
 /** Resolve the active connection for repositories and integration tests. */
 export const AppDataSource = new Proxy({} as DataSource, {
     get(_target, prop: string | symbol) {
-        const value = (activeDataSource as any)[prop]
+        const value = Reflect.get(activeDataSource, prop)
         if (typeof value === "function") {
             return value.bind(activeDataSource)
         }

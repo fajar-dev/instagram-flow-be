@@ -1,3 +1,8 @@
+import { instagramAnalyticsController } from "../modules/instagram/analytics/analytics.module"
+import {
+    analyticsQuery,
+    analyticsPostsQuery
+} from "../modules/instagram/analytics/validators/analytics.validator"
 import { publishingController } from "../modules/publishing/publishing.module"
 import { publicationSchema } from "../modules/publishing/validators/publication.validator"
 import { instagramController } from "../modules/instagram/instagram.module"
@@ -100,9 +105,6 @@ routes.put(
 )
 routes.delete("/user/:id", authMiddleware, (c) => userController.destroy(c))
 
-// Storage
-routes.post("/upload", authMiddleware, (c) => storageController.upload(c))
-
 // Content, AI jobs, review, reporting and integration
 const json = (schema: z.ZodType) => zValidator("json", schema, validationHook)
 const contentBodyLimit = bodyLimit({
@@ -113,6 +115,9 @@ const callbackBodyLimit = bodyLimit({
     maxSize: 1200000,
     onError: (c) => ApiResponse.error(c, "Request too large", 413)
 })
+
+// Avatar uploads share the content size limit and validate decoded image bytes.
+routes.post("/upload", authMiddleware, contentBodyLimit, (c) => storageController.upload(c))
 
 // n8n callbacks
 routes.post("/jobs/:jobId/claim", serviceOnly, callbackBodyLimit, json(z.unknown()), (c) =>
@@ -213,6 +218,32 @@ routes.patch(
     contentBodyLimit,
     json(settingsSchema),
     (c) => settingsController.updateSettings(c)
+)
+
+// Instagram analytics is read-only and shares the authenticated account configuration.
+routes.get(
+    "/instagram/accounts/:accountKey/insights",
+    authMiddleware,
+    zValidator("query", analyticsQuery, validationHook),
+    (c) => instagramAnalyticsController.account(c)
+)
+routes.get(
+    "/instagram/accounts/:accountKey/media",
+    authMiddleware,
+    zValidator("query", analyticsPostsQuery, validationHook),
+    (c) => instagramAnalyticsController.posts(c)
+)
+routes.get(
+    "/instagram/accounts/:accountKey/top-posts",
+    authMiddleware,
+    zValidator("query", analyticsPostsQuery, validationHook),
+    (c) => instagramAnalyticsController.topPosts(c)
+)
+routes.get("/instagram/accounts/:accountKey/media/:mediaId/insights", authMiddleware, (c) =>
+    instagramAnalyticsController.media(c)
+)
+routes.get("/publications/:publicationId/insights", authMiddleware, (c) =>
+    instagramAnalyticsController.publication(c)
 )
 
 // Instagram accounts and durable publication jobs
