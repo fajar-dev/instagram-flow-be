@@ -28,7 +28,7 @@ Reset password memakai tabel terpisah; request/resend membuat token baru. Satu r
 
 ## Database dan command
 
-Sync selalu false, termasuk test. Baseline development 20 Oktober 2026 berisi 13 migration untuk 13 tabel pada src/database/migrations (1792490400000–1792490400012). Ini menggantikan baseline sebelumnya. Perubahan berikutnya menggunakan migration baru kecuali reset development diminta eksplisit. Lihat docs/operations/database.md sebelum mengubah history.
+Sync selalu false, termasuk test. Baseline development dikonsolidasikan pada 21 Oktober 2026 dan berisi 13 migration untuk 13 tabel pada src/database/migrations (1792490400000–1792490400012). Schema jobs langsung memakai output tunggal; tidak ada migration transisi. Ini menggantikan baseline sebelumnya. Perubahan berikutnya menggunakan migration baru kecuali reset development diminta eksplisit. Lihat docs/operations/database.md sebelum mengubah history.
 
 Seeder satu file per seeder pada src/database/seeders; index.ts hanya koordinator, import.meta.main menjaga entrypoint CLI. Migration dan seeder memakai script package, bukan job. Worker AI menjalankan dispatch/recovery konten; worker publishing menangani publikasi Instagram.
 
@@ -52,3 +52,7 @@ Backend memakai indentasi 4 spasi, double quote, tanpa semicolon dan tanpa trail
 ## Penyederhanaan publish — 20 Oktober 2026
 
 Draft menyimpan isi konten langsung. Tidak ada entity, endpoint edit, nomor, atau tabel revisi aktif. Publish menyimpan konten final dan snapshot publikasi secara atomik; Reject mengakhiri konten. Baseline development sudah disusun ulang langsung ke schema final, satu tabel satu file. Tidak ada migration transisi atau tabel revisi. Backup dan verifikasi schema wajib sebelum menyelaraskan ledger database development yang sudah berisi data.
+
+## Output tunggal — 21 Oktober 2026
+
+Setiap job memilih satu `output`: `feed` atau `story` sejak proses upload. Output tidak dapat diganti saat publish. Event n8n memakai scalar `output`; callback berisi tepat satu render sesuai output job. Feed memuat caption/hashtag; Story tidak memiliki caption/hashtag posting (payload kosong). Jangan mengembalikan checkbox multi-output, tab pemilih preview, atau pilihan placement pada form publish.

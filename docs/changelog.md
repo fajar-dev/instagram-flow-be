@@ -1,3 +1,11 @@
+## 21 Oktober 2026 — Konsolidasi baseline development
+
+Menggabungkan schema output tunggal langsung ke migration create-jobs dan menghapus migration transisi. Baseline kembali menjadi 13 file untuk 13 tabel. Test baseline tetap memverifikasi rollback/reapply; test khusus migration transisi dihapus. Database aplikasi diselaraskan melalui backup, perbandingan schema dengan database test, lalu rekonsiliasi ledger tanpa reset tabel aplikasi.
+
+## 21 Oktober 2026 — Satu output per konten
+
+Mengganti daftar output dengan pilihan tunggal Feed atau Story sejak upload. Preview dan publikasi mengikuti pilihan tersebut; Story tidak menampilkan field caption/hashtag posting. Backend memvalidasi output callback dan publikasi; workflow n8n, Swagger dan regression tests mengikuti kontrak baru. Migration tambahan mengonversi job lama tanpa reset database. Verifikasi: 185 tes backend lulus, termasuk konversi data lama, rollback/reapply dan penolakan output callback yang salah. Typecheck, lint dan build lulus. Migration sudah diterapkan ke database aplikasi setelah backup, dan workflow baru sudah diaktifkan di n8n server. Uji nyata Feed dan Story berhasil mencapai READY_FOR_REVIEW dengan satu render masing-masing; tidak melakukan publikasi Instagram. Pengujian ulang terarah yang sebelumnya terhalang koneksi MySQL kini lulus (25 tes). Lihat [catatan penerapan](archive/audits/deployment-single-output-2026-10-21.md).
+
 ## 20 Oktober 2026 — Penataan dokumentasi
 
 Memisahkan aturan, arsitektur, fitur, referensi, operasional backend, dan arsip audit. Indeks per kategori serta tautan silang diperbarui. Tidak mengubah runtime aplikasi.

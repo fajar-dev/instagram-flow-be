@@ -6,7 +6,7 @@ Baca [AGENTS.md](../../AGENTS.md) untuk aturan utama, lalu [arsitektur](../archi
 2. Pastikan perilaku yang diminta sesuai batas produk: semua user aktif setara, media privat MinIO, review internal, AI lewat n8n.
 3. Ikuti controller → service → repository interface. Wiring di module; config di parser; route di api.ts.
 4. Jika kontrak berubah, perbarui validator, serializer, frontend consumer, OpenAPI dan test regresi terkait.
-5. Perubahan schema memakai migration baru, satu tabel per file, dan sync tetap false. Baseline development 20 Oktober 2026 menggantikan baseline sebelumnya; jangan mengulang reset tanpa permintaan eksplisit.
+5. Perubahan schema memakai migration baru, satu tabel per file, dan sync tetap false. Baseline development 21 Oktober 2026 menggantikan baseline sebelumnya; jangan mengulang reset tanpa permintaan eksplisit.
 6. Jalankan pemeriksaan yang sesuai, laporkan hasil nyata dan batas pengujian eksternal. Perubahan dokumentasi diperiksa terhadap source, link dan command, tanpa mengubah database atau menjalankan workflow AI.
 7. Perbarui dokumentasi aktif dan changelog. Audit bertanggal serta PRD awal adalah arsip; jangan mengambil instruksi role/menu/storage lama dari arsip sebagai aturan sekarang.
 

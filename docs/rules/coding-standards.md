@@ -23,7 +23,7 @@ Tidak ada role pengguna atau pembatasan berdasarkan kepemilikan. Autentikasi pen
 
 Setiap request/resend reset password menghasilkan token email baru; satu reset berhasil menghapus seluruh token user melalui transaksi. Jangan memindahkan token kembali ke tabel users.
 
-Migration dan seeder dijalankan melalui script package, bukan background job. Sync selalu false. Setiap tabel baru memiliki file migration sendiri; pertahankan history setelah baseline development 20 Oktober 2026.
+Migration dan seeder dijalankan melalui script package, bukan background job. Sync selalu false. Setiap tabel baru memiliki file migration sendiri; pertahankan history setelah baseline development 21 Oktober 2026.
 
 ## Verifikasi perubahan
 

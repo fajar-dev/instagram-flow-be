@@ -60,7 +60,7 @@ docker restart n8n
 - Claim uses `eventId` and actual n8n execution ID. Another execution cannot claim a running/completed job. A retry from the same execution can recover a lost claim response.
 - Manifest contains direct MinIO presigned URLs. No media proxy or extra signing secret is used.
 - Analysis uses deterministic image-1, image-2 aliases in manifest order rather than asking the model to copy database UUIDs. Parse Analysis resolves exact aliases back to IDs and rejects unknown/duplicate IDs; it never guesses a photograph from a malformed ID. Analysis must cover every asset exactly once. Invalid/partial model output fails rather than silently omitting files.
-- Only requested feed/story placements are rendered. Backend sanitizes SVG, embeds the selected image from object storage and stores generated media in MinIO.
+- Exactly one render is produced, matching the scalar event `output` (`feed` or `story`). Story caption and hashtags must be empty. Backend sanitizes SVG, embeds the selected image from object storage and stores generated media in MinIO.
 - Post-claim failures call the authenticated failure endpoint with a fixed safe message and then mark the n8n execution failed. Claim errors stop without claiming ownership of another execution.
 - Result retries reuse the same payload; backend hashes it and accepts exact duplicates without creating a second draft.
 - The workflow ends at READY_FOR_REVIEW. Users then choose Publish or Reject in the dashboard; publishing is handled by posts:dispatch. This AI workflow does not send Telegram messages or publish posts.
@@ -72,4 +72,8 @@ A 502 at **Claim Job** can mean the reverse tunnel is absent: nginx cannot conne
 
 A 504 at **Claim Job** occurs before image analysis/rendering. Check local `/health`, then server port 14000. If the local SSH process is gone but that remote port is still held by an old SSH session, the tunnel is stale. An administrator must inspect the listening SSH PID and terminate only that tunnel session before reconnecting. Do not terminate all SSH sessions or disable authentication.
 
-A job already acknowledged by n8n can remain DISPATCHED when claim cannot reach the backend. After restoring the tunnel, replay its existing event ID and requested outputs only if it is still unclaimed; never invent an event ID or overwrite a running job. The watchdog eventually exposes a failed job for normal dashboard retry. A detached tunnel survives terminal closure, but does not keep working through MacBook shutdown or network loss; reconnect after restoring connectivity.
+A job already acknowledged by n8n can remain DISPATCHED when claim cannot reach the backend. After restoring the tunnel, replay its existing event ID and selected output only if it is still unclaimed; never invent an event ID or overwrite a running job. The watchdog eventually exposes a failed job for normal dashboard retry. A detached tunnel survives terminal closure, but does not keep working through MacBook shutdown or network loss; reconnect after restoring connectivity.
+
+## Upgrade single-output contract
+
+Pause dispatch and finish active executions before applying the output migration and publishing the rebuilt workflow. The new event uses scalar `output`, not an array; rebuild with `bun run integrations/n8n/build-workflow.ts`. Upgrade frontend/backend/workflow together. An old two-render callback is rejected rather than silently choosing a placement.

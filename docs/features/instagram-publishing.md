@@ -35,7 +35,7 @@ Worker memeriksa pekerjaan sekitar setiap tiga detik. Production memerlukan proc
 
 ## Alur UI
 
-Buka detail Content yang READY_FOR_REVIEW lalu pilih Publish atau Reject. Pada halaman Publish, sesuaikan caption, hashtag, metadata, dan foto; semua perubahan disimpan bersamaan dengan permintaan publikasi. Publish memilih tepat satu akun, feed/story, sumber foto/desain, dan Post sekarang atau Jadwalkan. Tanggal/jam input adalah WIB; server menyimpan UTC. Izin publikasi batch harus sudah diberikan.
+Buka Content yang READY_FOR_REVIEW. Form langsung mengikuti output job yang dipilih sejak upload, bukan memilih placement lagi. Feed menyediakan caption, hashtag, metadata dan foto. Story menyediakan foto/sumber desain tanpa caption/hashtag posting; payload Story harus mengirim caption kosong dan hashtag kosong. Keduanya memilih satu akun, sumber foto/desain, dan Post sekarang atau Jadwalkan. Output request yang berbeda dengan job ditolak. Tanggal/jam input adalah WIB; server menyimpan UTC. Izin publikasi batch harus sudah diberikan.
 
 Foto memakai primary asset yang dipilih dalam form publish. Desain AI hanya tersedia jika konten sama dengan hasil AI dan mempunyai render sesuai. Setelah edit, pilih Foto atau buat ulang konten/desain; aplikasi belum melakukan re-render otomatis. Caption feed menggabungkan caption dan hashtag (maksimal 2.200 karakter). Caption tidak dikirim sebagai teks Story.
 
