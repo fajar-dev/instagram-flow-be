@@ -5,7 +5,6 @@ export class User {
     @PrimaryGeneratedColumn()
     id!: number
 
-
     @Column()
     name!: string
 
@@ -27,4 +26,3 @@ export class User {
     @UpdateDateColumn({ name: "updated_at" })
     updatedAt!: Date
 }
-

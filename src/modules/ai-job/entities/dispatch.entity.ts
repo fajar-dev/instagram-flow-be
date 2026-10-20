@@ -1,26 +1,37 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm"
+
 @Entity("job_dispatches")
 export class Dispatch {
     @PrimaryColumn({ type: "varchar", length: 36 })
-    id!: string;
+    id!: string
+
     @Column({ type: "varchar", name: "job_id", length: 36 })
-    jobId!: string;
+    jobId!: string
+
     @Column({ type: "varchar", name: "event_id", length: 36 })
-    eventId!: string;
+    eventId!: string
+
     @Column({ type: "varchar", name: "status", length: 40 })
-    status!: string;
+    status!: string
+
     @Column({ type: "int", name: "attempt_no" })
-    attemptNo!: number;
+    attemptNo!: number
+
     @Column({ type: "datetime", name: "next_retry_at", precision: 6 })
-    nextRetryAt!: Date;
+    nextRetryAt!: Date
+
     @Column({ type: "datetime", name: "locked_until", precision: 6, nullable: true })
-    lockedUntil!: Date | null;
+    lockedUntil!: Date | null
+
     @Column({ type: "int", name: "last_response_code", nullable: true })
-    lastResponseCode!: number | null;
+    lastResponseCode!: number | null
+
     @Column({ type: "datetime", name: "sent_at", precision: 6, nullable: true })
-    sentAt!: Date | null;
+    sentAt!: Date | null
+
     @CreateDateColumn({ name: "created_at", type: "datetime", precision: 6 })
-    createdAt!: Date;
+    createdAt!: Date
+
     @UpdateDateColumn({ name: "updated_at", type: "datetime", precision: 6 })
-    updatedAt!: Date;
+    updatedAt!: Date
 }

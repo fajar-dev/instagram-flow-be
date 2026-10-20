@@ -9,11 +9,7 @@ import { ZodError } from "zod"
 export class BaseException extends HTTPException {
     public context: unknown
 
-    constructor(
-        message: string,
-        status: number = 400,
-        errors: unknown = null
-    ) {
+    constructor(message: string, status: number = 400, errors: unknown = null) {
         super(status as ContentfulStatusCode, { message })
         this.context = errors
     }
@@ -66,9 +62,13 @@ export class TooManyRequestsException extends BaseException {
 
 export class ValidationException extends BaseException {
     constructor(errors: ZodError) {
-        super("Validation failed", 422, errors.issues.map(i => ({
-            field: i.path.join("."),
-            message: i.message
-        })))
+        super(
+            "Validation failed",
+            422,
+            errors.issues.map((i) => ({
+                field: i.path.join("."),
+                message: i.message
+            }))
+        )
     }
 }

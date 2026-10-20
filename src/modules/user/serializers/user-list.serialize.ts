@@ -10,11 +10,11 @@ export class UserListSerializer {
             photo: await resolveStorageUrl(row.photo),
             email: row.email || null,
             isActive: Boolean(row.isActive),
-            createdAt: row.createdAt,
+            createdAt: row.createdAt
         }
     }
 
     static async collection(rows: UserListRow[]) {
-        return Promise.all(rows.map(row => this.single(row)))
+        return Promise.all(rows.map((row) => this.single(row)))
     }
 }

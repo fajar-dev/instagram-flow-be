@@ -9,8 +9,9 @@ export class StorageController {
     async upload(c: Context) {
         const body = await c.req.parseBody()
         const file = body.file
-        if (!(file instanceof File)) throw new BadRequestException("No file uploaded or invalid file")
+        if (!(file instanceof File)) {
+            throw new BadRequestException("No file uploaded or invalid file")
+        }
         return ApiResponse.success(c, await this.service.upload(file), "File uploaded successfully")
     }
-
 }

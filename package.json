@@ -14,7 +14,9 @@
     "seed:users": "bun run src/database/seeders/user.seeder.ts",
     "typecheck": "tsc --noEmit",
     "jobs:dispatch": "bun run src/commands/job-dispatch.ts",
-    "posts:dispatch": "bun run src/commands/publication-dispatch.ts"
+    "posts:dispatch": "bun run src/commands/publication-dispatch.ts",
+    "lint": "eslint src test integrations/n8n",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"integrations/n8n/**/*.ts\" \"integrations/n8n/nodes/*.js\" && eslint src test integrations/n8n --fix && bun run integrations/n8n/build-workflow.ts"
   },
   "dependencies": {
     "@hono/swagger-ui": "^0.6.1",
@@ -32,9 +34,13 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@stylistic/eslint-plugin": "^5.10.0",
     "@types/bcryptjs": "^3.0.0",
     "@types/bun": "latest",
     "@types/nodemailer": "^7.0.11",
-    "typescript": "6.0.3"
+    "eslint": "^10.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.72.0"
   }
 }

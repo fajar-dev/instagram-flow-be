@@ -1,6 +1,22 @@
-import type { Batch } from '../entities/batch.entity';
+import type { Batch } from "../entities/batch.entity"
 
-type PublicFields = Pick<Batch, 'id' | 'uploaderId' | 'projectName' | 'activity' | 'location' | 'documentationDate' | 'description' | 'clientName' | 'publicationPermission' | 'consentBy' | 'consentAt' | 'status' | 'createdAt' | 'updatedAt'>;
+type PublicFields = Pick<
+    Batch,
+    | "id"
+    | "uploaderId"
+    | "projectName"
+    | "activity"
+    | "location"
+    | "documentationDate"
+    | "description"
+    | "clientName"
+    | "publicationPermission"
+    | "consentBy"
+    | "consentAt"
+    | "status"
+    | "createdAt"
+    | "updatedAt"
+>
 
 export class BatchSerializer {
     static single(value: PublicFields) {
@@ -18,11 +34,11 @@ export class BatchSerializer {
             consentAt: value.consentAt,
             status: value.status,
             createdAt: value.createdAt,
-            updatedAt: value.updatedAt,
-        };
+            updatedAt: value.updatedAt
+        }
     }
 
     static collection(values: PublicFields[]) {
-        return values.map(value => this.single(value));
+        return values.map((value) => this.single(value))
     }
 }

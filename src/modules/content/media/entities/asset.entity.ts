@@ -1,28 +1,40 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm"
+
 @Entity("assets")
 export class Asset {
     @PrimaryColumn({ type: "varchar", length: 36 })
-    id!: string;
+    id!: string
+
     @Column({ type: "varchar", name: "batch_id", length: 36 })
-    batchId!: string;
+    batchId!: string
+
     @Column({ type: "varchar", name: "original_storage_key", length: 255 })
-    originalStorageKey!: string;
+    originalStorageKey!: string
+
     @Column({ type: "varchar", name: "safe_preview_storage_key", length: 255 })
-    safePreviewStorageKey!: string;
+    safePreviewStorageKey!: string
+
     @Column({ type: "varchar", name: "mime", length: 50 })
-    mime!: string;
+    mime!: string
+
     @Column({ type: "int", name: "byte_size" })
-    byteSize!: number;
+    byteSize!: number
+
     @Column({ type: "int", name: "width" })
-    width!: number;
+    width!: number
+
     @Column({ type: "int", name: "height" })
-    height!: number;
+    height!: number
+
     @Column({ type: "varchar", name: "sha256", length: 64 })
-    sha256!: string;
+    sha256!: string
+
     @Column({ type: "datetime", name: "deleted_at", precision: 6, nullable: true })
-    deletedAt!: Date | null;
+    deletedAt!: Date | null
+
     @CreateDateColumn({ name: "created_at", type: "datetime", precision: 6 })
-    createdAt!: Date;
+    createdAt!: Date
+
     @UpdateDateColumn({ name: "updated_at", type: "datetime", precision: 6 })
-    updatedAt!: Date;
+    updatedAt!: Date
 }

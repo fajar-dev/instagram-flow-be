@@ -1,6 +1,8 @@
-import type { MigrationInterface, QueryRunner } from 'typeorm'
+import type { MigrationInterface, QueryRunner } from "typeorm"
+
 export class CreatePublications1792371600000 implements MigrationInterface {
     transaction = false
+
     async up(runner: QueryRunner) {
         await runner.query(`CREATE TABLE publications (
             id varchar(36) NOT NULL PRIMARY KEY,
@@ -19,5 +21,8 @@ export class CreatePublications1792371600000 implements MigrationInterface {
             INDEX publication_draft (draft_id, created_at)
         ) ENGINE=InnoDB`)
     }
-    async down(runner: QueryRunner) { await runner.query('DROP TABLE IF EXISTS publications') }
+
+    async down(runner: QueryRunner) {
+        await runner.query("DROP TABLE IF EXISTS publications")
+    }
 }

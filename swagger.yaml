@@ -368,7 +368,8 @@ paths:
       parameters:
         - name: days
           in: query
-          schema: { type: integer, minimum: 1, maximum: 365, default: 30 }
+          description: Optional lookback in days. Omit to include all dates.
+          schema: { type: integer, minimum: 1, maximum: 365 }
       responses:
         '200':
           description: Status counts in the standard success envelope, including zero-count statuses
@@ -1026,8 +1027,8 @@ paths:
             maxLength: 40
         - name: days
           in: query
+          description: Optional lookback in days. Omit to include all dates.
           schema:
-            default: 30
             type: integer
             minimum: 1
             maximum: 365
@@ -1329,8 +1330,8 @@ paths:
             maxLength: 40
         - name: days
           in: query
+          description: Optional lookback in days. Omit to include all dates.
           schema:
-            default: 30
             type: integer
             minimum: 1
             maximum: 365
@@ -1782,8 +1783,8 @@ paths:
             maxLength: 40
         - name: days
           in: query
+          description: Optional lookback in days. Omit to include all dates.
           schema:
-            default: 30
             type: integer
             minimum: 1
             maximum: 365
@@ -1992,8 +1993,8 @@ paths:
             maxLength: 40
         - name: days
           in: query
+          description: Optional lookback in days. Omit to include all dates.
           schema:
-            default: 30
             type: integer
             minimum: 1
             maximum: 365
@@ -2196,8 +2197,8 @@ paths:
             maxLength: 40
         - name: days
           in: query
+          description: Optional lookback in days. Omit to include all dates.
           schema:
-            default: 30
             type: integer
             minimum: 1
             maximum: 365

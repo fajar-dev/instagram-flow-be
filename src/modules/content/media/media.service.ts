@@ -1,120 +1,183 @@
-import type { ThumbnailService } from './thumbnail.service';
-import { createHash } from 'node:crypto';
-import sharp, { type Metadata } from 'sharp';
-import { logger } from '../../../core/helpers/logger';
-import { config } from '../../../config/config';
-import { BadRequestException, ConflictException, NotFoundException } from '../../../core/exceptions/base';
-import type { User } from '../../user/entities/user.entity';
-import type { IWorkflowRepository } from '../../shared/interfaces/workflow.repository.interface';
-import type { IContentMedia } from './interfaces/content-media.interface';
-import { id } from '../../shared/workflow.helpers';
-import { WorkflowContextService } from '../../shared/context.service';
-export class MediaService {
-    constructor(private readonly repository: IWorkflowRepository, private readonly media: IContentMedia, private readonly context: WorkflowContextService, private readonly thumbnails: ThumbnailService) { }
-    async upload(actor: User, batchId: string, file: File) {
+import type { ThumbnailService } from "./thumbnail.service"
+import { createHash } from "node:crypto"
+import sharp, { type Metadata } from "sharp"
+import { logger } from "../../../core/helpers/logger"
+import { config } from "../../../config/config"
+import {
+    BadRequestException,
+    ConflictException,
+    NotFoundException
+} from "../../../core/exceptions/base"
+import type { User } from "../../user/entities/user.entity"
+import type { IWorkflowRepository } from "../../shared/interfaces/workflow.repository.interface"
+import type { IContentMedia } from "./interfaces/content-media.interface"
+import { id } from "../../shared/workflow.helpers"
+import { WorkflowContextService } from "../../shared/context.service"
 
-        await this.context.batch(batchId);
-        if (!file || file.size === 0 || file.size > config.media.maxUploadMb * 1024 * 1024)
-            throw new BadRequestException('Invalid file size');
-        const original = Buffer.from(await file.arrayBuffer());
-        let metadata: Metadata;
-        let preview: Buffer;
-        try {
-            metadata = await sharp(original, { limitInputPixels: false }).metadata();
-            if ((metadata.width || 0) * (metadata.height || 0) > 40000000)
-                throw new BadRequestException('Image resolution exceeds 40 megapixels');
-            const image = sharp(original, { limitInputPixels: 40000000, failOn: 'warning' });
-            const mime = ({ jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' } as Record<string, string>)[metadata.format || ''];
-            const ext = file.name.split('.').pop()?.toLowerCase();
-            if (!mime || mime !== file.type || !(metadata.format === 'jpeg' ? ['jpg', 'jpeg'] : [metadata.format]).includes(ext || '') || (metadata.pages || 1) > 1)
-                throw new BadRequestException('Only static JPG, PNG and WEBP images are supported');
-            preview = await image.rotate().resize({ width: 2048, height: 2048, fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 88 }).toBuffer();
+export class MediaService {
+    constructor(
+        private readonly repository: IWorkflowRepository,
+        private readonly media: IContentMedia,
+        private readonly context: WorkflowContextService,
+        private readonly thumbnails: ThumbnailService
+    ) {}
+
+    async upload(actor: User, batchId: string, file: File) {
+        await this.context.batch(batchId)
+        if (!file || file.size === 0 || file.size > config.media.maxUploadMb * 1024 * 1024) {
+            throw new BadRequestException("Invalid file size")
         }
-        catch (error) {
-            if (error instanceof BadRequestException) throw error;
-            throw new BadRequestException('Invalid or unsupported image');
-        }
-        const assetId = id();
-        const originalStorageKey = `batches/${batchId}/original/${assetId}.${metadata.format}`;
-        const safePreviewStorageKey = `batches/${batchId}/preview/${assetId}.jpg`;
-        const sha256 = createHash('sha256').update(original).digest('hex');
+        const original = Buffer.from(await file.arrayBuffer())
+        let metadata: Metadata
+        let preview: Buffer
         try {
-            await this.media.put(originalStorageKey, original);
-            await this.media.put(safePreviewStorageKey, preview);
-            const asset = await this.repository.transaction(async (store) => {
-                const batch = await this.context.batch(batchId, store, true);
-                if (batch.status !== 'DRAFT' && batch.status !== 'READY')
-                    throw new ConflictException('Batch is locked for processing');
-                const assets = await store.find('asset', { batchId });
-                const duplicate = assets.find(a => a.sha256 === sha256 && !a.deletedAt);
-                if (duplicate)
-                    return duplicate;
-                if (assets.filter(asset => !asset.deletedAt).length >= config.media.maxBatchFiles)
-                    throw new BadRequestException('Batch photo limit reached');
-                const saved = await store.save('asset', {
-                    id: assetId, batchId, originalStorageKey, safePreviewStorageKey, sha256, mime: file.type, byteSize: file.size, width: metadata.width!, height: metadata.height!, deletedAt: null
-                });
-                await store.save('batch', { ...batch, status: 'READY' });
-                await this.context.audit(store, actor, 'ASSET_UPLOADED', 'batch', batchId, { assetId });
-                return saved;
-            });
-            if (asset.id !== assetId) {
-                await this.media.remove(originalStorageKey);
-                await this.media.remove(safePreviewStorageKey);
+            metadata = await sharp(original, { limitInputPixels: false }).metadata()
+            if ((metadata.width || 0) * (metadata.height || 0) > 40000000) {
+                throw new BadRequestException("Image resolution exceeds 40 megapixels")
             }
-            return asset;
+            const image = sharp(original, { limitInputPixels: 40000000, failOn: "warning" })
+            const mime = (
+                { jpeg: "image/jpeg", png: "image/png", webp: "image/webp" } as Record<
+                    string,
+                    string
+                >
+            )[metadata.format || ""]
+            const ext = file.name.split(".").pop()?.toLowerCase()
+            if (
+                !mime ||
+                mime !== file.type ||
+                !(metadata.format === "jpeg" ? ["jpg", "jpeg"] : [metadata.format]).includes(
+                    ext || ""
+                ) ||
+                (metadata.pages || 1) > 1
+            ) {
+                throw new BadRequestException("Only static JPG, PNG and WEBP images are supported")
+            }
+            preview = await image
+                .rotate()
+                .resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true })
+                .jpeg({ quality: 88 })
+                .toBuffer()
+        } catch (error) {
+            if (error instanceof BadRequestException) {
+                throw error
+            }
+            throw new BadRequestException("Invalid or unsupported image")
         }
-        catch (error) {
+        const assetId = id()
+        const originalStorageKey = `batches/${batchId}/original/${assetId}.${metadata.format}`
+        const safePreviewStorageKey = `batches/${batchId}/preview/${assetId}.jpg`
+        const sha256 = createHash("sha256").update(original).digest("hex")
+        try {
+            await this.media.put(originalStorageKey, original)
+            await this.media.put(safePreviewStorageKey, preview)
+            const asset = await this.repository.transaction(async (store) => {
+                const batch = await this.context.batch(batchId, store, true)
+                if (batch.status !== "DRAFT" && batch.status !== "READY") {
+                    throw new ConflictException("Batch is locked for processing")
+                }
+                const assets = await store.find("asset", { batchId })
+                const duplicate = assets.find((a) => a.sha256 === sha256 && !a.deletedAt)
+                if (duplicate) {
+                    return duplicate
+                }
+                if (
+                    assets.filter((asset) => !asset.deletedAt).length >= config.media.maxBatchFiles
+                ) {
+                    throw new BadRequestException("Batch photo limit reached")
+                }
+                const saved = await store.save("asset", {
+                    id: assetId,
+                    batchId,
+                    originalStorageKey,
+                    safePreviewStorageKey,
+                    sha256,
+                    mime: file.type,
+                    byteSize: file.size,
+                    width: metadata.width!,
+                    height: metadata.height!,
+                    deletedAt: null
+                })
+                await store.save("batch", { ...batch, status: "READY" })
+                await this.context.audit(store, actor, "ASSET_UPLOADED", "batch", batchId, {
+                    assetId
+                })
+                return saved
+            })
+            if (asset.id !== assetId) {
+                await this.media.remove(originalStorageKey)
+                await this.media.remove(safePreviewStorageKey)
+            }
+            return asset
+        } catch (error) {
             const cleanup = await Promise.allSettled([
                 this.media.remove(originalStorageKey),
-                this.media.remove(safePreviewStorageKey),
-            ]);
-            if (cleanup.some(result => result.status === 'rejected')) {
-                logger.warn('Failed upload media requires cleanup', { assetId });
+                this.media.remove(safePreviewStorageKey)
+            ])
+            if (cleanup.some((result) => result.status === "rejected")) {
+                logger.warn("Failed upload media requires cleanup", { assetId })
             }
-            throw error;
+            throw error
         }
     }
-    async previews(assetId: string) {
-        const asset = await this.repository.get('asset', assetId);
-        if (!asset || asset.deletedAt) throw new NotFoundException('Asset not found');
-        await this.context.batch(asset.batchId);
-        return this.thumbnails.previews(asset.safePreviewStorageKey, `batches/${asset.batchId}/thumbnail/${asset.id}.jpg`);
-    }
-    async signedUrl(assetId: string) {
-        const asset = await this.repository.get('asset', assetId);
-        if (!asset || asset.deletedAt) throw new NotFoundException('Asset not found');
-        return this.media.signedUrl(asset.safePreviewStorageKey, config.media.signedTtl);
-    }
-    async assetFile(assetId: string, original = false) {
-        const asset = await this.repository.get('asset', assetId);
-        if (!asset || asset.deletedAt)
-            throw new NotFoundException('Asset not found');
-        await this.context.batch(asset.batchId);
-        return {
-            data: await this.media.get(original ? asset.originalStorageKey : asset.safePreviewStorageKey), mime: original ? asset.mime : 'image/jpeg'
-        };
-    }
-    async renderFile(renderId: string) {
-        const render = await this.repository.get('render', renderId);
-        if (!render)
-            throw new NotFoundException('Render not found');
-        const ai = await this.repository.get('aiResult', render.aiResultId);
-        await this.context.job(ai!.jobId);
-        return this.media.get(render.storageKey);
-    }
-    async deleteAsset(actor: User, assetId: string) {
 
+    async previews(assetId: string) {
+        const asset = await this.repository.get("asset", assetId)
+        if (!asset || asset.deletedAt) {
+            throw new NotFoundException("Asset not found")
+        }
+        await this.context.batch(asset.batchId)
+        return this.thumbnails.previews(
+            asset.safePreviewStorageKey,
+            `batches/${asset.batchId}/thumbnail/${asset.id}.jpg`
+        )
+    }
+
+    async signedUrl(assetId: string) {
+        const asset = await this.repository.get("asset", assetId)
+        if (!asset || asset.deletedAt) {
+            throw new NotFoundException("Asset not found")
+        }
+        return this.media.signedUrl(asset.safePreviewStorageKey, config.media.signedTtl)
+    }
+
+    async assetFile(assetId: string, original = false) {
+        const asset = await this.repository.get("asset", assetId)
+        if (!asset || asset.deletedAt) {
+            throw new NotFoundException("Asset not found")
+        }
+        await this.context.batch(asset.batchId)
+        return {
+            data: await this.media.get(
+                original ? asset.originalStorageKey : asset.safePreviewStorageKey
+            ),
+            mime: original ? asset.mime : "image/jpeg"
+        }
+    }
+
+    async renderFile(renderId: string) {
+        const render = await this.repository.get("render", renderId)
+        if (!render) {
+            throw new NotFoundException("Render not found")
+        }
+        const ai = await this.repository.get("aiResult", render.aiResultId)
+        await this.context.job(ai!.jobId)
+        return this.media.get(render.storageKey)
+    }
+
+    async deleteAsset(actor: User, assetId: string) {
         return this.repository.transaction(async (store) => {
-            const asset = await store.get('asset', assetId);
-            if (!asset)
-                throw new NotFoundException('Asset not found');
-            await this.context.batch(asset.batchId, store, true);
-            if ((await store.find('job', { batchId: asset.batchId })).length)
-                throw new ConflictException('Asset is referenced by a job');
-            await store.save('asset', { ...asset, deletedAt: new Date() });
-            await this.context.audit(store, actor, 'ASSET_ARCHIVED', 'asset', assetId);
-            return null;
-        });
+            const asset = await store.get("asset", assetId)
+            if (!asset) {
+                throw new NotFoundException("Asset not found")
+            }
+            await this.context.batch(asset.batchId, store, true)
+            if ((await store.find("job", { batchId: asset.batchId })).length) {
+                throw new ConflictException("Asset is referenced by a job")
+            }
+            await store.save("asset", { ...asset, deletedAt: new Date() })
+            await this.context.audit(store, actor, "ASSET_ARCHIVED", "asset", assetId)
+            return null
+        })
     }
 }

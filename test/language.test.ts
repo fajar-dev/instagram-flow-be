@@ -1,6 +1,12 @@
 import { describe, test, expect, beforeAll, afterAll, beforeEach } from "bun:test"
 import { Hono } from "hono"
-import { initTestDatabase, destroyTestDatabase, cleanTestDatabase, createTestApp, request } from "./setup"
+import {
+    initTestDatabase,
+    destroyTestDatabase,
+    cleanTestDatabase,
+    createTestApp,
+    request
+} from "./setup"
 import { createUserData, resetCounters } from "./helpers"
 import en from "../src/core/i18n/en.json"
 import id from "../src/core/i18n/id.json"
@@ -36,7 +42,7 @@ describe("Language detection", () => {
 
     test("uses Indonesian when Accept-Language: id is sent", async () => {
         const { headers } = await request(app, "/api/user", {
-            headers: { "Accept-Language": "id" },
+            headers: { "Accept-Language": "id" }
         })
 
         expect(headers.get("Content-Language")).toBe("id")
@@ -44,7 +50,7 @@ describe("Language detection", () => {
 
     test("uses English when Accept-Language: en is sent", async () => {
         const { headers } = await request(app, "/api/user", {
-            headers: { "Accept-Language": "en" },
+            headers: { "Accept-Language": "en" }
         })
 
         expect(headers.get("Content-Language")).toBe("en")
@@ -52,7 +58,7 @@ describe("Language detection", () => {
 
     test("resolves regional variants to the base language (id-ID -> id)", async () => {
         const { headers } = await request(app, "/api/user", {
-            headers: { "Accept-Language": "id-ID,id;q=0.9" },
+            headers: { "Accept-Language": "id-ID,id;q=0.9" }
         })
 
         expect(headers.get("Content-Language")).toBe("id")
@@ -60,7 +66,7 @@ describe("Language detection", () => {
 
     test("falls back to English when the requested language is unsupported", async () => {
         const { headers } = await request(app, "/api/user", {
-            headers: { "Accept-Language": "fr-FR,fr;q=0.9" },
+            headers: { "Accept-Language": "fr-FR,fr;q=0.9" }
         })
 
         expect(headers.get("Content-Language")).toBe("en")
@@ -76,7 +82,7 @@ describe("Localized response messages", () => {
         const { status, body } = await request(app, "/api/auth/register", {
             method: "POST",
             headers: { "Accept-Language": "id" },
-            body: createUserData(),
+            body: createUserData()
         })
 
         expect(status).toBe(201)
@@ -86,7 +92,7 @@ describe("Localized response messages", () => {
     test("success message stays in English by default", async () => {
         const { status, body } = await request(app, "/api/auth/register", {
             method: "POST",
-            body: createUserData(),
+            body: createUserData()
         })
 
         expect(status).toBe(201)
@@ -95,7 +101,7 @@ describe("Localized response messages", () => {
 
     test("exception message is translated to Indonesian", async () => {
         const { status, body } = await request(app, "/api/user", {
-            headers: { "Accept-Language": "id" },
+            headers: { "Accept-Language": "id" }
         })
 
         expect(status).toBe(401)
@@ -106,7 +112,7 @@ describe("Localized response messages", () => {
         const { status, body } = await request(app, "/api/auth/register", {
             method: "POST",
             headers: { "Accept-Language": "id" },
-            body: { name: "", email: "not-an-email", password: "123" },
+            body: { name: "", email: "not-an-email", password: "123" }
         })
 
         expect(status).toBe(422)

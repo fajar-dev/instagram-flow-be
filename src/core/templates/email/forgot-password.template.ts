@@ -19,7 +19,10 @@ export interface ForgotPasswordEmailProps {
 /**
  * Generates simple, clean HTML and plain text for Forgot Password email in English.
  */
-export function renderForgotPasswordEmail(props: ForgotPasswordEmailProps): { html: string; text: string } {
+export function renderForgotPasswordEmail(props: ForgotPasswordEmailProps): {
+    html: string
+    text: string
+} {
     const safeName = escapeHtml(props.name || "User")
     const safeResetLink = escapeHtml(props.resetLink)
     const expiresInHours = props.expiresInHours ?? 10
@@ -40,7 +43,7 @@ export function renderForgotPasswordEmail(props: ForgotPasswordEmailProps): { ht
         `If you did not request a password reset, you can safely ignore this email.`,
         "",
         `Thank you,`,
-        copyrightText,
+        copyrightText
     ].join("\n")
 
     // Simple, clean HTML email

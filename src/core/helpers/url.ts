@@ -2,7 +2,7 @@
 export function isHttpsUrl(value: string): boolean {
     try {
         const url = new URL(value)
-        return url.protocol === 'https:' && Boolean(url.hostname) && !url.username && !url.password
+        return url.protocol === "https:" && Boolean(url.hostname) && !url.username && !url.password
     } catch {
         return false
     }

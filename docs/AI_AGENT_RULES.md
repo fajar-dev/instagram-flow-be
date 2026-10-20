@@ -11,3 +11,7 @@ Baca [AGENTS.md](../AGENTS.md) untuk aturan utama, lalu [arsitektur](ARCHITECTUR
 7. Perbarui dokumentasi aktif dan changelog. Audit bertanggal serta PRD awal adalah arsip; jangan mengambil instruksi role/menu/storage lama dari arsip sebagai aturan sekarang.
 
 Jangan commit `.env`, token, credential export n8n atau data pribadi. Jangan menjalankan migration/seeder sebagai job. Jangan menambahkan facade social atau media proxy generik.
+
+## Format source
+
+`bun run format` menjalankan Prettier lalu ESLint dan membangun ulang workflow JSON n8n dari source. `bun run lint` memeriksa jarak fungsi/method, batas statement per baris dan braces. Gunakan bersama typecheck, test dan build sebelum menyerahkan perubahan. Backend mengikuti indentasi empat spasi dan double quote seperti modul User; secrets, hasil build dan media tidak termasuk target formatter.

@@ -1,2 +1,3 @@
-import { z } from 'zod';
-export const settingsSchema = z.object({ dispatchEnabled: z.boolean() }).strict();
+import { z } from "zod"
+
+export const settingsSchema = z.object({ dispatchEnabled: z.boolean() }).strict()

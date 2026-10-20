@@ -7,6 +7,6 @@ export const transporter = nodemailer.createTransport({
     secure: config.mail.port === 465,
     auth: {
         user: config.mail.user,
-        pass: config.mail.pass,
-    },
+        pass: config.mail.pass
+    }
 })

@@ -1,0 +1,8 @@
+node_modules
+bun.lock
+dist
+coverage
+secrets
+public
+.env*
+integrations/n8n/ig-flow.workflow.json

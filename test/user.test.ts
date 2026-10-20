@@ -6,7 +6,7 @@ import {
     cleanTestDatabase,
     createTestApp,
     request,
-    registerAndLogin,
+    registerAndLogin
 } from "./setup"
 import { createUserData, resetCounters } from "./helpers"
 
@@ -42,7 +42,7 @@ describe("User - Auth Required", () => {
     test("POST /api/user should fail without auth", async () => {
         const { status, body } = await request(app, "/api/user", {
             method: "POST",
-            body: createUserData(),
+            body: createUserData()
         })
         expect(status).toBe(401)
         expect(body.success).toBe(false)
@@ -57,7 +57,7 @@ describe("User - Auth Required", () => {
     test("PUT /api/user/:id should fail without auth", async () => {
         const { status, body } = await request(app, "/api/user/1", {
             method: "PUT",
-            body: { name: "Updated" },
+            body: { name: "Updated" }
         })
         expect(status).toBe(401)
         expect(body.success).toBe(false)
@@ -65,7 +65,7 @@ describe("User - Auth Required", () => {
 
     test("DELETE /api/user/:id should fail without auth", async () => {
         const { status, body } = await request(app, "/api/user/1", {
-            method: "DELETE",
+            method: "DELETE"
         })
         expect(status).toBe(401)
         expect(body.success).toBe(false)
@@ -74,7 +74,7 @@ describe("User - Auth Required", () => {
     test("POST /api/upload should fail without auth", async () => {
         const res = await app.request("/api/upload", {
             method: "POST",
-            body: new FormData(),
+            body: new FormData()
         })
         expect(res.status).toBe(401)
     })
@@ -92,7 +92,7 @@ describe("POST /api/user", () => {
         const { status, body } = await request(app, "/api/user", {
             method: "POST",
             headers,
-            body: userData,
+            body: userData
         })
 
         expect(status).toBe(201)
@@ -113,7 +113,7 @@ describe("POST /api/user", () => {
         const { status, body } = await request(app, "/api/user", {
             method: "POST",
             headers,
-            body: { email: "test@example.com", password: "password123" },
+            body: { email: "test@example.com", password: "password123" }
         })
 
         expect(status).toBe(422)
@@ -126,7 +126,7 @@ describe("POST /api/user", () => {
         const { status, body } = await request(app, "/api/user", {
             method: "POST",
             headers,
-            body: { name: "Test", email: "not-an-email", password: "password123" },
+            body: { name: "Test", email: "not-an-email", password: "password123" }
         })
 
         expect(status).toBe(422)
@@ -139,7 +139,7 @@ describe("POST /api/user", () => {
         const { status, body } = await request(app, "/api/user", {
             method: "POST",
             headers,
-            body: { name: "Test", email: "test@example.com", password: "123" },
+            body: { name: "Test", email: "test@example.com", password: "123" }
         })
 
         expect(status).toBe(422)
@@ -155,8 +155,8 @@ describe("POST /api/user", () => {
             body: {
                 name: "Another User",
                 email: user.email, // duplicate
-                password: "password123",
-            },
+                password: "password123"
+            }
         })
 
         expect(status).toBe(400)
@@ -175,7 +175,7 @@ describe("GET /api/user", () => {
 
         const { status, body } = await request(app, "/api/user", {
             method: "GET",
-            headers,
+            headers
         })
 
         expect(status).toBe(200)
@@ -198,17 +198,17 @@ describe("GET /api/user", () => {
         await request(app, "/api/user", {
             method: "POST",
             headers,
-            body: { name: "Alice Cooper", email: "cooper@example.com", password: "password123" },
+            body: { name: "Alice Cooper", email: "cooper@example.com", password: "password123" }
         })
         await request(app, "/api/user", {
             method: "POST",
             headers,
-            body: { name: "Bob Dylan", email: "dylan@example.com", password: "password123" },
+            body: { name: "Bob Dylan", email: "dylan@example.com", password: "password123" }
         })
 
         const { body } = await request(app, "/api/user?q=Cooper", {
             method: "GET",
-            headers,
+            headers
         })
 
         expect(body.data.length).toBe(1)
@@ -218,32 +218,64 @@ describe("GET /api/user", () => {
     test("should sort by name ascending", async () => {
         const { headers } = await registerAndLogin(app)
 
-        await request(app, "/api/user", { method: "POST", headers, body: { name: "Zed Sortable", email: "zed-sort@example.com", password: "password123" } })
-        await request(app, "/api/user", { method: "POST", headers, body: { name: "Amy Sortable", email: "amy-sort@example.com", password: "password123" } })
-        await request(app, "/api/user", { method: "POST", headers, body: { name: "Milo Sortable", email: "milo-sort@example.com", password: "password123" } })
+        await request(app, "/api/user", {
+            method: "POST",
+            headers,
+            body: { name: "Zed Sortable", email: "zed-sort@example.com", password: "password123" }
+        })
+        await request(app, "/api/user", {
+            method: "POST",
+            headers,
+            body: { name: "Amy Sortable", email: "amy-sort@example.com", password: "password123" }
+        })
+        await request(app, "/api/user", {
+            method: "POST",
+            headers,
+            body: { name: "Milo Sortable", email: "milo-sort@example.com", password: "password123" }
+        })
 
         const { status, body } = await request(app, "/api/user?q=Sortable&sortBy=name&order=ASC", {
             method: "GET",
-            headers,
+            headers
         })
 
         expect(status).toBe(200)
-        expect(body.data.map((u: any) => u.name)).toEqual(["Amy Sortable", "Milo Sortable", "Zed Sortable"])
+        expect(body.data.map((u: any) => u.name)).toEqual([
+            "Amy Sortable",
+            "Milo Sortable",
+            "Zed Sortable"
+        ])
     })
 
     test("should sort by name descending", async () => {
         const { headers } = await registerAndLogin(app)
 
-        await request(app, "/api/user", { method: "POST", headers, body: { name: "Zed Sortable", email: "zed-sort@example.com", password: "password123" } })
-        await request(app, "/api/user", { method: "POST", headers, body: { name: "Amy Sortable", email: "amy-sort@example.com", password: "password123" } })
-        await request(app, "/api/user", { method: "POST", headers, body: { name: "Milo Sortable", email: "milo-sort@example.com", password: "password123" } })
+        await request(app, "/api/user", {
+            method: "POST",
+            headers,
+            body: { name: "Zed Sortable", email: "zed-sort@example.com", password: "password123" }
+        })
+        await request(app, "/api/user", {
+            method: "POST",
+            headers,
+            body: { name: "Amy Sortable", email: "amy-sort@example.com", password: "password123" }
+        })
+        await request(app, "/api/user", {
+            method: "POST",
+            headers,
+            body: { name: "Milo Sortable", email: "milo-sort@example.com", password: "password123" }
+        })
 
         const { body } = await request(app, "/api/user?q=Sortable&sortBy=name&order=DESC", {
             method: "GET",
-            headers,
+            headers
         })
 
-        expect(body.data.map((u: any) => u.name)).toEqual(["Zed Sortable", "Milo Sortable", "Amy Sortable"])
+        expect(body.data.map((u: any) => u.name)).toEqual([
+            "Zed Sortable",
+            "Milo Sortable",
+            "Amy Sortable"
+        ])
     })
 })
 
@@ -259,13 +291,13 @@ describe("GET /api/user/:id", () => {
         const createRes = await request(app, "/api/user", {
             method: "POST",
             headers,
-            body: userData,
+            body: userData
         })
         const userId = createRes.body.data.id
 
         const { status, body } = await request(app, `/api/user/${userId}`, {
             method: "GET",
-            headers,
+            headers
         })
 
         expect(status).toBe(200)
@@ -281,7 +313,7 @@ describe("GET /api/user/:id", () => {
 
         const { status, body } = await request(app, "/api/user/99999", {
             method: "GET",
-            headers,
+            headers
         })
 
         expect(status).toBe(404)
@@ -301,14 +333,14 @@ describe("PUT /api/user/:id", () => {
         const createRes = await request(app, "/api/user", {
             method: "POST",
             headers,
-            body: createUserData(),
+            body: createUserData()
         })
         const userId = createRes.body.data.id
 
         const { status, body } = await request(app, `/api/user/${userId}`, {
             method: "PUT",
             headers,
-            body: { name: "Updated Name", isActive: false },
+            body: { name: "Updated Name", isActive: false }
         })
 
         expect(status).toBe(200)
@@ -330,13 +362,13 @@ describe("DELETE /api/user/:id", () => {
         const createRes = await request(app, "/api/user", {
             method: "POST",
             headers,
-            body: createUserData(),
+            body: createUserData()
         })
         const userId = createRes.body.data.id
 
         const { status, body } = await request(app, `/api/user/${userId}`, {
             method: "DELETE",
-            headers,
+            headers
         })
 
         expect(status).toBe(200)
@@ -346,7 +378,7 @@ describe("DELETE /api/user/:id", () => {
         // Verify it's deleted
         const { status: getStatus } = await request(app, `/api/user/${userId}`, {
             method: "GET",
-            headers,
+            headers
         })
         expect(getStatus).toBe(404)
     })
@@ -368,12 +400,12 @@ describe("POST /api/upload", () => {
         const res = await app.request("/api/upload", {
             method: "POST",
             headers: {
-                Authorization: `Bearer ${accessToken}`,
+                Authorization: `Bearer ${accessToken}`
             },
-            body: formData,
+            body: formData
         })
 
-        const body = await res.json() as any
+        const body = (await res.json()) as any
 
         expect(res.status).toBe(200)
         expect(body.success).toBe(true)

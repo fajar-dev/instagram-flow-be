@@ -43,3 +43,8 @@ Audit bertanggal dan PRD awal adalah arsip, bukan aturan aktif. Jangan mengambil
 ## Instagram publishing — 19 Oktober 2026
 
 Publikasi Graph API memakai Instagram Login (graph.instagram.com, Instagram User access token, tanpa Facebook Page) melalui aksi eksplisit mendukung daftar multi-account, tetapi satu project hanya boleh diposting satu kali ke satu akun, langsung/terjadwal. Credential hanya di JSON privat server (bukan database); contoh tanpa secret boleh di-commit. Ready for review hanya mempunyai keputusan Publish atau Reject. Snapshot dan jadwal berada di tabel publications (migration tabel ke-14; constraint dan normalisasi ditambahkan pada migration 15–18). Worker posts:dispatch terpisah dari jobs:dispatch. Settings menampilkan daftar akun dan kontrol dispatcher AI. Jangan mengulang publish saat hasil jaringan ambigu; lakukan rekonsiliasi container.
+
+## Keterbacaan dan format
+
+Jalankan `bun run format` untuk merapikan source dan `bun run lint` untuk memeriksa aturan. Pisahkan fungsi/method dan blok import dari deklarasi berikutnya dengan satu baris kosong. Gunakan kurung kurawal pada kondisi/loop dan satu statement per baris; jangan memadatkan beberapa operasi dalam satu baris. Formatter memecah object, argumen dan ekspresi panjang tanpa mengubah kontrak bisnis.
+Backend memakai indentasi 4 spasi, double quote, tanpa semicolon dan tanpa trailing comma, mengikuti UserService. Workflow JSON n8n dibangun ulang dari source setelah format; ini tidak melakukan deploy.

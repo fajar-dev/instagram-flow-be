@@ -12,10 +12,9 @@ export function createUserData(overrides: Record<string, any> = {}) {
         name: `Test User ${userCounter}`,
         email: `testuser${userCounter}@example.com`,
         password: "password123",
-        ...overrides,
+        ...overrides
     }
 }
-
 
 // ── Response Assertions ─────────────────────────────────────────────────────
 
@@ -56,18 +55,31 @@ export function resetCounters() {
 }
 
 /** Stores a deterministic reset token for API tests without sending email. */
-export async function createPasswordResetToken(userId: number, email: string, expiresAt = new Date(Date.now() + 36000000)) {
+export async function createPasswordResetToken(
+    userId: number,
+    email: string,
+    expiresAt = new Date(Date.now() + 36000000)
+) {
     const { AppDataSource } = await import("../src/config/database")
-    const { PasswordResetToken } = await import("../src/modules/auth/entities/password-reset-token.entity")
+    const { PasswordResetToken } =
+        await import("../src/modules/auth/entities/password-reset-token.entity")
     const crypto = await import("node:crypto")
     const token = crypto.randomBytes(32).toString("hex")
     await AppDataSource.getRepository(PasswordResetToken).save({
-        userId, email, expiresAt,
-        tokenHash: crypto.createHash("sha256").update(token).digest("hex"),
+        userId,
+        email,
+        expiresAt,
+        tokenHash: crypto.createHash("sha256").update(token).digest("hex")
     })
     return token
 }
 
 export function createBatchData() {
-    return { projectName: 'Bridge monitoring', activity: 'Sensor installation', location: 'Jakarta', documentationDate: '2026-01-01', publicationPermission: true as const }
+    return {
+        projectName: "Bridge monitoring",
+        activity: "Sensor installation",
+        location: "Jakarta",
+        documentationDate: "2026-01-01",
+        publicationPermission: true as const
+    }
 }

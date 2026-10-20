@@ -1,4 +1,4 @@
-import { listQuerySchema } from '../../core/validators/list-query.validator'
+import { listQuerySchema } from "../../core/validators/list-query.validator"
 import { UserListSerializer } from "./serializers/user-list.serialize"
 import { Context } from "hono"
 import { UserService } from "./user.service"
@@ -16,7 +16,14 @@ export class UserController {
         const { data, total } = await this.service.getAll(page, limit, q, filters, sortBy, order)
 
         const serialized = await UserListSerializer.collection(data)
-        return ApiResponse.paginate(c, serialized, total, page, limit, 'Users retrieved successfully')
+        return ApiResponse.paginate(
+            c,
+            serialized,
+            total,
+            page,
+            limit,
+            "Users retrieved successfully"
+        )
     }
 
     async show(c: Context) {

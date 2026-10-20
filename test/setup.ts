@@ -19,14 +19,14 @@ import { requestLogger } from "../src/core/middlewares/logger.middleware"
 const testDbName = config.database.testName
 
 if (testDbName === config.database.name || !/^[a-zA-Z0-9_]+_test$/.test(testDbName)) {
-    throw new Error('Tests require a dedicated *_test database different from DB_NAME')
+    throw new Error("Tests require a dedicated *_test database different from DB_NAME")
 }
 
 const TestDataSource = new DataSource({
     ...databaseOptions,
     database: testDbName,
     dropSchema: true,
-    logging: false,
+    logging: false
 })
 
 // ── Database Lifecycle ──────────────────────────────────────────────────────
@@ -50,7 +50,9 @@ export async function destroyTestDatabase() {
 
 export async function cleanTestDatabase() {
     mockExternalServices()
-    if (!TestDataSource.isInitialized) return
+    if (!TestDataSource.isInitialized) {
+        return
+    }
 
     const queryRunner = TestDataSource.createQueryRunner()
     try {
@@ -97,7 +99,7 @@ export function createTestApp(): Hono {
 
         return ApiResponse.error(c, "Internal Server Error", 500, {
             message: err.message,
-            stack: err.stack,
+            stack: err.stack
         })
     })
 
@@ -117,7 +119,7 @@ export async function request(app: Hono, path: string, options: RequestOptions =
 
     const init: RequestInit = {
         method,
-        headers: { "Content-Type": "application/json", ...headers },
+        headers: { "Content-Type": "application/json", ...headers }
     }
 
     if (body) {
@@ -125,7 +127,7 @@ export async function request(app: Hono, path: string, options: RequestOptions =
     }
 
     const res = await app.request(path, init)
-    const json = await res.json() as any
+    const json = (await res.json()) as any
 
     return { status: res.status, body: json, headers: res.headers }
 }
@@ -142,11 +144,10 @@ export async function registerAndLogin(
         throw new Error(`Register failed: ${JSON.stringify(regRes.body)}`)
     }
 
-
     // Login
     const loginRes = await request(app, "/api/auth/login", {
         method: "POST",
-        body: { email: userData.email, password: userData.password },
+        body: { email: userData.email, password: userData.password }
     })
     if (!loginRes.body.success) {
         throw new Error(`Login failed: ${JSON.stringify(loginRes.body)}`)
@@ -156,6 +157,6 @@ export async function registerAndLogin(
         accessToken: loginRes.body.data.accessToken,
         refreshToken: loginRes.body.data.refreshToken,
         headers: { Authorization: `Bearer ${loginRes.body.data.accessToken}` },
-        user: loginRes.body.data.user,
+        user: loginRes.body.data.user
     }
 }

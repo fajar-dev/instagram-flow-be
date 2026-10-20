@@ -4,7 +4,9 @@ import { translate } from "./i18n"
 
 // Translates each item's message in errors arrays (e.g. ValidationException's [{ field, message }]).
 function translateErrors(c: Context, errors: unknown) {
-    if (!Array.isArray(errors)) return errors
+    if (!Array.isArray(errors)) {
+        return errors
+    }
 
     return errors.map((error) =>
         error && typeof error === "object" && typeof error.message === "string"
@@ -25,13 +27,16 @@ export class ApiResponse {
         status: number = 200,
         meta?: Record<string, unknown>
     ) {
-        return c.json({
-            success: true,
-            statusCode: status,
-            message: translate(c, message),
-            data: data,
-            ...(meta && { meta })
-        }, status as ContentfulStatusCode)
+        return c.json(
+            {
+                success: true,
+                statusCode: status,
+                message: translate(c, message),
+                data: data,
+                ...(meta && { meta })
+            },
+            status as ContentfulStatusCode
+        )
     }
 
     static paginate<T>(
@@ -44,20 +49,23 @@ export class ApiResponse {
     ) {
         const lastPage = Math.ceil(total / limit)
 
-        return c.json({
-            success: true,
-            statusCode: 200,
-            message: translate(c, message),
-            data: data,
-            meta: {
-                total,
-                perPage: limit,
-                currentPage: page,
-                lastPage: lastPage,
-                from: total > (page - 1) * limit ? (page - 1) * limit + 1 : 0,
-                to: total > (page - 1) * limit ? Math.min(page * limit, total) : 0
-            }
-        }, 200)
+        return c.json(
+            {
+                success: true,
+                statusCode: 200,
+                message: translate(c, message),
+                data: data,
+                meta: {
+                    total,
+                    perPage: limit,
+                    currentPage: page,
+                    lastPage: lastPage,
+                    from: total > (page - 1) * limit ? (page - 1) * limit + 1 : 0,
+                    to: total > (page - 1) * limit ? Math.min(page * limit, total) : 0
+                }
+            },
+            200
+        )
     }
 
     static error(
@@ -66,11 +74,14 @@ export class ApiResponse {
         status: number = 500,
         errors: unknown = null
     ) {
-        return c.json({
-            success: false,
-            statusCode: status,
-            message: translate(c, message),
-            errors: translateErrors(c, errors)
-        }, status as ContentfulStatusCode)
+        return c.json(
+            {
+                success: false,
+                statusCode: status,
+                message: translate(c, message),
+                errors: translateErrors(c, errors)
+            },
+            status as ContentfulStatusCode
+        )
     }
 }

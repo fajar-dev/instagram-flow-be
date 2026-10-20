@@ -1,30 +1,43 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm"
+
 @Entity("draft_revisions")
 export class Revision {
     @PrimaryColumn({ type: "varchar", length: 36 })
-    id!: string;
+    id!: string
+
     @Column({ type: "varchar", name: "draft_id", length: 36 })
-    draftId!: string;
+    draftId!: string
+
     @Column({ type: "int", name: "revision_no" })
-    revisionNo!: number;
+    revisionNo!: number
+
     @Column({ type: "varchar", name: "primary_asset_id", length: 36 })
-    primaryAssetId!: string;
+    primaryAssetId!: string
+
     @Column({ type: "varchar", name: "title", length: 300 })
-    title!: string;
+    title!: string
+
     @Column({ type: "text", name: "caption" })
-    caption!: string;
+    caption!: string
+
     @Column({ type: "json", name: "hashtags" })
-    hashtags!: string[];
+    hashtags!: string[]
+
     @Column({ type: "varchar", name: "location", length: 200 })
-    location!: string;
+    location!: string
+
     @Column({ type: "varchar", name: "activity", length: 200 })
-    activity!: string;
+    activity!: string
+
     @Column({ type: "varchar", name: "content_hash", length: 64 })
-    contentHash!: string;
+    contentHash!: string
+
     @Column({ type: "int", name: "created_by", nullable: true })
-    createdBy!: number | null;
+    createdBy!: number | null
+
     @CreateDateColumn({ name: "created_at", type: "datetime", precision: 6 })
-    createdAt!: Date;
+    createdAt!: Date
+
     @UpdateDateColumn({ name: "updated_at", type: "datetime", precision: 6 })
-    updatedAt!: Date;
+    updatedAt!: Date
 }

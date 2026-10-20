@@ -1,6 +1,21 @@
-import type { Revision } from '../entities/revision.entity';
+import type { Revision } from "../entities/revision.entity"
 
-type PublicFields = Pick<Revision, 'id' | 'draftId' | 'revisionNo' | 'primaryAssetId' | 'title' | 'caption' | 'hashtags' | 'location' | 'activity' | 'contentHash' | 'createdBy' | 'createdAt' | 'updatedAt'>;
+type PublicFields = Pick<
+    Revision,
+    | "id"
+    | "draftId"
+    | "revisionNo"
+    | "primaryAssetId"
+    | "title"
+    | "caption"
+    | "hashtags"
+    | "location"
+    | "activity"
+    | "contentHash"
+    | "createdBy"
+    | "createdAt"
+    | "updatedAt"
+>
 
 export class RevisionSerializer {
     static single(value: PublicFields) {
@@ -17,11 +32,11 @@ export class RevisionSerializer {
             contentHash: value.contentHash,
             createdBy: value.createdBy,
             createdAt: value.createdAt,
-            updatedAt: value.updatedAt,
-        };
+            updatedAt: value.updatedAt
+        }
     }
 
     static collection(values: PublicFields[]) {
-        return values.map(value => this.single(value));
+        return values.map((value) => this.single(value))
     }
 }

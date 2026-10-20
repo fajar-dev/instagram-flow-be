@@ -1,3 +1,16 @@
+## 2026-10-20 — Keterbacaan kode
+
+## 20 Oktober 2026 — audit struktur lanjutan
+
+Audit keterbacaan: pemilihan sumber publikasi dipisahkan ke `resolveSourceKey`; lock project/draft, idempotency dan cleanup snapshot tetap berada pada transaksi enqueue. Tidak mengubah kontrak API atau status publikasi.
+
+- Merapikan source dan tests: jarak fungsi/method, blok import, indentasi, kondisi berkurung kurawal dan pemecahan object/parameter panjang.
+- Menambahkan command format dan aturan lint untuk menjaga pola yang sama. Perubahan alur reporting/breadcrumb yang sudah ada tetap dipertahankan.
+
+## 2026-10-20 — Seluruh periode pada reporting
+
+Overview, daftar Content dan count status tidak lagi memakai batas default 30 hari. Parameter days tetap opsional untuk filter eksplisit; pagination tetap berlaku.
+
 # Riwayat perubahan IG Flow — backend
 
 ## 2026-10-19 — Instagram multi-account publishing

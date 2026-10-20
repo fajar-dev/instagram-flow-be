@@ -1,26 +1,37 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm"
+
 @Entity("renders")
 export class Render {
     @PrimaryColumn({ type: "varchar", length: 36 })
-    id!: string;
+    id!: string
+
     @Column({ type: "varchar", name: "ai_result_id", length: 36 })
-    aiResultId!: string;
+    aiResultId!: string
+
     @Column({ type: "varchar", name: "placement", length: 20 })
-    placement!: string;
+    placement!: string
+
     @Column({ type: "varchar", name: "format", length: 10 })
-    format!: string;
+    format!: string
+
     @Column({ type: "int", name: "width" })
-    width!: number;
+    width!: number
+
     @Column({ type: "int", name: "height" })
-    height!: number;
+    height!: number
+
     @Column({ type: "varchar", name: "storage_key", length: 255 })
-    storageKey!: string;
+    storageKey!: string
+
     @Column({ type: "varchar", name: "asset_id", length: 36 })
-    assetId!: string;
+    assetId!: string
+
     @Column({ type: "varchar", name: "render_state", length: 30 })
-    renderState!: string;
+    renderState!: string
+
     @CreateDateColumn({ name: "created_at", type: "datetime", precision: 6 })
-    createdAt!: Date;
+    createdAt!: Date
+
     @UpdateDateColumn({ name: "updated_at", type: "datetime", precision: 6 })
-    updatedAt!: Date;
+    updatedAt!: Date
 }
