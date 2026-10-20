@@ -5,7 +5,7 @@ import { sanitizeSvg } from "../src/modules/content/media/adapters/svg-sanitizer
 
 const jobId = "11111111-1111-4111-8111-111111111111"
 const assetId = "22222222-2222-4222-8222-222222222222"
-const event = { jobId, eventId: jobId, requestedOutputs: ["feed", "story"] }
+const event = { jobId, eventId: jobId, output: "feed" }
 const manifest = {
     jobId,
     assets: [
@@ -45,9 +45,9 @@ const response = (value: unknown) => ({
 describe("deployable n8n workflow", () => {
     test("validates events before acknowledging and rejects duplicate outputs", () => {
         expect(run("validate-event", { body: event }).valid).toBe(true)
-        expect(
-            run("validate-event", { body: { ...event, requestedOutputs: ["feed", "feed"] } }).valid
-        ).toBe(false)
+        expect(run("validate-event", { body: { ...event, output: ["feed", "feed"] } }).valid).toBe(
+            false
+        )
         expect(run("validate-event", { body: {} }).valid).toBe(false)
     })
     test("all manifest assets are included and all analysis IDs are validated", () => {
@@ -90,7 +90,7 @@ describe("deployable n8n workflow", () => {
         )
         expect(content.hashtags).toEqual(["#AMTI"])
         const result = run("render-result", content)
-        expect(result.renders.map((r: any) => r.height)).toEqual([1350, 1920])
+        expect(result.renders.map((r: any) => r.height)).toEqual([1350])
         for (const render of result.renders) {
             expect(render.svg).toContain("AMTI &amp; &lt;QA&gt;")
             expect(
@@ -105,6 +105,29 @@ describe("deployable n8n workflow", () => {
             run("parse-caption", response({ title: "", caption: "test", hashtags: [] }))
         ).toThrow()
     })
+    test("Story generates one portrait render and no Feed caption", () => {
+        const previous = event.output
+        event.output = "story"
+        try {
+            const content = run(
+                "parse-caption",
+                response({ title: "AMTI Story", caption: "", hashtags: [] })
+            )
+            const result = run("render-result", content)
+            expect(result.renders).toHaveLength(1)
+            expect(result.renders[0].placement).toBe("story")
+            expect(result.renders[0].height).toBe(1920)
+            expect(() =>
+                run(
+                    "parse-caption",
+                    response({ title: "Story", caption: "Feed caption", hashtags: [] })
+                )
+            ).toThrow()
+        } finally {
+            event.output = previous
+        }
+    })
+
     test("webhook authenticates; every post-claim fallible node reports failure", () => {
         const workflow = buildWorkflow()
         expect(

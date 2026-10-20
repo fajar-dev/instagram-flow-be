@@ -4,11 +4,7 @@ if (
     !body ||
     !uuid.test(body.jobId) ||
     !uuid.test(body.eventId) ||
-    !Array.isArray(body.requestedOutputs) ||
-    !body.requestedOutputs.length ||
-    body.requestedOutputs.length > 2 ||
-    new Set(body.requestedOutputs).size !== body.requestedOutputs.length ||
-    body.requestedOutputs.some((value) => !["feed", "story"].includes(value))
+    !["feed", "story"].includes(body.output)
 ) {
     return [{ json: { valid: false } }]
 }
@@ -18,7 +14,7 @@ return [
             valid: true,
             jobId: body.jobId,
             eventId: body.eventId,
-            requestedOutputs: body.requestedOutputs
+            output: body.output
         }
     }
 ]
