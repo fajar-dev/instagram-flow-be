@@ -21,9 +21,15 @@ export class ReportingController {
         return ApiResponse.success(c, overview)
     }
 
-    async browse(c: Context, kind: 'job' | 'asset' | 'draft' | 'auditLog' | 'batch') {
+    async browse(c: Context, kind: "job" | "asset" | "draft" | "auditLog" | "batch") {
         const filters = c.req.valid("query" as never) as ReportingQuery
         const { data, total } = await this.service.browse(kind, filters)
-        return ApiResponse.paginate(c, await ReportingSerializer.collection(kind, data), total, filters.page, filters.limit)
+        return ApiResponse.paginate(
+            c,
+            await ReportingSerializer.collection(kind, data),
+            total,
+            filters.page,
+            filters.limit
+        )
     }
 }
