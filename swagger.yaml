@@ -61,6 +61,58 @@ components:
         enum: [en, id]
 
   schemas:
+    InsightReport:
+      type: object
+      required: [metrics, fetchedAt, engagementRate]
+      properties:
+        range:
+          type: object
+          description: Account period bounds as Unix seconds in Asia/Jakarta calendar boundaries.
+          properties:
+            since:
+              type: integer
+            until:
+              type: integer
+        previous:
+          description: Account-only comparison for the elapsed portion of the preceding period; includes metrics, engagementRate, range and fetchedAt.
+          $ref: '#/components/schemas/InsightReport'
+        engagementRate:
+          type: number
+          nullable: true
+          description: Total interactions divided by reach times 100; null if reach is zero/missing or interactions missing. May exceed 100.
+        fetchedAt:
+          type: string
+          format: date-time
+        metrics:
+          type: array
+          items:
+            type: object
+            required: [name, value]
+            properties:
+              name:
+                type: string
+              value:
+                type: number
+                nullable: true
+                description: Null means unavailable, not zero.
+        media:
+          $ref: '#/components/schemas/AnalyticsMedia'
+    AnalyticsMedia:
+      type: object
+      properties:
+        id:
+          type: string
+        caption:
+          type: string
+        type:
+          type: string
+        product:
+          type: string
+        timestamp:
+          type: string
+        permalink:
+          type: string
+          nullable: true
     InstagramAccount:
       type: object
       properties:
@@ -304,7 +356,7 @@ components:
       properties:
         name: { type: string, example: "Budi Santoso" }
         email: { type: string, format: email, example: "budi@example.com" }
-        photo: { type: string, nullable: true, example: "users/abc-123.png" }
+        photo: { type: string, nullable: true, example: "users/abc-123.jpg" }
 
     UpdatePasswordRequest:
       type: object
@@ -344,7 +396,7 @@ components:
         name: { type: string, example: "John Doe" }
         email: { type: string, format: email, example: "john@example.com" }
         password: { type: string, minLength: 6, example: "secret123" }
-        photo: { type: string, nullable: true, example: "users/abc-123.png" }
+        photo: { type: string, nullable: true, example: "users/abc-123.jpg" }
         isActive: { type: boolean, default: true, example: true }
 
     UpdateUserRequest:
@@ -353,10 +405,37 @@ components:
         name: { type: string, example: "John Doe" }
         email: { type: string, format: email, example: "john@example.com" }
         password: { type: string, minLength: 6, example: "newSecret123" }
-        photo: { type: string, nullable: true, example: "users/abc-123.png" }
+        photo: { type: string, nullable: true, example: "users/abc-123.jpg" }
         isActive: { type: boolean, example: true }
 
 paths:
+  /health:
+    get:
+      summary: Application database initialization status
+      description: Reports initialization state, not a live dependency probe.
+      servers:
+        - url: /
+      security: []
+      responses:
+        '200':
+          description: Database initialized
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, timestamp, uptime, environment, checks]
+                properties:
+                  status: { type: string, enum: [healthy, degraded] }
+                  timestamp: { type: string, format: date-time }
+                  uptime: { type: number }
+                  environment: { type: string }
+                  checks:
+                    type: object
+                    properties:
+                      database: { type: string, enum: [connected, disconnected] }
+        '503':
+          description: Database not initialized
+
   /assets/{assetId}/previews:
     get:
       tags: [Content]
@@ -977,8 +1056,10 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: The file to upload
+                  description: Static JPG, PNG or WEBP image, validated by decoded bytes. Size limit follows MAX_UPLOAD_MB; stored as sanitized JPEG.
       responses:
+        "413":
+          description: Request exceeds upload body limit
         "200":
           description: File uploaded successfully
           content:
@@ -991,7 +1072,7 @@ paths:
                       data:
                         type: object
                         properties:
-                          path: { type: string, example: "users/abc-123.png" }
+                          path: { type: string, example: "users/abc-123.jpg" }
         "400":
           description: No file uploaded or invalid file
           content:
@@ -1174,7 +1255,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AcceptLanguage"
     get:
-      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set).
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and requestedOutputs (feed/story).
       tags:
         - Content
       summary: Get owned batch
@@ -1310,7 +1391,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AcceptLanguage"
     get:
-      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set).
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and requestedOutputs (feed/story).
       tags:
         - AI Jobs
       summary: List scoped jobs
@@ -1502,7 +1583,7 @@ paths:
                         - READY_FOR_REVIEW
                     selectedAssetIds:
                       minItems: 1
-                      maxItems: 5
+                      maxItems: 20
                       type: array
                       items:
                         type: string
@@ -1620,7 +1701,7 @@ paths:
                         - READY_FOR_REVIEW
                     selected_asset_ids:
                       minItems: 1
-                      maxItems: 5
+                      maxItems: 20
                       type: array
                       items:
                         type: string
@@ -1763,7 +1844,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AcceptLanguage"
     get:
-      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set).
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and requestedOutputs (feed/story).
       tags:
         - Content Review
       summary: List draft review queue
@@ -1890,7 +1971,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AcceptLanguage"
     get:
-      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set).
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and requestedOutputs (feed/story).
       tags:
         - Content
       summary: List scoped private original asset metadata
@@ -2674,3 +2755,238 @@ paths:
           description: Content, state or idempotency conflict
         "422":
           description: Validation failed
+
+  /instagram/accounts/{accountKey}/insights:
+    get:
+      tags: [Instagram]
+      summary: Read account insights over a Jakarta calendar period
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - name: accountKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [today, this_week, this_month, last_7_days, last_30_days]
+            default: this_week
+          description: Asia/Jakarta calendar boundaries; weeks begin Monday. Last 7/30 days include today.
+      responses:
+        '502':
+          description: Instagram upstream request failed
+        '403':
+          description: Media does not belong to the configured account
+        "200":
+          description: Data uses a five-minute process cache. Unavailable metrics return null. Media metrics are lifetime totals; account period does not filter the media list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/InsightReport'
+        "400":
+          description: Account unavailable, insight access failed, or publication not published
+        "401":
+          description: Authentication required
+        "404":
+          description: Publication not found
+        "422":
+          description: Invalid query
+
+  /instagram/accounts/{accountKey}/top-posts:
+    get:
+      tags: [Instagram]
+      summary: Read a cursor page of Feed/Reels insights ranked by lifetime interactions, then reach
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: accountKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: after
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Opaque cursor from the previous page.
+      responses:
+        '502':
+          description: Instagram upstream request failed
+        '403':
+          description: Media does not belong to the configured account
+        "200":
+          description: Five-minute cache. Independent of account date range. Missing interaction metrics are retained last; provider failures fail the request rather than return an incomplete ranking.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        maxItems: 20
+                        items:
+                          $ref: '#/components/schemas/InsightReport'
+                      sampled:
+                        type: integer
+                      unavailable:
+                        type: integer
+                      limit:
+                        type: integer
+                        enum: [20]
+                      after:
+                        type: string
+                        nullable: true
+                      fetchedAt:
+                        type: string
+                        format: date-time
+        "400":
+          description: Account or insights unavailable
+        "401":
+          description: Authentication required
+
+  /instagram/accounts/{accountKey}/media:
+    get:
+      tags: [Instagram]
+      summary: List Instagram posts using opaque cursor pagination
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - name: accountKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: after
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 2048
+      responses:
+        '502':
+          description: Instagram upstream request failed
+        '403':
+          description: Media does not belong to the configured account
+        "200":
+          description: Data uses a five-minute process cache. Unavailable metrics return null. Media metrics are lifetime totals; account period does not filter the media list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AnalyticsMedia'
+                      after:
+                        type: string
+                        nullable: true
+        "400":
+          description: Account unavailable, insight access failed, or publication not published
+        "401":
+          description: Authentication required
+        "404":
+          description: Publication not found
+        "422":
+          description: Invalid query
+
+  /instagram/accounts/{accountKey}/media/{mediaId}/insights:
+    get:
+      tags: [Instagram]
+      summary: Read lifetime metrics for owned Instagram media
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - name: accountKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: mediaId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '502':
+          description: Instagram upstream request failed
+        '403':
+          description: Media does not belong to the configured account
+        "200":
+          description: Data uses a five-minute process cache. Unavailable metrics return null. Media metrics are lifetime totals; account period does not filter the media list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/InsightReport'
+        "400":
+          description: Account unavailable, insight access failed, or publication not published
+        "401":
+          description: Authentication required
+        "404":
+          description: Publication not found
+        "422":
+          description: Invalid query
+
+  /publications/{publicationId}/insights:
+    get:
+      tags: [Instagram]
+      summary: Read insights for a published IG Flow publication
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - name: publicationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '502':
+          description: Instagram upstream request failed
+        '403':
+          description: Media does not belong to the configured account
+        "200":
+          description: Data uses a five-minute process cache. Unavailable metrics return null. Media metrics are lifetime totals; account period does not filter the media list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/InsightReport'
+        "400":
+          description: Account unavailable, insight access failed, or publication not published
+        "401":
+          description: Authentication required
+        "404":
+          description: Publication not found
+        "422":
+          description: Invalid query

@@ -1,3 +1,4 @@
+import sharp from "sharp"
 import { describe, test, expect, beforeAll, afterAll, beforeEach } from "bun:test"
 import { Hono } from "hono"
 import {
@@ -393,7 +394,11 @@ describe("POST /api/upload", () => {
         const { accessToken } = await registerAndLogin(app)
 
         const formData = new FormData()
-        const fileContent = "dummy image data"
+        const fileContent = await sharp({
+            create: { width: 32, height: 32, channels: 3, background: "white" }
+        })
+            .png()
+            .toBuffer()
         const fileBlob = new Blob([fileContent], { type: "image/png" })
         formData.append("file", fileBlob, "avatar.png")
 
@@ -412,6 +417,19 @@ describe("POST /api/upload", () => {
         expect(body.message).toBe("File uploaded successfully")
         expect(body.data.path).toBeDefined()
         expect(body.data.path).toStartWith("users/")
-        expect(body.data.path).toEndWith(".png")
+        expect(body.data.path).toEndWith(".jpg")
     })
+})
+
+test("avatar endpoint rejects corrupt bytes before storing and shares PATCH CORS", async () => {
+    const { headers } = await registerAndLogin(app)
+    const form = new FormData()
+    form.append("file", new File(["not an image"], "avatar.png", { type: "image/png" }))
+    const response = await app.request("/api/upload", { method: "POST", headers, body: form })
+    expect(response.status).toBe(400)
+    const preflight = await app.request("/api/settings", {
+        method: "OPTIONS",
+        headers: { Origin: "http://localhost:3000", "Access-Control-Request-Method": "PATCH" }
+    })
+    expect(preflight.headers.get("Access-Control-Allow-Methods")).toContain("PATCH")
 })

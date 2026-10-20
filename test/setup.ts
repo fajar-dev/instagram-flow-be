@@ -1,15 +1,9 @@
 import { mockExternalServices, restoreExternalServices } from "./external-services"
 import "reflect-metadata"
 import { Hono } from "hono"
-import { cors } from "hono/cors"
 import { DataSource } from "typeorm"
-import { ApiResponse } from "../src/core/helpers/response"
-import { BaseException, ValidationException } from "../src/core/exceptions/base"
-import { ZodError } from "zod"
 import { config } from "../src/config/config"
 import { databaseOptions, setDataSource } from "../src/config/database"
-import { languageMiddleware } from "../src/core/middlewares/language.middleware"
-import { requestLogger } from "../src/core/middlewares/logger.middleware"
 
 // ── Test Database ───────────────────────────────────────────────────────────
 // Uses real database with a separate test database name
@@ -25,7 +19,8 @@ const TestDataSource = new DataSource({
     ...databaseOptions,
     database: testDbName,
     dropSchema: true,
-    logging: false
+    logging: false,
+    poolSize: 3
 })
 
 // ── Database Lifecycle ──────────────────────────────────────────────────────
@@ -75,34 +70,8 @@ export async function cleanTestDatabase() {
  * Must be called AFTER initTestDatabase().
  */
 export function createTestApp(): Hono {
-    // Import routes — they use AppDataSource which is now TestDataSource
-    const { registerRoutes } = require("../src/routes/api")
-
-    const app = new Hono()
-
-    app.use("*", requestLogger)
-    app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"] }))
-    app.use("*", languageMiddleware)
-    registerRoutes(app)
-
-    // Global Error Handler (matches production)
-    app.onError((err, c) => {
-        if (err instanceof ZodError) {
-            const valErr = new ValidationException(err)
-            return ApiResponse.error(c, valErr.message, valErr.status, valErr.context)
-        }
-
-        if (err instanceof BaseException) {
-            return ApiResponse.error(c, err.message, err.status, err.context)
-        }
-
-        return ApiResponse.error(c, "Internal Server Error", 500, {
-            message: err.message,
-            stack: err.stack
-        })
-    })
-
-    return app
+    const { createApp } = require("../src/app")
+    return createApp()
 }
 
 // ── Request Helper ──────────────────────────────────────────────────────────

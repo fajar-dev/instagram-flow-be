@@ -154,7 +154,11 @@ describe("Content workflow", () => {
         })
         const get = async (path: string) =>
             (await request(app, path, { headers: user.headers })).body
-        expect((await get("/api/jobs")).meta.total).toBe(1)
+        const jobs = await get("/api/jobs")
+        expect(jobs.meta.total).toBe(1)
+        expect(jobs.data[0].projectLocation).toBe(metadata.location)
+        expect(jobs.data[0].photoCount).toBe(1)
+        expect(jobs.data[0].requestedOutputs).toEqual(["feed"])
         expect((await get("/api/jobs?days=30")).meta.total).toBe(0)
         expect((await get("/api/content/counts")).data.QUEUED).toBe(1)
         expect((await get("/api/content/counts?days=30")).data.QUEUED).toBe(0)
@@ -197,6 +201,17 @@ describe("Content workflow", () => {
             headers: user.headers
         })
         expect(listed.body.meta.total).toBe((await counts()).REJECTED)
+        expect(listed.body.data[0].projectLocation).toBe(metadata.location)
+        expect(listed.body.data[0].photoCount).toBe(1)
+        expect(listed.body.data[0].requestedOutputs).toEqual(["feed"])
+        await AppDataSource.getRepository(workflowEntityMap.asset).update(
+            { batchId: job.batchId },
+            { deletedAt: new Date() }
+        )
+        const archived = await request(app, "/api/review?status=REJECTED", {
+            headers: user.headers
+        })
+        expect(archived.body.data[0].photoCount).toBe(0)
         await AppDataSource.getRepository(workflowEntityMap.draft).update(detail.draft.id, {
             createdAt: new Date(Date.now() - 31 * 86400000)
         })
