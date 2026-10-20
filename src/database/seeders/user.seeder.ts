@@ -15,7 +15,7 @@ interface SeedUserInput {
 export const DUMMY_USERS: readonly SeedUserInput[] = [
     { name: "Admin Demo", email: "admin@example.com", password: "password123" },
     { name: "Budi Santoso", email: "budi@example.com", password: "password123" },
-    { name: "Siti Rahma", email: "siti@example.com", password: "password123" },
+    { name: "Siti Rahma", email: "siti@example.com", password: "password123" }
 ]
 
 export class UserSeeder {
@@ -23,13 +23,17 @@ export class UserSeeder {
 
     async runAll() {
         const results = []
-        for (const input of DUMMY_USERS) results.push(await this.run(input))
+        for (const input of DUMMY_USERS) {
+            results.push(await this.run(input))
+        }
         return results
     }
 
     async run(input: SeedUserInput): Promise<{ created: boolean; userId: number; email: string }> {
         const identity = CreateUserValidator.pick({ name: true, email: true }).safeParse(input)
-        if (!identity.success) throw new ValidationException(identity.error)
+        if (!identity.success) {
+            throw new ValidationException(identity.error)
+        }
 
         const existing = await this.userService.getByEmail(identity.data.email)
         if (existing) {
@@ -37,7 +41,9 @@ export class UserSeeder {
         }
 
         const result = CreateUserValidator.safeParse({ ...input, isActive: true })
-        if (!result.success) throw new ValidationException(result.error)
+        if (!result.success) {
+            throw new ValidationException(result.error)
+        }
 
         // UserService hashes the password and applies the existing creation rules.
         const user = await this.userService.create(result.data)
@@ -52,10 +58,13 @@ export async function runUserSeeder() {
         await AppDataSource.initialize()
         const results = await userSeeder.runAll()
         for (const result of results) {
-            logger.info(result.created ? "Seed user created" : "Seed user already exists; skipped", {
-                userId: result.userId,
-                email: result.email,
-            })
+            logger.info(
+                result.created ? "Seed user created" : "Seed user already exists; skipped",
+                {
+                    userId: result.userId,
+                    email: result.email
+                }
+            )
         }
     } catch (err) {
         if (err instanceof ValidationException) {
@@ -65,8 +74,12 @@ export async function runUserSeeder() {
         }
         process.exitCode = 1
     } finally {
-        if (AppDataSource.isInitialized) await AppDataSource.destroy()
+        if (AppDataSource.isInitialized) {
+            await AppDataSource.destroy()
+        }
     }
 }
 
-if (import.meta.main) await runUserSeeder()
+if (import.meta.main) {
+    await runUserSeeder()
+}

@@ -9,7 +9,7 @@ const minioClient = new Minio.Client({
     port: config.minio.port,
     useSSL: config.minio.useSSL,
     accessKey: config.minio.accessKey,
-    secretKey: config.minio.secretKey,
+    secretKey: config.minio.secretKey
 })
 
 const BUCKET = config.minio.bucket
@@ -22,11 +22,16 @@ class MinioHelper {
         try {
             policy = await minioClient.getBucketPolicy(bucket)
         } catch (error) {
-            if ((error as { code?: string }).code !== "NoSuchBucketPolicy") throw error
+            if ((error as { code?: string }).code !== "NoSuchBucketPolicy") {
+                throw error
+            }
         }
         // Bucket policies grant anonymous access in MinIO. Private buckets need no policy.
-        if (policy.trim()) throw new InternalServerException("Storage bucket must not have a public policy")
+        if (policy.trim()) {
+            throw new InternalServerException("Storage bucket must not have a public policy")
+        }
     }
+
     /**
      * Ensure the default bucket exists, create it if not
      */
@@ -36,9 +41,15 @@ class MinioHelper {
             try {
                 await minioClient.makeBucket(bucket)
             } catch (error) {
-                if (!["BucketAlreadyOwnedByYou", "BucketAlreadyExists"].includes((error as { code?: string }).code || "")) throw error
+                if (
+                    !["BucketAlreadyOwnedByYou", "BucketAlreadyExists"].includes(
+                        (error as { code?: string }).code || ""
+                    )
+                ) {
+                    throw error
+                }
             }
-            logger.info('MinIO bucket created', { bucket })
+            logger.info("MinIO bucket created", { bucket })
         }
     }
 
@@ -50,14 +61,24 @@ class MinioHelper {
      * @param bucket - Optional bucket override
      * @returns The object name that was uploaded
      */
-    async upload(objectName: string, buffer: Buffer, contentType: string, bucket: string = BUCKET): Promise<string> {
+    async upload(
+        objectName: string,
+        buffer: Buffer,
+        contentType: string,
+        bucket: string = BUCKET
+    ): Promise<string> {
         await this.ensureBucket(bucket)
 
         await minioClient.putObject(bucket, objectName, buffer, buffer.length, {
-            "Content-Type": contentType,
+            "Content-Type": contentType
         })
 
-        logger.info('MinIO object uploaded', { bucket, objectName, contentType, size: buffer.length })
+        logger.info("MinIO object uploaded", {
+            bucket,
+            objectName,
+            contentType,
+            size: buffer.length
+        })
         return objectName
     }
 
@@ -67,7 +88,11 @@ class MinioHelper {
      * @param expiry - Expiry in seconds (default: 7 days)
      * @param bucket - Optional bucket override
      */
-    async getPresignedUrl(objectName: string, expiry: number = 7 * 24 * 60 * 60, bucket: string = BUCKET): Promise<string> {
+    async getPresignedUrl(
+        objectName: string,
+        expiry: number = 7 * 24 * 60 * 60,
+        bucket: string = BUCKET
+    ): Promise<string> {
         return minioClient.presignedGetObject(bucket, objectName, expiry)
     }
 
@@ -76,7 +101,10 @@ class MinioHelper {
      * @param objectName - The object key in the bucket
      * @param bucket - Optional bucket override
      */
-    async getObject(objectName: string, bucket: string = BUCKET): Promise<{ stream: Readable; stat: Minio.BucketItemStat }> {
+    async getObject(
+        objectName: string,
+        bucket: string = BUCKET
+    ): Promise<{ stream: Readable; stat: Minio.BucketItemStat }> {
         const stat = await minioClient.statObject(bucket, objectName)
         const stream = await minioClient.getObject(bucket, objectName)
         return { stream, stat }
@@ -89,7 +117,7 @@ class MinioHelper {
      */
     async delete(objectName: string, bucket: string = BUCKET): Promise<void> {
         await minioClient.removeObject(bucket, objectName)
-        logger.info('MinIO object deleted', { bucket, objectName })
+        logger.info("MinIO object deleted", { bucket, objectName })
     }
 
     /**
@@ -111,14 +139,18 @@ class MinioHelper {
      * Robust against nested, double-encoded URLs.
      */
     sanitizePath(urlOrPath: string | null | undefined, bucket: string = BUCKET): string | null {
-        if (!urlOrPath) return null
-        
+        if (!urlOrPath) {
+            return null
+        }
+
         let decoded = urlOrPath
         try {
             // Recursively decode URL-encoded segments if nested
-            while (decoded && decoded.includes('%')) {
+            while (decoded && decoded.includes("%")) {
                 const next = decodeURIComponent(decoded)
-                if (next === decoded) break
+                if (next === decoded) {
+                    break
+                }
                 decoded = next
             }
         } catch {
@@ -133,12 +165,12 @@ class MinioHelper {
         }
 
         // Strip query parameters
-        if (decoded.includes('?')) {
-            decoded = decoded.split('?')[0]
+        if (decoded.includes("?")) {
+            decoded = decoded.split("?")[0]
         }
 
         // Clean up leading/trailing slashes
-        decoded = decoded.replace(/^\/+|\/+$/g, '')
+        decoded = decoded.replace(/^\/+|\/+$/g, "")
 
         return decoded || null
     }
@@ -146,4 +178,5 @@ class MinioHelper {
 
 // Export a singleton instance
 export const minio = new MinioHelper()
+
 export default minio

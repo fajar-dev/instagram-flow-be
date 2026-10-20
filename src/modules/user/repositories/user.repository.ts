@@ -1,14 +1,18 @@
 import { EntityManager, Repository } from "typeorm"
 import { AppDataSource } from "../../../config/database"
 import { User } from "../entities/user.entity"
-import { IUserRepository, UserListFilters, UserListRow } from "../interfaces/user.repository.interface"
+import {
+    IUserRepository,
+    UserListFilters,
+    UserListRow
+} from "../interfaces/user.repository.interface"
 import { SortOrder } from "../../../core/interfaces/base.repository.interface"
 
 const SORTABLE_COLUMNS: Record<string, string> = {
     name: "user.name",
     email: "user.email",
     isActive: "user.is_active",
-    createdAt: "user.created_at",
+    createdAt: "user.created_at"
 }
 
 export class TypeOrmUserRepository implements IUserRepository {
@@ -18,24 +22,29 @@ export class TypeOrmUserRepository implements IUserRepository {
         this.repository = AppDataSource.getRepository(User)
     }
 
-    async findAll(page: number, limit: number, q: string, filters: UserListFilters = {}, sortBy?: string, order: SortOrder = "DESC"): Promise<{ data: UserListRow[]; total: number }> {
+    async findAll(
+        page: number,
+        limit: number,
+        q: string,
+        filters: UserListFilters = {},
+        sortBy?: string,
+        order: SortOrder = "DESC"
+    ): Promise<{ data: UserListRow[]; total: number }> {
         const offset = (page - 1) * limit
 
-        const query = this.repository.createQueryBuilder("user")
+        const query = this.repository
+            .createQueryBuilder("user")
             .select([
                 "user.id AS id",
                 "user.name AS name",
                 "user.photo AS photo",
                 "user.email AS email",
                 "user.is_active AS isActive",
-                "user.created_at AS createdAt",
+                "user.created_at AS createdAt"
             ])
 
         if (q) {
-            query.where(
-                "(user.name LIKE :q OR user.email LIKE :q)",
-                { q: `%${q}%` }
-            )
+            query.where("(user.name LIKE :q OR user.email LIKE :q)", { q: `%${q}%` })
         }
 
         if (filters.isActive !== undefined && filters.isActive !== "") {
@@ -66,14 +75,16 @@ export class TypeOrmUserRepository implements IUserRepository {
     }
 
     async findByEmailWithPassword(email: string): Promise<User | null> {
-        return await this.repository.createQueryBuilder("user")
+        return await this.repository
+            .createQueryBuilder("user")
             .where("user.email = :email", { email })
             .addSelect("user.password")
             .getOne()
     }
 
     async findByIdWithPassword(id: number): Promise<User | null> {
-        return await this.repository.createQueryBuilder("user")
+        return await this.repository
+            .createQueryBuilder("user")
             .where("user.id = :id", { id })
             .addSelect("user.password")
             .getOne()

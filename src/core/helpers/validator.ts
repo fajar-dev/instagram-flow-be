@@ -1,4 +1,5 @@
 import { ValidationException } from "../exceptions/base"
+
 /**
  * Standard Zod validation hook for Hono/zValidator.
  * Automatically throws a ValidationException if validation fails.

@@ -11,10 +11,14 @@ const LOG_FILE = join(process.cwd(), "logs", `app-${new Date().toISOString().sli
 function captureConsole(method: "log" | "error") {
     const calls: string[] = []
     const original = console[method]
-    console[method] = ((...args: unknown[]) => { calls.push(args[0] as string) }) as typeof console[typeof method]
+    console[method] = ((...args: unknown[]) => {
+        calls.push(args[0] as string)
+    }) as (typeof console)[typeof method]
     return {
         calls,
-        restore: () => { console[method] = original },
+        restore: () => {
+            console[method] = original
+        }
     }
 }
 
@@ -125,7 +129,7 @@ describe("requestLogger middleware", () => {
 
     test("echoes back a client-supplied X-Request-Id", async () => {
         const { headers } = await request(app, "/api/user", {
-            headers: { "X-Request-Id": "custom-trace-id" },
+            headers: { "X-Request-Id": "custom-trace-id" }
         })
 
         expect(headers.get("X-Request-Id")).toBe("custom-trace-id")

@@ -10,11 +10,11 @@ export class AuthSerializer {
             photo: await resolveStorageUrl(user.photo),
             email: user.email,
             isActive: Boolean(user.isActive),
-            hasPassword: !!user.password,
+            hasPassword: !!user.password
         }
     }
 
     static async collection(users: User[]) {
-        return Promise.all(users.map(u => this.single(u)))
+        return Promise.all(users.map((u) => this.single(u)))
     }
 }

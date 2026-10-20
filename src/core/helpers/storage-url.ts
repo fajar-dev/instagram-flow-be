@@ -20,7 +20,9 @@ export async function resolveStorageUrl(
 ): Promise<string | null> {
     const { passthroughAbsolute = false, fallbackToPath = false } = options
 
-    if (!path) return null
+    if (!path) {
+        return null
+    }
 
     if (passthroughAbsolute && (path.startsWith("http://") || path.startsWith("https://"))) {
         return path
@@ -29,7 +31,9 @@ export async function resolveStorageUrl(
     try {
         return await minio.getPresignedUrl(path)
     } catch (error) {
-        if (fallbackToPath) return path
+        if (fallbackToPath) {
+            return path
+        }
         throw error
     }
 }

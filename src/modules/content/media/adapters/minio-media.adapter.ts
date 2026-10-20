@@ -1,6 +1,6 @@
-import type { Readable } from 'node:stream'
-import type { IContentMedia } from '../interfaces/content-media.interface'
-import { BadRequestException } from '../../../../core/exceptions/base'
+import type { Readable } from "node:stream"
+import type { IContentMedia } from "../interfaces/content-media.interface"
+import { BadRequestException } from "../../../../core/exceptions/base"
 
 export interface IPrivateObjectStorage {
     getPresignedUrl(key: string, expiry: number, bucket: string): Promise<string>
@@ -12,11 +12,20 @@ export interface IPrivateObjectStorage {
 
 /** Reuses the existing MinIO connection/helper; all media shares the configured private bucket. */
 export class MinioMedia implements IContentMedia {
-    constructor(private readonly storage: IPrivateObjectStorage, private readonly bucket: string) {}
+    constructor(
+        private readonly storage: IPrivateObjectStorage,
+        private readonly bucket: string
+    ) {}
 
     private validateKey(key: string) {
-        if (!/^publications\/[a-f0-9-]{36}\.jpg$/.test(key) && !/^renders\/[a-f0-9-]{36}\.svg$/.test(key) && !/^batches\/[a-f0-9-]{36}\/(original|preview|thumbnail)\/[a-f0-9-]{36}\.(jpeg|jpg|png|webp)$/.test(key)) {
-            throw new BadRequestException('Invalid media key')
+        if (
+            !/^publications\/[a-f0-9-]{36}\.jpg$/.test(key) &&
+            !/^renders\/[a-f0-9-]{36}\.svg$/.test(key) &&
+            !/^batches\/[a-f0-9-]{36}\/(original|preview|thumbnail)\/[a-f0-9-]{36}\.(jpeg|jpg|png|webp)$/.test(
+                key
+            )
+        ) {
+            throw new BadRequestException("Invalid media key")
         }
     }
 
@@ -29,8 +38,15 @@ export class MinioMedia implements IContentMedia {
     async put(key: string, data: Buffer) {
         this.validateKey(key)
         await this.storage.ensurePrivateBucket(this.bucket)
-        const extension = key.split('.').pop()
-        const mime = extension === 'svg' ? 'image/svg+xml' : extension === 'png' ? 'image/png' : extension === 'webp' ? 'image/webp' : 'image/jpeg'
+        const extension = key.split(".").pop()
+        const mime =
+            extension === "svg"
+                ? "image/svg+xml"
+                : extension === "png"
+                  ? "image/png"
+                  : extension === "webp"
+                    ? "image/webp"
+                    : "image/jpeg"
         await this.storage.upload(key, data, mime, this.bucket)
     }
 
@@ -39,7 +55,9 @@ export class MinioMedia implements IContentMedia {
         await this.storage.ensurePrivateBucket(this.bucket)
         const { stream } = await this.storage.getObject(key, this.bucket)
         const chunks: Buffer[] = []
-        for await (const chunk of stream) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+        for await (const chunk of stream) {
+            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+        }
         return Buffer.concat(chunks)
     }
 

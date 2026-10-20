@@ -6,7 +6,7 @@ import {
     cleanTestDatabase,
     createTestApp,
     request,
-    registerAndLogin,
+    registerAndLogin
 } from "./setup"
 import { createUserData, resetCounters } from "./helpers"
 
@@ -38,7 +38,7 @@ describe("POST /api/auth/register", () => {
 
         const { status, body } = await request(app, "/api/auth/register", {
             method: "POST",
-            body: userData,
+            body: userData
         })
 
         expect(status).toBe(201)
@@ -62,7 +62,7 @@ describe("POST /api/auth/register", () => {
         // Register again with same email
         const { status, body } = await request(app, "/api/auth/register", {
             method: "POST",
-            body: userData,
+            body: userData
         })
 
         expect(status).toBe(400)
@@ -73,7 +73,7 @@ describe("POST /api/auth/register", () => {
     test("should fail validation when name is missing", async () => {
         const { status, body } = await request(app, "/api/auth/register", {
             method: "POST",
-            body: { email: "test@example.com", password: "password123" },
+            body: { email: "test@example.com", password: "password123" }
         })
 
         expect(status).toBe(422)
@@ -83,7 +83,7 @@ describe("POST /api/auth/register", () => {
     test("should fail validation when email is invalid", async () => {
         const { status, body } = await request(app, "/api/auth/register", {
             method: "POST",
-            body: { name: "Test", email: "not-an-email", password: "password123" },
+            body: { name: "Test", email: "not-an-email", password: "password123" }
         })
 
         expect(status).toBe(422)
@@ -93,7 +93,7 @@ describe("POST /api/auth/register", () => {
     test("should fail validation when password is too short", async () => {
         const { status, body } = await request(app, "/api/auth/register", {
             method: "POST",
-            body: { name: "Test", email: "test@example.com", password: "123" },
+            body: { name: "Test", email: "test@example.com", password: "123" }
         })
 
         expect(status).toBe(422)
@@ -112,7 +112,7 @@ describe("POST /api/auth/login", () => {
 
         const { status, body } = await request(app, "/api/auth/login", {
             method: "POST",
-            body: { email: userData.email, password: userData.password },
+            body: { email: userData.email, password: userData.password }
         })
 
         expect(status).toBe(200)
@@ -130,7 +130,7 @@ describe("POST /api/auth/login", () => {
     test("should fail with unregistered email", async () => {
         const { status, body } = await request(app, "/api/auth/login", {
             method: "POST",
-            body: { email: "notexist@example.com", password: "password123" },
+            body: { email: "notexist@example.com", password: "password123" }
         })
 
         expect(status).toBe(401)
@@ -143,7 +143,7 @@ describe("POST /api/auth/login", () => {
 
         const { status, body } = await request(app, "/api/auth/login", {
             method: "POST",
-            body: { email: userData.email, password: "wrongpassword" },
+            body: { email: userData.email, password: "wrongpassword" }
         })
 
         expect(status).toBe(401)
@@ -153,7 +153,7 @@ describe("POST /api/auth/login", () => {
     test("should fail validation without email", async () => {
         const { status, body } = await request(app, "/api/auth/login", {
             method: "POST",
-            body: { password: "password123" },
+            body: { password: "password123" }
         })
 
         expect(status).toBe(422)
@@ -163,7 +163,7 @@ describe("POST /api/auth/login", () => {
     test("should fail validation without password", async () => {
         const { status, body } = await request(app, "/api/auth/login", {
             method: "POST",
-            body: { email: "test@example.com" },
+            body: { email: "test@example.com" }
         })
 
         expect(status).toBe(422)
@@ -181,7 +181,7 @@ describe("POST /api/auth/refresh", () => {
 
         const { status, body } = await request(app, "/api/auth/refresh", {
             method: "POST",
-            body: { refreshToken },
+            body: { refreshToken }
         })
 
         expect(status).toBe(200)
@@ -195,7 +195,7 @@ describe("POST /api/auth/refresh", () => {
     test("should fail with invalid refresh token", async () => {
         const { status, body } = await request(app, "/api/auth/refresh", {
             method: "POST",
-            body: { refreshToken: "invalid-token-here" },
+            body: { refreshToken: "invalid-token-here" }
         })
 
         expect(status).toBe(401)
@@ -205,7 +205,7 @@ describe("POST /api/auth/refresh", () => {
     test("should fail validation without refresh token", async () => {
         const { status, body } = await request(app, "/api/auth/refresh", {
             method: "POST",
-            body: {},
+            body: {}
         })
 
         expect(status).toBe(422)
@@ -223,7 +223,7 @@ describe("GET /api/auth/me", () => {
 
         const { status, body } = await request(app, "/api/auth/me", {
             method: "GET",
-            headers,
+            headers
         })
 
         expect(status).toBe(200)
@@ -239,7 +239,7 @@ describe("GET /api/auth/me", () => {
 
     test("should fail without auth token", async () => {
         const { status, body } = await request(app, "/api/auth/me", {
-            method: "GET",
+            method: "GET"
         })
 
         expect(status).toBe(401)
@@ -249,7 +249,7 @@ describe("GET /api/auth/me", () => {
     test("should fail with invalid auth token", async () => {
         const { status, body } = await request(app, "/api/auth/me", {
             method: "GET",
-            headers: { Authorization: "Bearer invalid-token" },
+            headers: { Authorization: "Bearer invalid-token" }
         })
 
         expect(status).toBe(401)
@@ -267,7 +267,7 @@ describe("POST /api/auth/logout", () => {
 
         const { status, body } = await request(app, "/api/auth/logout", {
             method: "POST",
-            headers,
+            headers
         })
 
         expect(status).toBe(200)
@@ -277,7 +277,7 @@ describe("POST /api/auth/logout", () => {
 
     test("should fail without auth token", async () => {
         const { status, body } = await request(app, "/api/auth/logout", {
-            method: "POST",
+            method: "POST"
         })
 
         expect(status).toBe(401)
@@ -296,7 +296,7 @@ describe("POST /api/auth/forgot-password", () => {
 
         const { status, body } = await request(app, "/api/auth/forgot-password", {
             method: "POST",
-            body: { email: userData.email },
+            body: { email: userData.email }
         })
 
         expect(status).toBe(200)
@@ -307,7 +307,7 @@ describe("POST /api/auth/forgot-password", () => {
     test("should fail for unregistered email", async () => {
         const { status, body } = await request(app, "/api/auth/forgot-password", {
             method: "POST",
-            body: { email: "notexist@example.com" },
+            body: { email: "notexist@example.com" }
         })
 
         expect(status).toBe(400)
@@ -317,7 +317,7 @@ describe("POST /api/auth/forgot-password", () => {
     test("should fail validation with invalid email", async () => {
         const { status, body } = await request(app, "/api/auth/forgot-password", {
             method: "POST",
-            body: { email: "not-an-email" },
+            body: { email: "not-an-email" }
         })
 
         expect(status).toBe(422)
@@ -331,18 +331,26 @@ describe("POST /api/auth/forgot-password", () => {
 
 describe("GET /api/auth/validate-reset-token", () => {
     test("should fail when token query param is missing", async () => {
-        const { status, body } = await request(app, "/api/auth/validate-reset-token?email=test@example.com", {
-            method: "GET",
-        })
+        const { status, body } = await request(
+            app,
+            "/api/auth/validate-reset-token?email=test@example.com",
+            {
+                method: "GET"
+            }
+        )
 
         expect(status).toBe(400)
         expect(body.success).toBe(false)
     })
 
     test("should fail when email query param is missing", async () => {
-        const { status, body } = await request(app, "/api/auth/validate-reset-token?token=sometoken", {
-            method: "GET",
-        })
+        const { status, body } = await request(
+            app,
+            "/api/auth/validate-reset-token?token=sometoken",
+            {
+                method: "GET"
+            }
+        )
 
         expect(status).toBe(400)
         expect(body.success).toBe(false)
@@ -368,7 +376,7 @@ describe("POST /api/auth/reset-password", () => {
     test("should fail with invalid reset token", async () => {
         const { status, body } = await request(app, "/api/auth/reset-password", {
             method: "POST",
-            body: { token: "invalid-token", newPassword: "newpassword123" },
+            body: { token: "invalid-token", newPassword: "newpassword123" }
         })
 
         expect(status).toBe(400)
@@ -378,7 +386,7 @@ describe("POST /api/auth/reset-password", () => {
     test("should fail validation without token", async () => {
         const { status, body } = await request(app, "/api/auth/reset-password", {
             method: "POST",
-            body: { newPassword: "newpassword123" },
+            body: { newPassword: "newpassword123" }
         })
 
         expect(status).toBe(422)
@@ -388,7 +396,7 @@ describe("POST /api/auth/reset-password", () => {
     test("should fail validation with short password", async () => {
         const { status, body } = await request(app, "/api/auth/reset-password", {
             method: "POST",
-            body: { token: "sometoken", newPassword: "123" },
+            body: { token: "sometoken", newPassword: "123" }
         })
 
         expect(status).toBe(422)
@@ -407,14 +415,14 @@ describe("Full Auth Flow", () => {
         // 1. Register
         const registerRes = await request(app, "/api/auth/register", {
             method: "POST",
-            body: userData,
+            body: userData
         })
         expect(registerRes.status).toBe(201)
 
         // 2. Login
         const loginRes = await request(app, "/api/auth/login", {
             method: "POST",
-            body: { email: userData.email, password: userData.password },
+            body: { email: userData.email, password: userData.password }
         })
         expect(loginRes.status).toBe(200)
         const { accessToken, refreshToken } = loginRes.body.data
@@ -422,7 +430,7 @@ describe("Full Auth Flow", () => {
         // 3. Get profile
         const meRes = await request(app, "/api/auth/me", {
             method: "GET",
-            headers: { Authorization: `Bearer ${accessToken}` },
+            headers: { Authorization: `Bearer ${accessToken}` }
         })
         expect(meRes.status).toBe(200)
         expect(meRes.body.data.email).toBe(userData.email)
@@ -430,7 +438,7 @@ describe("Full Auth Flow", () => {
         // 4. Refresh token
         const refreshRes = await request(app, "/api/auth/refresh", {
             method: "POST",
-            body: { refreshToken },
+            body: { refreshToken }
         })
         expect(refreshRes.status).toBe(200)
         const newAccessToken = refreshRes.body.data.accessToken
@@ -438,14 +446,14 @@ describe("Full Auth Flow", () => {
         // 5. Use new token to get profile
         const meRes2 = await request(app, "/api/auth/me", {
             method: "GET",
-            headers: { Authorization: `Bearer ${newAccessToken}` },
+            headers: { Authorization: `Bearer ${newAccessToken}` }
         })
         expect(meRes2.status).toBe(200)
 
         // 6. Logout
         const logoutRes = await request(app, "/api/auth/logout", {
             method: "POST",
-            headers: { Authorization: `Bearer ${newAccessToken}` },
+            headers: { Authorization: `Bearer ${newAccessToken}` }
         })
         expect(logoutRes.status).toBe(200)
     })
@@ -462,7 +470,7 @@ describe("PUT /api/auth/profile", () => {
         const { status, body } = await request(app, "/api/auth/profile", {
             method: "PUT",
             headers,
-            body: { name: "Updated Profile Name", email: "updatedprofile@example.com" },
+            body: { name: "Updated Profile Name", email: "updatedprofile@example.com" }
         })
 
         expect(status).toBe(200)
@@ -479,7 +487,7 @@ describe("PUT /api/auth/profile", () => {
         const res1 = await request(app, "/api/auth/profile", {
             method: "PUT",
             headers,
-            body: { name: "Test User", email: "testphoto@example.com", photo: "users/abc.png" },
+            body: { name: "Test User", email: "testphoto@example.com", photo: "users/abc.png" }
         })
         expect(res1.status).toBe(200)
         expect(res1.body.data.photo).toContain("users/abc.png")
@@ -490,11 +498,11 @@ describe("PUT /api/auth/profile", () => {
         const res2 = await request(app, "/api/auth/profile", {
             method: "PUT",
             headers,
-            body: { name: "Test User", email: "testphoto@example.com", photo: nestedUrl },
+            body: { name: "Test User", email: "testphoto@example.com", photo: nestedUrl }
         })
         expect(res2.status).toBe(200)
         expect(res2.body.success).toBe(true)
-        
+
         // 3. Verify it resolves to a single valid absolute URL, not double-nested
         expect(res2.body.data.photo).toContain("users/abc.png")
         const httpCount = (res2.body.data.photo.match(/http/g) || []).length
@@ -503,7 +511,7 @@ describe("PUT /api/auth/profile", () => {
 
     test("should fail with duplicate email", async () => {
         const { headers } = await registerAndLogin(app)
-        
+
         // register user 2
         const user2Data = createUserData()
         await request(app, "/api/auth/register", { method: "POST", body: user2Data })
@@ -512,7 +520,7 @@ describe("PUT /api/auth/profile", () => {
         const { status, body } = await request(app, "/api/auth/profile", {
             method: "PUT",
             headers,
-            body: { name: "Updated Name", email: user2Data.email },
+            body: { name: "Updated Name", email: user2Data.email }
         })
 
         expect(status).toBe(400)
@@ -532,7 +540,7 @@ describe("PUT /api/auth/password", () => {
         const { status, body } = await request(app, "/api/auth/password", {
             method: "PUT",
             headers,
-            body: { oldPassword: "password123", newPassword: "newsecurepassword" },
+            body: { oldPassword: "password123", newPassword: "newsecurepassword" }
         })
 
         expect(status).toBe(200)
@@ -546,7 +554,7 @@ describe("PUT /api/auth/password", () => {
         const { status, body } = await request(app, "/api/auth/password", {
             method: "PUT",
             headers,
-            body: { oldPassword: "wrongpassword", newPassword: "newsecurepassword" },
+            body: { oldPassword: "wrongpassword", newPassword: "newsecurepassword" }
         })
 
         expect(status).toBe(400)
@@ -560,7 +568,7 @@ describe("PUT /api/auth/password", () => {
         const { status, body } = await request(app, "/api/auth/password", {
             method: "PUT",
             headers,
-            body: { oldPassword: "password123", newPassword: "123" },
+            body: { oldPassword: "password123", newPassword: "123" }
         })
 
         expect(status).toBe(422)

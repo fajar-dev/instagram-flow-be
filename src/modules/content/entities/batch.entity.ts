@@ -1,34 +1,49 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm"
+
 @Entity("batches")
 export class Batch {
     @PrimaryColumn({ type: "varchar", length: 36 })
-    id!: string;
+    id!: string
+
     @Column({ type: "int", name: "uploader_id" })
-    uploaderId!: number;
+    uploaderId!: number
+
     @Column({ type: "varchar", name: "project_name", length: 150 })
-    projectName!: string;
+    projectName!: string
+
     @Column({ type: "varchar", name: "activity", length: 200 })
-    activity!: string;
+    activity!: string
+
     @Column({ type: "varchar", name: "location", length: 200 })
-    location!: string;
+    location!: string
+
     @Column({ type: "date", name: "documentation_date" })
-    documentationDate!: string;
+    documentationDate!: string
+
     @Column({ type: "text", name: "description" })
-    description!: string;
+    description!: string
+
     @Column({ type: "varchar", name: "client_name", length: 200 })
-    clientName!: string;
+    clientName!: string
+
     @Column({ type: "boolean", name: "publication_permission" })
-    publicationPermission!: boolean;
+    publicationPermission!: boolean
+
     @Column({ type: "int", name: "consent_by" })
-    consentBy!: number;
+    consentBy!: number
+
     @Column({ type: "datetime", name: "consent_at", precision: 6 })
-    consentAt!: Date;
+    consentAt!: Date
+
     @Column({ type: "varchar", name: "status", length: 40 })
-    status!: string;
+    status!: string
+
     @Column({ type: "varchar", name: "idempotency_key", length: 128 })
-    idempotencyKey!: string;
+    idempotencyKey!: string
+
     @CreateDateColumn({ name: "created_at", type: "datetime", precision: 6 })
-    createdAt!: Date;
+    createdAt!: Date
+
     @UpdateDateColumn({ name: "updated_at", type: "datetime", precision: 6 })
-    updatedAt!: Date;
+    updatedAt!: Date
 }

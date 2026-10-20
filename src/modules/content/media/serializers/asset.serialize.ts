@@ -1,6 +1,18 @@
-import type { Asset } from '../entities/asset.entity';
+import type { Asset } from "../entities/asset.entity"
 
-type PublicFields = Pick<Asset, 'id' | 'batchId' | 'mime' | 'byteSize' | 'width' | 'height' | 'sha256' | 'deletedAt' | 'createdAt' | 'updatedAt'>;
+type PublicFields = Pick<
+    Asset,
+    | "id"
+    | "batchId"
+    | "mime"
+    | "byteSize"
+    | "width"
+    | "height"
+    | "sha256"
+    | "deletedAt"
+    | "createdAt"
+    | "updatedAt"
+>
 
 export class AssetSerializer {
     static single(value: PublicFields) {
@@ -14,11 +26,11 @@ export class AssetSerializer {
             sha256: value.sha256,
             deletedAt: value.deletedAt,
             createdAt: value.createdAt,
-            updatedAt: value.updatedAt,
-        };
+            updatedAt: value.updatedAt
+        }
     }
 
     static collection(values: PublicFields[]) {
-        return values.map(value => this.single(value));
+        return values.map((value) => this.single(value))
     }
 }

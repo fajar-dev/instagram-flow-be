@@ -5,8 +5,7 @@ export const CreateUserValidator = z.object({
     email: z.string().email("Invalid email format"),
     password: z.string().min(6, "Password must be at least 6 characters"),
     photo: z.string().nullable().optional(),
-    isActive: z.boolean().optional(),
-
+    isActive: z.boolean().optional()
 })
 
 export type CreateUserValidator = z.infer<typeof CreateUserValidator>
@@ -16,8 +15,7 @@ export const UpdateUserValidator = z.object({
     email: z.string().email("Invalid email format").optional(),
     password: z.string().min(6, "Password must be at least 6 characters").optional(),
     photo: z.string().nullable().optional(),
-    isActive: z.boolean().optional(),
-
+    isActive: z.boolean().optional()
 })
 
 export type UpdateUserValidator = z.infer<typeof UpdateUserValidator>

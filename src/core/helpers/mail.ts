@@ -24,7 +24,7 @@ class Mail {
                 to,
                 subject,
                 text: text || (html ? "Please view this email in an HTML-compatible client." : ""),
-                html,
+                html
             })
 
             logger.info("Email sent", { to, subject, messageId: info.messageId })
@@ -60,4 +60,5 @@ class Mail {
 
 // Export a singleton instance
 export const mail = new Mail()
+
 export default mail

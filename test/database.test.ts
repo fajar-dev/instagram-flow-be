@@ -3,7 +3,14 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:tes
 import type { Hono } from "hono"
 import { databaseMigrations } from "../src/database/migrations"
 import { AppDataSource } from "../src/config/database"
-import { cleanTestDatabase, createTestApp, destroyTestDatabase, initTestDatabase, registerAndLogin, request } from "./setup"
+import {
+    cleanTestDatabase,
+    createTestApp,
+    destroyTestDatabase,
+    initTestDatabase,
+    registerAndLogin,
+    request
+} from "./setup"
 
 let app: Hono
 
@@ -20,7 +27,22 @@ describe("MySQL database integration", () => {
         expect(AppDataSource.options.synchronize).toBe(false)
         const runner = AppDataSource.createQueryRunner()
         try {
-            for (const table of ["users", "password_reset_tokens", "batches", "assets", "jobs", "job_dispatches", "ai_results", "renders", "drafts", "draft_revisions", "reviews", "audit_logs", "settings", "publications"]) {
+            for (const table of [
+                "users",
+                "password_reset_tokens",
+                "batches",
+                "assets",
+                "jobs",
+                "job_dispatches",
+                "ai_results",
+                "renders",
+                "drafts",
+                "draft_revisions",
+                "reviews",
+                "audit_logs",
+                "settings",
+                "publications"
+            ]) {
                 expect(await runner.hasTable(table)).toBe(true)
             }
             expect(await AppDataSource.showMigrations()).toBe(false)
@@ -35,15 +57,25 @@ describe("MySQL database integration", () => {
         try {
             expect(databaseMigrations).toHaveLength(18)
             expect(await runner.hasTable("contacts")).toBe(false)
-            const timestamps = databaseMigrations.slice(0, 13).map(Migration => Number(Migration.name.slice(-13)))
-            expect(timestamps).toEqual(Array.from({ length: 13 }, (_, index) => 1792368000000 + index))
+            const timestamps = databaseMigrations
+                .slice(0, 13)
+                .map((Migration) => Number(Migration.name.slice(-13)))
+            expect(timestamps).toEqual(
+                Array.from({ length: 13 }, (_, index) => 1792368000000 + index)
+            )
             expect(await runner.hasColumn("users", "role")).toBe(false)
             expect(await runner.hasColumn("renders", "sanitized_svg")).toBe(false)
             expect(await runner.hasColumn("renders", "storage_key")).toBe(true)
             const tables = await runner.query("SHOW TABLES")
-            expect(tables.some((row: object) => String(Object.values(row)[0]).startsWith("social_"))).toBe(false)
-            for (const Migration of [...databaseMigrations].reverse()) await new Migration().down(runner)
-            for (const Migration of databaseMigrations) await new Migration().up(runner)
+            expect(
+                tables.some((row: object) => String(Object.values(row)[0]).startsWith("social_"))
+            ).toBe(false)
+            for (const Migration of [...databaseMigrations].reverse()) {
+                await new Migration().down(runner)
+            }
+            for (const Migration of databaseMigrations) {
+                await new Migration().up(runner)
+            }
             expect(await runner.hasTable("password_reset_tokens")).toBe(true)
             expect(await runner.hasTable("renders")).toBe(true)
         } finally {
@@ -74,7 +106,13 @@ describe("MySQL database integration", () => {
     test("removed contact routes are unavailable to authenticated and anonymous users", async () => {
         const { headers } = await registerAndLogin(app)
         for (const auth of [undefined, headers]) {
-            for (const [method, path] of [["GET", "/api/contact"], ["POST", "/api/contact"], ["GET", "/api/contact/1"], ["PUT", "/api/contact/1"], ["DELETE", "/api/contact/1"]]) {
+            for (const [method, path] of [
+                ["GET", "/api/contact"],
+                ["POST", "/api/contact"],
+                ["GET", "/api/contact/1"],
+                ["PUT", "/api/contact/1"],
+                ["DELETE", "/api/contact/1"]
+            ]) {
                 expect((await app.request(path!, { method, headers: auth })).status).toBe(404)
             }
         }

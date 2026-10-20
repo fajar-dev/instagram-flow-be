@@ -1,4 +1,5 @@
 import { databaseMigrations } from "../database/migrations"
+
 export { databaseMigrations } from "../database/migrations"
 import { workflowEntities } from "../modules/shared/entities"
 import { PasswordResetToken } from "../modules/auth/entities/password-reset-token.entity"
@@ -9,11 +10,10 @@ import { config } from "./config"
 
 /**
  * TypeORM Database Configuration
- * 
+ *
  * Access via `AppDataSource` (default) atau `getDataSource()`.
  * Untuk testing, gunakan `setDataSource()` untuk override ke test database.
  */
-
 
 export const databaseOptions = {
     type: config.database.type,
@@ -27,7 +27,7 @@ export const databaseOptions = {
     entities: [User, PasswordResetToken, ...workflowEntities],
     migrations: databaseMigrations,
     migrationsTransactionMode: "each",
-    subscribers: [],
+    subscribers: []
 } satisfies DataSourceOptions
 
 const defaultDataSource = new DataSource(databaseOptions)
@@ -59,5 +59,5 @@ export const AppDataSource = new Proxy({} as DataSource, {
             return value.bind(activeDataSource)
         }
         return value
-    },
+    }
 })

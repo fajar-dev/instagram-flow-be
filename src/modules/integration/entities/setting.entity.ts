@@ -1,16 +1,22 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm"
+
 @Entity("settings")
 export class Setting {
     @PrimaryColumn({ type: "varchar", length: 36 })
-    id!: string;
+    id!: string
+
     @Column({ type: "varchar", name: "key", length: 100 })
-    key!: string;
+    key!: string
+
     @Column({ type: "json", name: "non_secret_value" })
-    nonSecretValue!: Record<string, unknown>;
+    nonSecretValue!: Record<string, unknown>
+
     @Column({ type: "int", name: "updated_by" })
-    updatedBy!: number;
+    updatedBy!: number
+
     @CreateDateColumn({ name: "created_at", type: "datetime", precision: 6 })
-    createdAt!: Date;
+    createdAt!: Date
+
     @UpdateDateColumn({ name: "updated_at", type: "datetime", precision: 6 })
-    updatedAt!: Date;
+    updatedAt!: Date
 }

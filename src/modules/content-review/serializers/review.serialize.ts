@@ -1,6 +1,17 @@
-import type { Review } from '../entities/review.entity';
+import type { Review } from "../entities/review.entity"
 
-type PublicFields = Pick<Review, 'id' | 'draftId' | 'revisionId' | 'reviewerId' | 'decision' | 'notes' | 'contentHash' | 'createdAt' | 'updatedAt'>;
+type PublicFields = Pick<
+    Review,
+    | "id"
+    | "draftId"
+    | "revisionId"
+    | "reviewerId"
+    | "decision"
+    | "notes"
+    | "contentHash"
+    | "createdAt"
+    | "updatedAt"
+>
 
 export class ReviewSerializer {
     static single(value: PublicFields) {
@@ -13,11 +24,11 @@ export class ReviewSerializer {
             notes: value.notes,
             contentHash: value.contentHash,
             createdAt: value.createdAt,
-            updatedAt: value.updatedAt,
-        };
+            updatedAt: value.updatedAt
+        }
     }
 
     static collection(values: PublicFields[]) {
-        return values.map(value => this.single(value));
+        return values.map((value) => this.single(value))
     }
 }

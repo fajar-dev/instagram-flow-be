@@ -13,7 +13,7 @@ function flatten(locale: LocaleFile): MessageGroup {
 
 const locales: Record<SupportedLanguage, MessageGroup> = {
     en: flatten(en as LocaleFile),
-    id: flatten(id as LocaleFile),
+    id: flatten(id as LocaleFile)
 }
 
 // Falls back to the original English message if not found in the dictionary.

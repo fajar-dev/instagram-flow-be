@@ -1,22 +1,31 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm"
+
 @Entity("reviews")
 export class Review {
     @PrimaryColumn({ type: "varchar", length: 36 })
-    id!: string;
+    id!: string
+
     @Column({ type: "varchar", name: "draft_id", length: 36 })
-    draftId!: string;
+    draftId!: string
+
     @Column({ type: "varchar", name: "revision_id", length: 36 })
-    revisionId!: string;
+    revisionId!: string
+
     @Column({ type: "int", name: "reviewer_id" })
-    reviewerId!: number;
+    reviewerId!: number
+
     @Column({ type: "varchar", name: "decision", length: 40 })
-    decision!: string;
+    decision!: string
+
     @Column({ type: "text", name: "notes" })
-    notes!: string;
+    notes!: string
+
     @Column({ type: "varchar", name: "content_hash", length: 64 })
-    contentHash!: string;
+    contentHash!: string
+
     @CreateDateColumn({ name: "created_at", type: "datetime", precision: 6 })
-    createdAt!: Date;
+    createdAt!: Date
+
     @UpdateDateColumn({ name: "updated_at", type: "datetime", precision: 6 })
-    updatedAt!: Date;
+    updatedAt!: Date
 }

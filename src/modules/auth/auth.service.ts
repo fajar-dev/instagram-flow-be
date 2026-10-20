@@ -5,9 +5,13 @@ import {
     ForgotPasswordValidator,
     ResetPasswordValidator,
     RefreshTokenValidator,
-    GoogleLoginValidator,
+    GoogleLoginValidator
 } from "./validators/auth.validator"
-import { UnauthorizedException, BadRequestException, NotFoundException } from "../../core/exceptions/base"
+import {
+    UnauthorizedException,
+    BadRequestException,
+    NotFoundException
+} from "../../core/exceptions/base"
 import { hashPassword, comparePassword } from "../../core/helpers/hash"
 import { verify } from "hono/jwt"
 import { config } from "../../config/config"
@@ -26,8 +30,8 @@ export class AuthService {
     constructor(
         private readonly userService: UserService,
         private readonly passwordResetTokens: IPasswordResetTokenRepository,
-        private readonly mailer: IMailer,
-    ) { }
+        private readonly mailer: IMailer
+    ) {}
 
     async register(data: RegisterValidator) {
         if (data.email) {
@@ -40,7 +44,7 @@ export class AuthService {
         // Transaction dikelola di repository layer (bukan service)
         return await this.userService.saveInTransaction({
             ...data,
-            password: await hashPassword(data.password),
+            password: await hashPassword(data.password)
         })
     }
 
@@ -91,7 +95,11 @@ export class AuthService {
         let userId: number
         try {
             const decoded = await verify(token, secret, "HS256")
-            if (typeof decoded.sub !== "number" || !Number.isSafeInteger(decoded.sub) || decoded.sub <= 0) {
+            if (
+                typeof decoded.sub !== "number" ||
+                !Number.isSafeInteger(decoded.sub) ||
+                decoded.sub <= 0
+            ) {
                 throw new UnauthorizedException(message)
             }
             userId = decoded.sub
@@ -103,15 +111,23 @@ export class AuthService {
         try {
             user = await this.userService.getByIdWithPassword(userId)
         } catch (error) {
-            if (error instanceof NotFoundException) throw new UnauthorizedException(message)
+            if (error instanceof NotFoundException) {
+                throw new UnauthorizedException(message)
+            }
             throw error
         }
-        if (!user.isActive) throw new UnauthorizedException("Account is inactive")
+        if (!user.isActive) {
+            throw new UnauthorizedException("Account is inactive")
+        }
         return user
     }
 
     async refreshToken(data: RefreshTokenValidator) {
-        const user = await this.authenticateToken(data.refreshToken, config.app.jwtRefreshSecret, "Invalid or expired refresh token")
+        const user = await this.authenticateToken(
+            data.refreshToken,
+            config.app.jwtRefreshSecret,
+            "Invalid or expired refresh token"
+        )
         const { accessToken, refreshToken } = await AuthHelper.generateTokens(user)
         return { user, accessToken, refreshToken }
     }
@@ -130,22 +146,31 @@ export class AuthService {
         const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_HOURS * 60 * 60 * 1000)
 
         await this.passwordResetTokens.createForUser(
-            user.id, user.email, this.hashResetToken(resetToken), expiresAt,
+            user.id,
+            user.email,
+            this.hashResetToken(resetToken),
+            expiresAt
         )
 
-        const resetUrl = new URL("auth/reset-password", `${config.app.frontendUrl.replace(/\/$/, "")}/`)
+        const resetUrl = new URL(
+            "auth/reset-password",
+            `${config.app.frontendUrl.replace(/\/$/, "")}/`
+        )
         resetUrl.search = new URLSearchParams({ email: user.email, token: resetToken }).toString()
         const { html, text } = renderForgotPasswordEmail({
             name: user.name,
             resetLink: resetUrl.toString(),
-            expiresInHours: RESET_TOKEN_TTL_HOURS,
+            expiresInHours: RESET_TOKEN_TTL_HOURS
         })
         await this.mailer.sendHtml(user.email, "Reset Password", html, text)
     }
 
     async resetPassword(data: ResetPasswordValidator) {
         const passwordHash = await hashPassword(data.newPassword)
-        const consumed = await this.passwordResetTokens.consumeAndResetPassword(this.hashResetToken(data.token), passwordHash)
+        const consumed = await this.passwordResetTokens.consumeAndResetPassword(
+            this.hashResetToken(data.token),
+            passwordHash
+        )
         if (!consumed) {
             throw new BadRequestException("Invalid or expired reset token")
         }
@@ -154,7 +179,10 @@ export class AuthService {
     }
 
     async validateResetToken(email: string, token: string) {
-        const resetToken = await this.passwordResetTokens.findValid(this.hashResetToken(token), email)
+        const resetToken = await this.passwordResetTokens.findValid(
+            this.hashResetToken(token),
+            email
+        )
         if (!resetToken) {
             throw new BadRequestException("Invalid or expired reset token")
         }
@@ -169,7 +197,10 @@ export class AuthService {
         return true
     }
 
-    async updateProfile(userId: number, data: { name: string; email: string; photo?: string | null }) {
+    async updateProfile(
+        userId: number,
+        data: { name: string; email: string; photo?: string | null }
+    ) {
         const user = await this.userService.getByIdWithPassword(userId)
 
         if (data.email && data.email !== user.email) {
