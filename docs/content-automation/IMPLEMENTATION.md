@@ -1,6 +1,6 @@
 # Implementasi konten IG Flow
 
-Dokumen ini menjelaskan perilaku aktif pada 19 Oktober 2026 dan menggantikan deskripsi implementasi awal yang sudah usang. [PRD v1.1](PRD-v1.1.md) tetap tersedia sebagai spesifikasi awal yang diarsipkan.
+Dokumen ini menjelaskan perilaku aktif pada 20 Oktober 2026 dan menggantikan deskripsi implementasi awal yang sudah usang. [PRD v1.1](PRD-v1.1.md) tetap tersedia sebagai spesifikasi awal yang diarsipkan.
 
 ## Alur pengguna
 
@@ -8,14 +8,14 @@ Dokumen ini menjelaskan perilaku aktif pada 19 Oktober 2026 dan menggantikan des
 2. Isi metadata kegiatan dan unggah foto di Content Upload. UI memvalidasi per file; backend memeriksa bytes, format, dimensi dan batas batch. File yang sudah berhasil tidak diulang hanya karena file lain gagal.
 3. Pilih output feed/story dan proses batch. Backend mengunci batch, membuat job dan outbox secara atomik.
 4. Worker menyampaikan event ke n8n. n8n mengklaim execution, mengambil manifest, menganalisis semua aset, membuat caption serta render, lalu memanggil result/failure.
-5. Buka Content Detail untuk melihat foto, summary, error/status dan timeline. Editor mempunyai Caption, Photos, Review dan History.
-6. Simpan revisi sebelum memberi keputusan review. History merekam keputusan/catatan, bukan diff caption. Ready for review langsung menuju Publish atau Reject; tidak ada tahap approval tambahan.
+5. Buka Content Detail untuk melihat foto, summary, error/status dan timeline. Pilih Publish atau Reject dari detail.
+6. Pada Publish, sesuaikan caption/foto, pilih akun dan waktu posting. Perubahan disimpan sekaligus dengan snapshot publikasi, tanpa simpan terpisah. Reject mengakhiri konten.
 
 ## Data dan transaksi
 
-Status job dan status review adalah dua state berbeda; tab Content memetakan keduanya ke list terpadu. Backend melindungi idempotency process/retry, claim execution, duplicate callback, revision aktif dan content hash. Edit mengubah revision serta membuat render lama outdated; belum ada re-render otomatis setelah setiap edit.
+Status job dan status review adalah dua state berbeda; tab Content memetakan keduanya ke list terpadu. Backend melindungi idempotency process/retry, claim execution, duplicate callback, content hash dan keputusan publish/reject. Desain AI hanya tersedia untuk isi yang cocok dengan hasil AI; belum ada re-render otomatis setelah edit.
 
-Baseline database memakai 13 tabel, ditambah tabel publications melalui migration baru. Domain konten memakai UUID, user tetap integer. Modul dipisah menjadi content, ai-job, content-review, reporting dan integration dengan shared repository transaksi. Tidak ada role atau modul social.
+Database aktif memiliki 13 tabel aplikasi termasuk publications; tabel history lama dikonsolidasikan ke drafts dan arsip audit. Domain konten memakai UUID, user tetap integer. Modul dipisah menjadi content, ai-job, content-review, reporting dan integration dengan shared repository transaksi. Tidak ada role atau modul social.
 
 ## Media
 

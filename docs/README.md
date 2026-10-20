@@ -19,7 +19,7 @@ Panduan aktif menjelaskan implementasi IG Flow saat ini. Source route, validator
 
 ## Arsip
 
-Dokumen `AUDIT-*.md`, [PRD v1.1](content-automation/PRD-v1.1.md), dan [catatan refactor](content-automation/REFACTOR-2026-10-16.md) menyimpan keputusan pada tanggalnya. Sebagian keputusan sudah digantikan: aplikasi kini tanpa role, tanpa Contact, memakai 18 migration (13 baseline, publications, serta 4 migration pengarsipan/constraint/status) dan satu bucket MinIO. Indeks berkas aktif ada di [FILE_MANIFEST](content-automation/FILE_MANIFEST.md).
+Dokumen `AUDIT-*.md`, [PRD v1.1](content-automation/PRD-v1.1.md), dan [catatan refactor](content-automation/REFACTOR-2026-10-16.md) menyimpan keputusan pada tanggalnya. Sebagian keputusan sudah digantikan: aplikasi kini tanpa role, tanpa Contact, memakai 13 migration baseline untuk 13 tabel, termasuk publications dan satu bucket MinIO. Indeks berkas aktif ada di [FILE_MANIFEST](content-automation/FILE_MANIFEST.md).
 
 ## Publishing
 

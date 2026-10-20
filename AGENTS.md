@@ -22,13 +22,13 @@ Semua pengguna aktif terautentikasi memiliki akses sama. Jangan menambah role/ow
 
 Semua media persisten memakai satu bucket MinIO, termasuk avatar, original, preview, thumbnail dan render. Tidak ada fallback lokal, SVG inline di database, proxy URL umum, atau secret signing tambahan. Presigned URL menggunakan MinIO.
 
-Alur konten adalah READY_FOR_REVIEW → PUBLISH atau REJECTED. PUBLISH adalah tahap publikasi, bukan bukti post sudah tayang; status delivery ada pada publication. Settings mempertahankan kontrol dispatcher; credential Instagram di JSON privat; credential integrasi lainnya tetap di environment. Pertahankan idempotency, claim ownership, optimistic revision dan hash review.
+Alur konten adalah READY_FOR_REVIEW → PUBLISH atau REJECTED. PUBLISH adalah tahap publikasi, bukan bukti post sudah tayang; status delivery ada pada publication. Settings mempertahankan kontrol dispatcher; credential Instagram di JSON privat; credential integrasi lainnya tetap di environment. Pertahankan idempotency, claim ownership, hash konten dan penguncian keputusan publish/reject.
 
 Reset password memakai tabel terpisah; request/resend membuat token baru. Satu reset berhasil menghapus semua token user dalam transaksi. Auth Google harus dipertahankan.
 
 ## Database dan command
 
-Sync selalu false, termasuk test. Baseline development 19 Oktober 2026 berisi 13 migration per tabel pada src/database/migrations (1792368000000–1792368000012). Ini menggantikan baseline sebelumnya. Perubahan berikutnya menggunakan migration baru kecuali reset development diminta eksplisit. Lihat docs/DATABASE_GUIDE.md sebelum mengubah history.
+Sync selalu false, termasuk test. Baseline development 20 Oktober 2026 berisi 13 migration untuk 13 tabel pada src/database/migrations (1792490400000–1792490400012). Ini menggantikan baseline sebelumnya. Perubahan berikutnya menggunakan migration baru kecuali reset development diminta eksplisit. Lihat docs/DATABASE_GUIDE.md sebelum mengubah history.
 
 Seeder satu file per seeder pada src/database/seeders; index.ts hanya koordinator, import.meta.main menjaga entrypoint CLI. Migration dan seeder memakai script package, bukan job. Worker AI menjalankan dispatch/recovery konten; worker publishing menangani publikasi Instagram.
 
@@ -42,9 +42,13 @@ Audit bertanggal dan PRD awal adalah arsip, bukan aturan aktif. Jangan mengambil
 
 ## Instagram publishing — 19 Oktober 2026
 
-Publikasi Graph API memakai Instagram Login (graph.instagram.com, Instagram User access token, tanpa Facebook Page) melalui aksi eksplisit mendukung daftar multi-account, tetapi satu project hanya boleh diposting satu kali ke satu akun, langsung/terjadwal. Credential hanya di JSON privat server (bukan database); contoh tanpa secret boleh di-commit. Ready for review hanya mempunyai keputusan Publish atau Reject. Snapshot dan jadwal berada di tabel publications (migration tabel ke-14; constraint dan normalisasi ditambahkan pada migration 15–18). Worker posts:dispatch terpisah dari jobs:dispatch. Settings menampilkan daftar akun dan kontrol dispatcher AI. Jangan mengulang publish saat hasil jaringan ambigu; lakukan rekonsiliasi container.
+Publikasi Graph API memakai Instagram Login (graph.instagram.com, Instagram User access token, tanpa Facebook Page) melalui aksi eksplisit mendukung daftar multi-account, tetapi satu project hanya boleh diposting satu kali ke satu akun, langsung/terjadwal. Credential hanya di JSON privat server (bukan database); contoh tanpa secret boleh di-commit. Ready for review hanya mempunyai keputusan Publish atau Reject. Snapshot dan jadwal berada di tabel publications dengan constraint unique batch_id sejak baseline. Worker posts:dispatch terpisah dari jobs:dispatch. Settings menampilkan daftar akun dan kontrol dispatcher AI. Jangan mengulang publish saat hasil jaringan ambigu; lakukan rekonsiliasi container.
 
 ## Keterbacaan dan format
 
 Jalankan `bun run format` untuk merapikan source dan `bun run lint` untuk memeriksa aturan. Pisahkan fungsi/method dan blok import dari deklarasi berikutnya dengan satu baris kosong. Gunakan kurung kurawal pada kondisi/loop dan satu statement per baris; jangan memadatkan beberapa operasi dalam satu baris. Formatter memecah object, argumen dan ekspresi panjang tanpa mengubah kontrak bisnis.
 Backend memakai indentasi 4 spasi, double quote, tanpa semicolon dan tanpa trailing comma, mengikuti UserService. Workflow JSON n8n dibangun ulang dari source setelah format; ini tidak melakukan deploy.
+
+## Penyederhanaan publish — 20 Oktober 2026
+
+Draft menyimpan isi konten langsung. Tidak ada entity, endpoint edit, nomor, atau tabel revisi aktif. Publish menyimpan konten final dan snapshot publikasi secara atomik; Reject mengakhiri konten. Baseline development sudah disusun ulang langsung ke schema final, satu tabel satu file. Tidak ada migration transisi atau tabel revisi. Backup dan verifikasi schema wajib sebelum menyelaraskan ledger database development yang sudah berisi data.

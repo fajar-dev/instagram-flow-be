@@ -29,19 +29,19 @@ bun run posts:dispatch
 bun run posts:dispatch --once
 ```
 
-Migration 1792371600000 menambahkan tabel publications setelah 13 migration baseline. Empat migration berikutnya (1792382399999–1792382400002) mengarsipkan percobaan gagal yang sudah digantikan publikasi berhasil, menambahkan unique project, memetakan status draft lama, dan menormalisasi riwayat keputusan tanpa menghapus catatannya. Tidak mereset data lama. jobs:dispatch tetap worker AI terpisah. Sakelar Dispatcher AI di Settings tidak menghentikan publikasi Instagram; hentikan proses posts:dispatch atau nonaktifkan akun untuk menghentikan pemrosesan akun tersebut.
+Tabel publications termasuk dalam baseline 13 migration. Constraint unique batch_id langsung dibuat sejak awal. jobs:dispatch tetap worker AI terpisah. Sakelar Dispatcher AI di Settings tidak menghentikan publikasi Instagram; hentikan proses posts:dispatch atau nonaktifkan akun untuk menghentikan pemrosesan akun tersebut.
 
 Worker memeriksa pekerjaan sekitar setiap tiga detik. Production memerlukan process supervisor serta API/database/MinIO yang selalu tersedia. Menjalankannya di MacBook berarti jadwal tidak diproses ketika mesin tidur/mati. Pekerjaan yang terlambat akan diproses saat worker kembali aktif; tidak ada kebijakan otomatis melewati jadwal yang sudah lewat.
 
 ## Alur UI
 
-Buka detail/editor Content yang READY_FOR_REVIEW, simpan revisi terbaru, lalu pilih Publish atau Reject. Publish memilih tepat satu akun, feed/story, sumber foto/desain, dan Post sekarang atau Jadwalkan. Tanggal/jam input adalah WIB; server menyimpan UTC. Izin publikasi batch harus sudah diberikan.
+Buka detail Content yang READY_FOR_REVIEW lalu pilih Publish atau Reject. Pada halaman Publish, sesuaikan caption, hashtag, metadata, dan foto; semua perubahan disimpan bersamaan dengan permintaan publikasi. Publish memilih tepat satu akun, feed/story, sumber foto/desain, dan Post sekarang atau Jadwalkan. Tanggal/jam input adalah WIB; server menyimpan UTC. Izin publikasi batch harus sudah diberikan.
 
-Foto memakai primary asset revisi. Desain AI hanya tersedia pada revisi pertama yang belum diedit dan mempunyai render sesuai. Setelah edit, pilih Foto atau buat ulang konten/desain; aplikasi belum melakukan re-render otomatis. Caption feed menggabungkan caption dan hashtag (maksimal 2.200 karakter). Caption tidak dikirim sebagai teks Story.
+Foto memakai primary asset yang dipilih dalam form publish. Desain AI hanya tersedia jika konten sama dengan hasil AI dan mempunyai render sesuai. Setelah edit, pilih Foto atau buat ulang konten/desain; aplikasi belum melakukan re-render otomatis. Caption feed menggabungkan caption dan hashtag (maksimal 2.200 karakter). Caption tidak dikirim sebagai teks Story.
 
 Snapshot JPEG final disimpan di bucket MinIO yang sama, ukuran 1080×1350 feed atau 1080×1920 story, dengan padding putih jika rasio sumber berbeda. SVG disimpan sebagai preview AI; worker menggunakan JPEG publikasi, bukan SVG. URL presigned dibuat ketika worker memproses pekerjaan dan harus dapat diambil Meta lewat HTTP/HTTPS publik tanpa header JWT aplikasi. TTL URL adalah satu jam.
 
-Riwayat di panel Content menunjukkan status per akun, waktu, revision, preview JPEG final dan link postingan bila tersedia. Satu project hanya memiliki satu postingan; akun lain dipilih untuk project lain. Pembatalan hanya untuk QUEUED/SCHEDULED/FAILED; pembatalan mengubah draft menjadi REJECTED dan tidak membuka publikasi kedua.
+Panel publikasi menunjukkan akun, status, waktu, preview JPEG final dan link postingan bila tersedia. Satu project hanya memiliki satu postingan; akun lain dipilih untuk project lain. Pembatalan hanya untuk QUEUED/SCHEDULED/FAILED; pembatalan mengubah draft menjadi REJECTED dan tidak membuka publikasi kedua.
 
 ## Ketahanan dan state
 
@@ -58,7 +58,7 @@ Status: QUEUED, SCHEDULED, PROCESSING, PUBLISHING, PUBLISHED, FAILED, UNKNOWN, C
 
 ## Cakupan pengujian
 
-Test memakai MySQL terisolasi dan adapter Meta/MinIO terkontrol: auth, JSON redaction, snapshot JPEG, idempotency paralel, satu publikasi per project, balapan Publish/Reject, revision/consent, scheduling/cancel, worker concurrent, timeout reconciliation dan retry. Live publishing diuji pada 19 Oktober 2026 menggunakan konten sintetis di akun @fajar_chngo. Bukti dan batas pengujian dicatat di docs/AUDIT-INSTAGRAM-2026-10-19.md.
+Test memakai MySQL terisolasi dan adapter Meta/MinIO terkontrol: auth, JSON redaction, snapshot JPEG, idempotency paralel, satu publikasi per project, balapan Publish/Reject, hash konten/consent, scheduling/cancel, worker concurrent, timeout reconciliation dan retry. Live publishing diuji pada 19 Oktober 2026 menggunakan konten sintetis di akun @fajar_chngo. Bukti dan batas pengujian dicatat di docs/AUDIT-INSTAGRAM-2026-10-19.md.
 
 Cakupan awal adalah gambar tunggal feed dan story per akun. Carousel, Reels/video, onboarding OAuth dan penyegaran token otomatis belum diimplementasikan. Rate limit/permission tetap diputuskan Meta; UI Periksa koneksi bukan tes publish.
 
@@ -70,4 +70,4 @@ Di Instagram > API setup with Instagram login, tambahkan akun dan terima undanga
 
 Status review lama yang belum memiliki publikasi dipetakan ke READY_FOR_REVIEW. Draft dengan publikasi menjadi PUBLISH; publikasi CANCELLED menjadi REJECTED. Catatan keputusan historis tetap dipertahankan. Jika satu project mempunyai tepat satu post berhasil dan percobaan FAILED/CANCELLED, percobaan terminal dipindahkan utuh ke audit log sebelum record duplikat dibersihkan. Bila ada beberapa post berhasil atau pekerjaan aktif yang bersaing, migration menolak dan memerlukan rekonsiliasi manual. Migration normalisasi tidak dapat dibalik pada database berisi data tanpa restore backup.
 
-PUBLISH adalah tahap pengiriman, bukan konfirmasi tayang. Satu project berarti satu batch ID, bukan kesamaan teks nama project. Unique publications.batch_id mencegah publikasi ulang lintas akun, revisi, placement, dan percobaan job. Transaksi menggunakan READ COMMITTED dengan lock project lalu draft agar request bersamaan membaca pemenang yang telah commit.
+PUBLISH adalah tahap pengiriman, bukan konfirmasi tayang. Satu project berarti satu batch ID, bukan kesamaan teks nama project. Unique publications.batch_id mencegah publikasi ulang lintas akun, perubahan konten, placement, dan percobaan job. Transaksi menggunakan READ COMMITTED dengan lock project lalu draft agar request bersamaan membaca pemenang yang telah commit.

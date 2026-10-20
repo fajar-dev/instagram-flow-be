@@ -12,7 +12,7 @@ CRUD akun berada di `user`; login/password di `auth`; batch/asset di `content`; 
 - Service: `src/modules/user/user.service.ts` menerima repository interface dan menjalankan aturan akun.
 - Repository: `src/modules/user/repositories/user.repository.ts` menangani persistence.
 - Composition root: `src/modules/user/user.module.ts` menyusun dependency.
-- Alur transaksi: `src/modules/content-review/draft.service.ts` memakai repository workflow dan pemeriksaan revision aktif.
+- Alur transaksi: `src/modules/content-review/draft.service.ts` memakai repository workflow dan pemeriksaan hash konten dan status.
 
 ## Menambah atau mengubah endpoint
 

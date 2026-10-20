@@ -1,30 +1,28 @@
 # Database IG Flow
 
-## Konfigurasi
+Backend menggunakan MySQL, TypeORM dan driver mysql2. `synchronize` selalu false, termasuk test. Koneksi memakai timezone UTC; tampilan workflow memakai Asia/Jakarta.
 
-Backend menggunakan MySQL melalui TypeORM dan driver mysql2. `src/config/database.ts` mendaftarkan entity serta migration. `synchronize` selalu false, termasuk pada test. Koneksi memakai timezone UTC (`Z`); tampilan waktu workflow di frontend memakai Asia/Jakarta.
+## Baseline development aktif
 
-## Baseline aktif
-
-Baseline development 19 Oktober 2026 terdiri dari 13 file pada `src/database/migrations/`, timestamp 1792368000000 sampai 1792368000012. Urutan resmi ada di `index.ts`.
+Baseline 20 Oktober 2026 terdiri dari **13 file untuk 13 tabel**, timestamp `1792490400000` sampai `1792490400012`. Registrasi dan urutan dependency berada di `src/database/migrations/index.ts`.
 
 | Tabel | Data |
 | --- | --- |
 | users | Identitas, password hash, status aktif, key avatar |
-| password_reset_tokens | Hash token, user/email, expiry |
-| batches | Metadata kegiatan dan status unggahan |
-| assets | Metadata original/preview dan key MinIO |
-| jobs | Status proses, attempt, execution, idempotency |
-| job_dispatches | Outbox dan state pengiriman |
-| ai_results | Output analisis AI |
-| renders | Metadata hasil render dan key MinIO |
-| drafts | Revision aktif dan status review |
-| draft_revisions | Snapshot isi draft dan content hash |
-| reviews | Keputusan, reviewer, revision, catatan |
-| audit_logs | Jejak aktivitas aplikasi |
+| password_reset_tokens | Hash token reset, user/email, expiry |
+| batches | Metadata kegiatan, consent, status unggahan |
+| assets | Metadata dan key original/preview/thumbnail MinIO |
+| jobs | State proses AI, attempt dan idempotency |
+| job_dispatches | Outbox dan state pengiriman n8n |
+| ai_results | Hasil analisis AI |
+| renders | Metadata render dan key MinIO |
+| drafts | Konten aktif, content hash dan keputusan |
+| reviews | Catatan penolakan dan reviewer |
+| audit_logs | Jejak aktivitas |
 | settings | Kontrol dispatcher non-secret |
+| publications | Snapshot postingan, akun, jadwal dan state delivery |
 
-Tabel `migrations` milik TypeORM merupakan ledger tambahan. Tidak ada tabel Contact, role atau media biner lokal/database. Detail kolom dan indeks ada pada migration/entity terkait; jangan memelihara salinan schema terpisah di dokumentasi.
+Tabel `migrations` merupakan ledger TypeORM, bukan tabel domain. Tidak ada tabel revisi, Contact, role, atau media biner. Schema sudah langsung mendukung Review → Publish/Reject; publication memiliki unique batch_id untuk satu postingan per project. Seluruh migration hanya membuat/menghapus satu tabel. `down` dijalankan dalam urutan terbalik agar dependency foreign key terjaga.
 
 ## Command
 
@@ -37,30 +35,22 @@ bun run migration:generate src/database/migrations/nama-perubahan -d src/config/
 bun run seed:users
 ```
 
-Review DDL yang dihasilkan sebelum menjalankannya. Daftarkan class migration baru di `src/database/migrations/index.ts`. `migration:revert` membalik satu migration terakhir dan dapat menghapus data. MySQL DDL tidak selalu dapat di-rollback sebagai satu transaksi.
+Database kosong cukup menjalankan `migration:run`. Seeder terpisah; migration tidak mengisi akun demo atau menjalankan job. Migration berikutnya harus memakai file baru kecuali pengguna meminta reset baseline development lagi. `migration:revert` menghapus tabel dari migration terakhir dan seluruh datanya; gunakan hanya pada database disposable atau setelah backup.
 
-## Database development dengan history lama
+## Database development yang sudah berisi data
 
-Baseline ini sengaja menggantikan history sebelum production atas permintaan pengguna. Pada database lokal yang sudah direkonsiliasi, 13 migration tercatat applied tanpa menghapus data fitur aktif. Jangan menganggap database lain sudah direkonsiliasi.
+Baseline ini menggantikan rangkaian migration sebelum production atas permintaan pengguna. Jangan langsung menjalankan baseline baru pada database dengan ledger lama: TypeORM akan mencoba membuat tabel yang sudah ada.
 
-Sebelum memakai baseline baru pada database lama, backup schema/data dan ledger, lalu pilih pembuatan ulang database development atau rekonsiliasi eksplisit. Rekonsiliasi harus membandingkan semua tabel, kolom, indeks dan constraint terhadap baseline, memastikan tabel Contact sudah tidak ada, kemudian menyelaraskan ledger hanya jika schema cocok. Jangan sekadar menandai migration applied atau menjalankan seed untuk memperbaiki schema. `migration:show` hanya memeriksa ledger, bukan kesamaan schema.
+Untuk mempertahankan data, backup database beserta ledger, bandingkan schema setiap tabel terhadap database disposable yang dibuat dari baseline baru, dan pastikan kolom, tipe, default, indeks serta foreign key cocok. Setelah cocok, ganti ledger secara transaksional dengan 13 nama/timestamp baseline. Jangan menandai migration applied hanya berdasarkan nama tabel. `migration:show` membaca ledger; ia tidak membuktikan kesamaan schema.
 
-Setelah baseline ini, gunakan migration baru untuk perubahan schema. Reset development berikutnya memerlukan keputusan eksplisit.
+Database lokal pada task ini diselaraskan melalui prosedur tersebut tanpa menghapus data aplikasi. Database lain harus diverifikasi secara terpisah. Alternatif pembuatan ulang database development memerlukan persetujuan untuk penghapusan datanya.
 
-## Seeder pengguna
+## Seeder dan reset password
 
-`src/database/seeders/user.seeder.ts` berisi fixture, implementasi dan entrypoint CLI; `index.ts` mengoordinasikan `bun run seed`. Akun demo: admin@example.com, budi@example.com, siti@example.com; password development masing-masing `password123`. Email yang sudah ada dilewati tanpa mengganti password atau data. Nama Admin Demo tidak memberi akses khusus. Jalankan hanya pada lingkungan development yang sesuai.
+`src/database/seeders/user.seeder.ts` menyediakan fixture serta entrypoint CLI; `index.ts` hanya koordinator. Akun demo: admin@example.com, budi@example.com, siti@example.com; password development `password123`. Email yang sudah ada dilewati. Nama Admin Demo tidak memberi akses khusus.
 
-## Reset password
+Request/resend password membuat token baru di password_reset_tokens. Token lama tetap valid sampai kedaluwarsa. Satu reset berhasil mengganti password dan menghapus seluruh token user dalam transaksi dengan lock.
 
-Token disimpan sebagai SHA-256 di `password_reset_tokens`, terpisah dari users. Request/resend membuat token baru dan mengirim email lagi; token lama valid sampai kedaluwarsa. Reset berhasil memperbarui password dan menghapus seluruh token user dalam transaksi dengan lock, sehingga dua token tidak dapat berhasil bersamaan.
+## Backup media
 
-## Penyimpanan media
-
-Original, preview, thumbnail, avatar dan render berada di satu bucket privat MinIO. Database menyimpan key serta metadata. Backup database tanpa bucket tidak cukup untuk memulihkan konten. Tidak ada command yang otomatis membersihkan semua objek yatim setelah reset database.
-
-## Migration publishing
-
-`1792371600000-create-publications.ts` menambahkan tabel publications sebagai migration ke-14. Tabel menyimpan accountKey, snapshot revisi, key JPEG MinIO, jadwal UTC, lease, container/media ID, status dan safe error. Credential tetap hanya di file JSON privat. Ini migration tambahan; 13 file baseline tidak diubah.
-
-Migration 1792382399999–1792382400002 menambahkan pengarsipan percobaan gagal yang telah digantikan post berhasil, constraint unique publications.batch_id, normalisasi status draft, dan normalisasi riwayat review. Total 18 migration untuk 14 tabel. Setiap file memutasi satu tabel. Arsip menyimpan seluruh percobaan lama di audit_logs; snapshot backup dibuat sebelum migrasi lokal. Rollback normalisasi pada database berisi data memerlukan backup.
+Original, preview, thumbnail, avatar dan render berada di satu bucket privat MinIO. Backup database saja tidak cukup untuk memulihkan media. Credential integrasi berada di environment atau JSON privat server dan tidak disimpan dalam tabel domain.
