@@ -99,7 +99,7 @@ async function queued(headers: Record<string, string>) {
     const response = await request(app, `/api/batches/${b.id}/process`, {
         method: "POST",
         headers: { ...headers, "Idempotency-Key": crypto.randomUUID() },
-        body: { requestedOutputs: ["feed"] }
+        body: { output: "feed" }
     })
     expect(response.status).toBe(202)
     const jobId = response.body.data.jobId
@@ -142,6 +142,24 @@ async function claim(job: { jobId: string; eventId: string }) {
 }
 
 describe("Content workflow", () => {
+    test("process accepts only a single output and rejects the old list contract", async () => {
+        const { headers } = await registerAndLogin(app)
+        const b = await batch(headers)
+        await upload(b.id, headers)
+        for (const body of [
+            { requestedOutputs: ["feed", "story"] },
+            { output: ["feed", "story"] },
+            { output: "reel" }
+        ]) {
+            const response = await request(app, `/api/batches/${b.id}/process`, {
+                method: "POST",
+                headers: { ...headers, "Idempotency-Key": crypto.randomUUID() },
+                body
+            })
+            expect(response.status).toBe(422)
+        }
+    })
+
     test("reporting includes older content by default and supports explicit date filters", async () => {
         const user = await actor("all-dates@example.com")
         const job = await queued(user.headers)
@@ -158,7 +176,7 @@ describe("Content workflow", () => {
         expect(jobs.meta.total).toBe(1)
         expect(jobs.data[0].projectLocation).toBe(metadata.location)
         expect(jobs.data[0].photoCount).toBe(1)
-        expect(jobs.data[0].requestedOutputs).toEqual(["feed"])
+        expect(jobs.data[0].output).toEqual("feed")
         expect((await get("/api/jobs?days=30")).meta.total).toBe(0)
         expect((await get("/api/content/counts")).data.QUEUED).toBe(1)
         expect((await get("/api/content/counts?days=30")).data.QUEUED).toBe(0)
@@ -203,7 +221,7 @@ describe("Content workflow", () => {
         expect(listed.body.meta.total).toBe((await counts()).REJECTED)
         expect(listed.body.data[0].projectLocation).toBe(metadata.location)
         expect(listed.body.data[0].photoCount).toBe(1)
-        expect(listed.body.data[0].requestedOutputs).toEqual(["feed"])
+        expect(listed.body.data[0].output).toEqual("feed")
         await AppDataSource.getRepository(workflowEntityMap.asset).update(
             { batchId: job.batchId },
             { deletedAt: new Date() }
@@ -431,7 +449,7 @@ describe("Content workflow", () => {
         const response = await request(app, `/api/batches/${b.id}/process`, {
             method: "POST",
             headers: { ...user.headers, "Idempotency-Key": crypto.randomUUID() },
-            body: { requestedOutputs: ["feed"] }
+            body: { output: "feed" }
         })
         expect(response.status).toBe(400)
         expect(await AppDataSource.getRepository(workflowEntityMap.job).count()).toBe(0)
@@ -468,7 +486,7 @@ describe("Content workflow", () => {
         const options = {
             method: "POST",
             headers: { ...user.headers, "Idempotency-Key": crypto.randomUUID() },
-            body: { requestedOutputs: ["feed"] }
+            body: { output: "feed" }
         }
         const results = await Promise.all([
             request(app, `/api/batches/${b.id}/process`, options),
@@ -582,6 +600,34 @@ describe("Content workflow", () => {
         detail = (await request(app, `/api/jobs/${job.jobId}`, { headers: user.headers })).body.data
         expect(detail.draft.reviewStatus).toBe("REJECTED")
     })
+    test("callback cannot return a different output or two renders", async () => {
+        const user = await actor("output-callback@example.com")
+        const job = await queued(user.headers)
+        await claim(job)
+        const value = result(job)
+        value.renders[0].placement = "story"
+        value.renders[0].height = 1920
+        expect(
+            (
+                await request(app, `/api/jobs/${job.jobId}/result`, {
+                    method: "POST",
+                    headers: serviceHeaders,
+                    body: toLegacy(value)
+                })
+            ).status
+        ).toBe(400)
+        value.renders.push(result(job).renders[0])
+        expect(
+            (
+                await request(app, `/api/jobs/${job.jobId}/result`, {
+                    method: "POST",
+                    headers: serviceHeaders,
+                    body: toLegacy(value)
+                })
+            ).status
+        ).toBe(422)
+    })
+
     test("wrong execution, partial ranking and malicious SVG cannot finalize a job", async () => {
         const user = await actor("badcallback@example.com")
         const job = await queued(user.headers)

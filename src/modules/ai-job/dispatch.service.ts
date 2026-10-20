@@ -57,7 +57,7 @@ export class JobDispatcher {
                 jobId: lease.job.id,
                 batchId: lease.job.batchId,
                 requestedBy: String(lease.job.createdBy),
-                requestedOutputs: lease.job.requestedOutputs
+                output: lease.job.output
             }
             let status = 0
             try {

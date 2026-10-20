@@ -14,7 +14,7 @@ export class RenderService {
     async create(
         renders: ResultInput["renders"],
         assets: Asset[],
-        outputs: string[],
+        output: "feed" | "story",
         primaryAssetId: string,
         aiResultId: string,
         storedKeys: string[]
@@ -22,7 +22,7 @@ export class RenderService {
         const safeRenders = []
         for (const render of renders) {
             if (
-                !outputs.includes(render.placement) ||
+                output !== render.placement ||
                 render.assetId !== primaryAssetId ||
                 render.height !== (render.placement === "story" ? 1920 : 1350)
             ) {

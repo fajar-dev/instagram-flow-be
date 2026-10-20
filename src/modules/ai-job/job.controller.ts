@@ -8,13 +8,8 @@ export class JobController {
     constructor(private readonly service: JobService) {}
 
     async process(c: Context) {
-        const input: { requestedOutputs: string[] } = c.req.valid("json" as never)
-        const job = await this.service.process(
-            actor(c),
-            id(c, "batchId"),
-            input.requestedOutputs,
-            key(c)
-        )
+        const input: { output: "feed" | "story" } = c.req.valid("json" as never)
+        const job = await this.service.process(actor(c), id(c, "batchId"), input.output, key(c))
         return ApiResponse.success(
             c,
             { batchId: job.batchId, jobId: job.id, status: job.status },

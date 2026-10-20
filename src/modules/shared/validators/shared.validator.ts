@@ -11,12 +11,6 @@ export const idempotencyKey = z
     .max(128)
     .regex(/^[a-zA-Z0-9_-]+$/)
 
-export const outputs = z
-    .array(z.enum(["feed", "story"]))
-    .min(1)
-    .max(2)
-    .refine((a) => new Set(a).size === a.length)
-
 export const querySchema = listQuerySchema.extend({
     limit: z.coerce.number().int().min(1).max(100).default(20),
     q: z.string().max(150).optional(),

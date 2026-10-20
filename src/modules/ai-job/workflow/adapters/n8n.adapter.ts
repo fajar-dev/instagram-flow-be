@@ -3,7 +3,6 @@ const mapping: Record<string, string> = {
     job_id: "jobId",
     batch_id: "batchId",
     requested_by: "requestedBy",
-    requested_outputs: "requestedOutputs",
     project_name: "projectName",
     review_url: "reviewUrl",
     asset_id: "assetId",

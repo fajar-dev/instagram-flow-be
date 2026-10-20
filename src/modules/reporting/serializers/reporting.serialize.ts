@@ -20,7 +20,7 @@ export class ReportingSerializer {
                 const item = value as Parameters<(typeof serializers)[typeof kind]["single"]>[0] & {
                     projectLocation?: string
                     photoCount?: number
-                    requestedOutputs?: string[]
+                    output?: "feed" | "story"
                     projectName?: string
                     uploaderName?: string
                     uploaderPhoto?: string | null
@@ -34,7 +34,7 @@ export class ReportingSerializer {
                               ? {
                                     projectLocation: item.projectLocation,
                                     photoCount: item.photoCount,
-                                    requestedOutputs: item.requestedOutputs
+                                    output: item.output
                                 }
                               : {}),
                           projectName: item.projectName,

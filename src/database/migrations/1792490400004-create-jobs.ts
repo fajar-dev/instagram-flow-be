@@ -7,7 +7,7 @@ export class CreateJobs1792490400004 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE \`jobs\` (
   \`id\` varchar(36) NOT NULL,
   \`batch_id\` varchar(36) NOT NULL,
-  \`requested_outputs\` json NOT NULL,
+  \`output\` enum('feed','story') NOT NULL,
   \`status\` varchar(40) NOT NULL,
   \`attempt_no\` int NOT NULL,
   \`last_execution_id\` varchar(128) DEFAULT NULL,

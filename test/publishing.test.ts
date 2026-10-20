@@ -59,8 +59,12 @@ afterAll(async () => {
     await destroyTestDatabase()
 })
 
-async function fixture() {
-    const auth = await registerAndLogin(app)
+async function fixture(output: "feed" | "story" = "feed") {
+    const auth = await registerAndLogin(app, {
+        name: "Publisher",
+        email: `${crypto.randomUUID()}@example.com`,
+        password: "password123"
+    })
     const batchId = crypto.randomUUID(),
         assetId = crypto.randomUUID(),
         jobId = crypto.randomUUID(),
@@ -102,7 +106,7 @@ async function fixture() {
     await repo.save("job", {
         id: jobId,
         batchId,
-        requestedOutputs: ["feed"],
+        output,
         status: "READY_FOR_REVIEW",
         attemptNo: 1,
         retryable: false,
@@ -112,8 +116,8 @@ async function fixture() {
     const content = {
         primaryAssetId: assetId,
         title: "Inspection",
-        caption: "AMTI inspection",
-        hashtags: ["#AMTI"],
+        caption: output === "story" ? "" : "AMTI inspection",
+        hashtags: output === "story" ? [] : ["#AMTI"],
         location: "Jakarta",
         activity: "Inspection"
     }
@@ -129,7 +133,7 @@ async function fixture() {
         content,
         accountKey: "one",
         source: "photo",
-        placement: "feed",
+        placement: output,
         scheduledAt: null
     }
     const enqueue = (body = payload, requestKey = crypto.randomUUID()) =>
@@ -194,6 +198,33 @@ const worker = (api: IInstagramApi) =>
     new PublicationWorker(repo, api, instagramService, publicationMedia)
 
 describe("Instagram publishing", () => {
+    test("Story publishes without caption and cannot switch to Feed", async () => {
+        const f = await fixture("story")
+        expect(
+            (
+                await f.enqueue({
+                    ...f.payload,
+                    content: { ...f.payload.content, caption: "Not supported" }
+                })
+            ).status
+        ).toBe(422)
+        expect(
+            (
+                await f.enqueue({
+                    ...f.payload,
+                    placement: "feed",
+                    content: { ...f.payload.content, caption: "Feed caption" }
+                })
+            ).status
+        ).toBe(400)
+        const response = await f.enqueue()
+        expect(response.status).toBe(202)
+        expect(response.body.data.placement).toBe("story")
+        const row = await repo.get("publication", response.body.data.id)
+        expect(row?.snapshot.caption).toBe("")
+        expect(row?.snapshot.hashtags).toEqual([])
+    })
+
     test("new endpoints require active user authentication", async () => {
         for (const [method, path] of [
             ["GET", "/api/instagram/accounts"],
@@ -330,7 +361,18 @@ describe("Instagram publishing", () => {
         expect((await repo.get("publication", rows[0]!.id))!.snapshot.caption).toBe(
             "AMTI inspection\n\n#AMTI"
         )
-        expect((await f.enqueue({ ...f.payload, placement: "story" }, key)).status).toBe(409)
+        expect(
+            (
+                await f.enqueue(
+                    {
+                        ...f.payload,
+                        placement: "story",
+                        content: { ...f.payload.content, caption: "", hashtags: [] }
+                    },
+                    key
+                )
+            ).status
+        ).toBe(409)
         expect((await f.enqueue()).status).toBe(409)
     })
     test("different accounts racing for one project create exactly one publication", async () => {
@@ -510,7 +552,14 @@ describe("Instagram publishing", () => {
             ).status
         ).toBe(400)
         expect(
-            (await f.enqueue({ ...f.payload, source: "design", placement: "story" })).status
+            (
+                await f.enqueue({
+                    ...f.payload,
+                    source: "design",
+                    placement: "story",
+                    content: { ...f.payload.content, caption: "", hashtags: [] }
+                })
+            ).status
         ).toBe(400)
         const response = await f.enqueue({ ...f.payload, source: "design" })
         expect(response.status).toBe(202)

@@ -8,8 +8,8 @@ export class Job {
     @Column({ type: "varchar", name: "batch_id", length: 36 })
     batchId!: string
 
-    @Column({ type: "json", name: "requested_outputs" })
-    requestedOutputs!: string[]
+    @Column({ type: "enum", name: "output", enum: ["feed", "story"] })
+    output!: "feed" | "story"
 
     @Column({ type: "varchar", name: "status", length: 40 })
     status!: string

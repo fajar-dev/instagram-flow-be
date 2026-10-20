@@ -105,17 +105,23 @@ export class WorkflowService {
                         "Results must cover every batch asset exactly once"
                     )
                 }
+                if (input.renders.length !== 1 || input.renders[0]?.placement !== job.output) {
+                    throw new BadRequestException("Result must contain exactly the selected output")
+                }
                 if (
-                    input.renders.length !== job.requestedOutputs.length ||
-                    new Set(input.renders.map((r) => r.placement)).size !== input.renders.length
+                    job.output === "feed"
+                        ? !input.caption
+                        : input.caption !== "" || input.hashtags.length > 0
                 ) {
-                    throw new BadRequestException("Missing or duplicate renders")
+                    throw new BadRequestException(
+                        "Caption and hashtags must match the selected output"
+                    )
                 }
                 const aiResultId = id()
                 const safeRenders = await this.renders.create(
                     input.renders,
                     assets,
-                    job.requestedOutputs,
+                    job.output,
                     input.selectedAssetIds[0],
                     aiResultId,
                     storedKeys

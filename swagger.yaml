@@ -162,7 +162,46 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+    StoryContent:
+      type: object
+      additionalProperties: false
+      required: [primaryAssetId, title, caption, hashtags, location, activity]
+      properties:
+        primaryAssetId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        caption:
+          type: string
+          enum: [""]
+        hashtags:
+          type: array
+          maxItems: 0
+          items:
+            type: string
+            maxLength: 100
+        location:
+          type: string
+          minLength: 1
+          maxLength: 200
+        activity:
+          type: string
+          minLength: 1
+          maxLength: 200
     PublicationInput:
+      description: Placement must match the job output. Feed includes caption and hashtags; Story requires both empty.
+      oneOf:
+        - $ref: '#/components/schemas/FeedPublicationInput'
+        - $ref: '#/components/schemas/StoryPublicationInput'
+      discriminator:
+        propertyName: placement
+        mapping:
+          feed: '#/components/schemas/FeedPublicationInput'
+          story: '#/components/schemas/StoryPublicationInput'
+    FeedPublicationInput:
       type: object
       required:
         - expectedContentHash
@@ -188,9 +227,40 @@ components:
             - design
         placement:
           type: string
+          enum: [feed]
+        scheduledAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Null for immediate queueing; otherwise at least one minute ahead.
+            Immutable publication snapshot.
+    StoryPublicationInput:
+      type: object
+      required:
+        - expectedContentHash
+        - content
+        - accountKey
+        - source
+        - placement
+        - scheduledAt
+      properties:
+        expectedContentHash:
+          type: string
+          minLength: 64
+          maxLength: 64
+        content:
+          $ref: '#/components/schemas/StoryContent'
+        accountKey:
+          type: string
+          pattern: ^[a-z0-9_-]{1,64}$
+        source:
+          type: string
           enum:
-            - feed
-            - story
+            - photo
+            - design
+        placement:
+          type: string
+          enum: [story]
         scheduledAt:
           type: string
           format: date-time
@@ -1255,7 +1325,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AcceptLanguage"
     get:
-      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and requestedOutputs (feed/story).
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and output (feed/story).
       tags:
         - Content
       summary: Get owned batch
@@ -1375,23 +1445,18 @@ paths:
             schema:
               type: object
               properties:
-                requestedOutputs:
-                  minItems: 1
-                  maxItems: 2
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - feed
-                      - story
+                output:
+                  type: string
+                  enum: [feed, story]
+                  description: Exactly one immutable output for this job.
               required:
-                - requestedOutputs
+                - output
               additionalProperties: false
   /jobs:
     parameters:
       - $ref: "#/components/parameters/AcceptLanguage"
     get:
-      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and requestedOutputs (feed/story).
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and output (feed/story).
       tags:
         - AI Jobs
       summary: List scoped jobs
@@ -1619,7 +1684,7 @@ paths:
                       maxLength: 300
                     caption:
                       type: string
-                      minLength: 1
+                      description: Nonempty for Feed; empty for Story (with empty hashtags).
                       maxLength: 10000
                     hashtags:
                       maxItems: 30
@@ -1629,7 +1694,7 @@ paths:
                         maxLength: 100
                     renders:
                       minItems: 1
-                      maxItems: 2
+                      maxItems: 1
                       type: array
                       items:
                         type: object
@@ -1737,7 +1802,7 @@ paths:
                       maxLength: 300
                     caption:
                       type: string
-                      minLength: 1
+                      description: Nonempty for Feed; empty for Story (with empty hashtags).
                       maxLength: 10000
                     hashtags:
                       maxItems: 30
@@ -1747,7 +1812,7 @@ paths:
                         maxLength: 100
                     renders:
                       minItems: 1
-                      maxItems: 2
+                      maxItems: 1
                       type: array
                       items:
                         type: object
@@ -1844,7 +1909,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AcceptLanguage"
     get:
-      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and requestedOutputs (feed/story).
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and output (feed/story).
       tags:
         - Content Review
       summary: List draft review queue
@@ -1971,7 +2036,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AcceptLanguage"
     get:
-      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and requestedOutputs (feed/story).
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and output (feed/story).
       tags:
         - Content
       summary: List scoped private original asset metadata
