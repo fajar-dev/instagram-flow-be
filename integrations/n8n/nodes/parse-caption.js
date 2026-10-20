@@ -1,3 +1,4 @@
+const story = $("Validate Event").first().json.output === "story"
 const raw = $json.choices?.[0]?.message?.content
 if (typeof raw !== "string") {
     throw new Error("Missing caption")
@@ -8,7 +9,8 @@ if (
     !content.title.trim() ||
     content.title.length > 100 ||
     typeof content.caption !== "string" ||
-    !content.caption.trim() ||
+    (!story && !content.caption.trim()) ||
+    (story && (content.caption !== "" || content.hashtags?.length !== 0)) ||
     content.caption.length > 2200 ||
     !Array.isArray(content.hashtags) ||
     content.hashtags.length > 30 ||

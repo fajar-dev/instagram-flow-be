@@ -1,4 +1,3 @@
 import { z } from "zod"
-import { outputs } from "../../shared/validators/shared.validator"
 
-export const processSchema = z.object({ requestedOutputs: outputs })
+export const processSchema = z.object({ output: z.enum(["feed", "story"]) }).strict()

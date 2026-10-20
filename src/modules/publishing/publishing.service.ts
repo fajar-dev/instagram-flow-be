@@ -46,6 +46,10 @@ export class PublishingService {
                     }
                     return previous[0]!
                 }
+                const job = await this.context.job(draft.jobId, store)
+                if (job.output !== input.placement) {
+                    throw new BadRequestException("Publication must match the selected job output")
+                }
                 const content = input.content
                 if (
                     draft.contentHash !== input.expectedContentHash ||
@@ -162,8 +166,8 @@ export class PublishingService {
             const original = ai && {
                 primaryAssetId: ai.selectedAssetIds[0],
                 title: ai.rawTitle,
-                caption: ai.rawCaption,
-                hashtags: ai.rawHashtags,
+                caption: input.placement === "story" ? "" : ai.rawCaption,
+                hashtags: input.placement === "story" ? [] : ai.rawHashtags,
                 location: batch.location,
                 activity: batch.activity
             }

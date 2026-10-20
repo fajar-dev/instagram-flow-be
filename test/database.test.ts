@@ -55,6 +55,8 @@ describe("MySQL database integration", () => {
         const runner = AppDataSource.createQueryRunner()
         try {
             expect(databaseMigrations).toHaveLength(13)
+            expect(await runner.hasColumn("jobs", "output")).toBe(true)
+            expect(await runner.hasColumn("jobs", "requested_outputs")).toBe(false)
             expect(await runner.hasTable("contacts")).toBe(false)
             const timestamps = databaseMigrations
                 .slice(0, 13)

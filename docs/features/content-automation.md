@@ -1,15 +1,15 @@
 # Implementasi konten IG Flow
 
-Dokumen ini menjelaskan perilaku aktif pada 20 Oktober 2026 dan menggantikan deskripsi implementasi awal yang sudah usang. [PRD v1.1](../archive/specifications/prd-v1.1.md) tetap tersedia sebagai spesifikasi awal yang diarsipkan.
+Dokumen ini menjelaskan perilaku aktif pada 21 Oktober 2026 dan menggantikan deskripsi implementasi awal yang sudah usang. [PRD v1.1](../archive/specifications/prd-v1.1.md) tetap tersedia sebagai spesifikasi awal yang diarsipkan.
 
 ## Alur pengguna
 
 1. Login dengan akun aktif; semua user memiliki akses setara.
 2. Isi metadata kegiatan dan unggah foto di Content Upload. UI memvalidasi per file; backend memeriksa bytes, format, dimensi dan batas batch. File yang sudah berhasil tidak diulang hanya karena file lain gagal.
-3. Pilih output feed/story dan proses batch. Backend mengunci batch, membuat job dan outbox secara atomik.
-4. Worker menyampaikan event ke n8n. n8n mengklaim execution, mengambil manifest, menganalisis semua aset, membuat caption serta render, lalu memanggil result/failure.
+3. Pilih tepat satu output Feed atau Story dan proses batch. Backend mengunci batch, membuat job dan outbox secara atomik.
+4. Worker menyampaikan event ke n8n. n8n mengklaim execution, mengambil manifest, menganalisis semua aset, membuat caption Feed (kosong untuk Story) serta tepat satu render, lalu memanggil result/failure.
 5. Buka Content Detail untuk melihat foto, summary, error/status dan timeline. Status ready for review langsung menampilkan form dan aksi Publish/Reject.
-6. Pada Publish, sesuaikan caption/foto, pilih akun dan waktu posting. Perubahan disimpan sekaligus dengan snapshot publikasi, tanpa simpan terpisah. Reject mengakhiri konten.
+6. Pada Publish, Feed menampilkan caption/hashtag/metadata serta pilihan foto; Story menampilkan pilihan foto tanpa field caption/hashtag posting. Keduanya memilih akun, sumber foto/desain dan waktu posting. Output tidak dapat diganti. Perubahan disimpan sekaligus dengan snapshot publikasi, tanpa simpan terpisah. Reject mengakhiri konten.
 
 ## Data dan transaksi
 

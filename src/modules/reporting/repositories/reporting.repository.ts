@@ -41,8 +41,8 @@ export class TypeOrmReportingRepository implements IReportingRepository {
             query.andWhere("item.deleted_at IS NULL")
         }
         if (filters.output && kind === "job") {
-            query.andWhere("JSON_CONTAINS(item.requested_outputs, :output)", {
-                output: JSON.stringify(filters.output)
+            query.andWhere("item.output = :output", {
+                output: filters.output
             })
         }
         return query
@@ -72,14 +72,15 @@ export class TypeOrmReportingRepository implements IReportingRepository {
             })
         }
         if (kind === "job" || kind === "draft") {
-            const job = kind === "job" ? "item" : "job"
             query
                 .addSelect("batch.location", "projectLocation")
-                .addSelect(`${job}.requested_outputs`, "requestedOutputs")
                 .addSelect(
                     "(SELECT COUNT(*) FROM assets photo WHERE photo.batch_id = batch.id AND photo.deleted_at IS NULL)",
                     "photoCount"
                 )
+        }
+        if (kind === "draft") {
+            query.addSelect("job.output", "jobOutput")
         }
         const total = await query.getCount()
         const { entities, raw } = await query
@@ -98,10 +99,10 @@ export class TypeOrmReportingRepository implements IReportingRepository {
                           ? {
                                 projectLocation: metadata.get(item.id)?.projectLocation,
                                 photoCount: Number(metadata.get(item.id)?.photoCount ?? 0),
-                                requestedOutputs:
-                                    typeof metadata.get(item.id)?.requestedOutputs === "string"
-                                        ? JSON.parse(metadata.get(item.id)!.requestedOutputs)
-                                        : (metadata.get(item.id)?.requestedOutputs ?? [])
+                                output:
+                                    "output" in item
+                                        ? item.output
+                                        : metadata.get(item.id)?.jobOutput
                             }
                           : {}),
                       projectName: metadata.get(item.id)?.projectName,

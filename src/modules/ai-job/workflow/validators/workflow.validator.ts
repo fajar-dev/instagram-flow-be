@@ -22,7 +22,7 @@ export const resultSchema = z.object({
         .min(1)
         .max(30),
     title: z.string().trim().min(1).max(300),
-    caption: z.string().trim().min(1).max(10000),
+    caption: z.string().trim().max(10000),
     hashtags: z.array(z.string().max(100)).max(30),
     renders: z
         .array(
@@ -35,8 +35,7 @@ export const resultSchema = z.object({
                 assetId: resourceId
             })
         )
-        .min(1)
-        .max(2)
+        .length(1)
 })
 
 export const failureSchema = z.object({

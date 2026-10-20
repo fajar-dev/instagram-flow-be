@@ -14,4 +14,6 @@ Dokumen historis, bukan aturan aktif. Hasil pengujian hanya berlaku pada kondisi
 - [audit-2026-10-16](audit-2026-10-16.md)
 - [audit-2026-10-15](audit-2026-10-15.md)
 
+- [Penerapan output tunggal — 21 Oktober 2026](deployment-single-output-2026-10-21.md)
+
 [Kembali ke arsip](../README.md).

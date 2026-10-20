@@ -2,7 +2,7 @@ import { config } from "../../config/config"
 import { BadRequestException, ConflictException } from "../../core/exceptions/base"
 import type { User } from "../user/entities/user.entity"
 import type { IWorkflowRepository } from "../shared/interfaces/workflow.repository.interface"
-import { contentHash, id } from "../shared/workflow.helpers"
+import { id } from "../shared/workflow.helpers"
 import { WorkflowContextService } from "../shared/context.service"
 
 export class JobService {
@@ -14,7 +14,7 @@ export class JobService {
     async process(
         actor: User,
         batchId: string,
-        requestedOutputs: string[],
+        output: "feed" | "story",
         key: string,
         retryOfJobId?: string
     ) {
@@ -23,7 +23,7 @@ export class JobService {
             const existing = (await store.find("job", { batchId, idempotencyKey: key }))[0]
             if (existing) {
                 if (
-                    contentHash(existing.requestedOutputs) !== contentHash(requestedOutputs) ||
+                    existing.output !== output ||
                     existing.retryOfJobId !== (retryOfJobId || null)
                 ) {
                     throw new ConflictException("Idempotency key was used for a different request")
@@ -57,7 +57,7 @@ export class JobService {
             const job = await store.save("job", {
                 id: id(),
                 batchId,
-                requestedOutputs,
+                output,
                 status: "QUEUED",
                 attemptNo: jobs.length + 1,
                 createdBy: actor.id,
@@ -87,7 +87,7 @@ export class JobService {
 
     async retry(actor: User, jobId: string, key: string) {
         const job = await this.context.job(jobId)
-        return this.process(actor, job.batchId, job.requestedOutputs, key, job.id)
+        return this.process(actor, job.batchId, job.output, key, job.id)
     }
 
     async details(jobId: string) {
@@ -99,7 +99,10 @@ export class JobService {
         const aiResult = (await this.repository.find("aiResult", { jobId }))[0] || null
         const draft = (await this.repository.find("draft", { jobId }))[0] || null
         const renders = aiResult
-            ? await this.repository.find("render", { aiResultId: aiResult.id })
+            ? await this.repository.find("render", {
+                  aiResultId: aiResult.id,
+                  placement: job.output
+              })
             : []
         return {
             job,

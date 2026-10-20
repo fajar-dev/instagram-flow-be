@@ -4,7 +4,7 @@ type PublicFields = Pick<
     Job,
     | "id"
     | "batchId"
-    | "requestedOutputs"
+    | "output"
     | "status"
     | "attemptNo"
     | "lastExecutionId"
@@ -24,7 +24,7 @@ export class JobSerializer {
         return {
             id: value.id,
             batchId: value.batchId,
-            requestedOutputs: value.requestedOutputs,
+            output: value.output,
             status: value.status,
             attemptNo: value.attemptNo,
             lastExecutionId: value.lastExecutionId,

@@ -9,7 +9,7 @@
 5. Jalankan `bun run dev`; periksa `GET /health` dan `/api/docs`.
 6. Jalankan frontend mengikuti [README frontend](../../../frontend/README.md).
 
-Baseline 20 Oktober 2026 berisi 13 migration untuk 13 tabel, termasuk publications. Database dengan history lama memerlukan rekonsiliasi eksplisit atau pembuatan ulang database development; lihat [database](database.md). Aplikasi tidak menjalankan migration/seeder otomatis saat startup.
+Baseline final 21 Oktober 2026 berisi 13 migration untuk 13 tabel, termasuk publications. Database dengan history lama memerlukan rekonsiliasi eksplisit atau pembuatan ulang database development; lihat [database](database.md). Aplikasi tidak menjalankan migration/seeder otomatis saat startup.
 
 ## Pemrosesan AI
 

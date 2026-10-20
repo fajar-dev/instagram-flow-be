@@ -4,7 +4,7 @@ Backend menggunakan MySQL, TypeORM dan driver mysql2. `synchronize` selalu false
 
 ## Baseline development aktif
 
-Baseline 20 Oktober 2026 terdiri dari **13 file untuk 13 tabel**, timestamp `1792490400000` sampai `1792490400012`. Registrasi dan urutan dependency berada di `src/database/migrations/index.ts`.
+Baseline dikonsolidasikan pada 21 Oktober 2026 dan terdiri dari **13 file untuk 13 tabel**, timestamp `1792490400000` sampai `1792490400012`. Registrasi dan urutan dependency berada di `src/database/migrations/index.ts`.
 
 | Tabel | Data |
 | --- | --- |
@@ -35,7 +35,7 @@ bun run migration:generate src/database/migrations/nama-perubahan -d src/config/
 bun run seed:users
 ```
 
-Database kosong cukup menjalankan `migration:run`. Seeder terpisah; migration tidak mengisi akun demo atau menjalankan job. Migration berikutnya harus memakai file baru kecuali pengguna meminta reset baseline development lagi. `migration:revert` menghapus tabel dari migration terakhir dan seluruh datanya; gunakan hanya pada database disposable atau setelah backup.
+Database kosong cukup menjalankan `migration:run`. Seeder terpisah; migration tidak mengisi akun demo atau menjalankan job. Migration berikutnya harus memakai file baru kecuali pengguna meminta reset baseline development lagi. `migration:revert` menjalankan down migration terakhir; periksa dampaknya dan backup sebelum menjalankannya.
 
 ## Database development yang sudah berisi data
 
@@ -54,3 +54,11 @@ Request/resend password membuat token baru di password_reset_tokens. Token lama 
 ## Backup media
 
 Original, preview, thumbnail, avatar dan render berada di satu bucket privat MinIO. Backup database saja tidak cukup untuk memulihkan media. Credential integrasi berada di environment atau JSON privat server dan tidak disimpan dalam tabel domain.
+
+## Baseline final output tunggal — 21 Oktober 2026
+
+`CreateJobs1792490400004` langsung membuat `jobs.output` enum Feed/Story. Tidak ada lagi kolom daftar output atau migration transisi. Total tetap **13 migration untuk 13 tabel**; timestamp baseline dipertahankan agar tabel dan data development tidak dibuat ulang.
+
+Untuk database kosong, jalankan `bun run migration:run`. Database lokal yang sebelumnya sudah menerapkan migration transisi dikonsolidasikan setelah backup SQL dan perbandingan schema dengan database pengujian yang dibuat dari baseline final. Perbandingan mencakup kolom, default, tipe, indeks, foreign key, aturan referensi dan collation; urutan fisik kolom tidak memengaruhi kontrak. Setelah schema cocok, hanya entry ledger migration transisi yang dihapus secara transaksional. Seluruh jumlah baris aplikasi dipertahankan.
+
+Database development lain dengan riwayat lama harus melalui pemeriksaan yang sama; jangan menghapus ledger tanpa membandingkan schema. Ini merupakan konsolidasi development atas permintaan pengguna, bukan prosedur upgrade production. Backup dan data lama tetap diperlukan untuk rollback historis; baseline final tidak mengembalikan pilihan output ganda.
