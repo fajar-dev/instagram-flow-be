@@ -10,7 +10,7 @@ API dan worker untuk IG Flow, dashboard AMTI (Asset Monitoring Teknologi Indones
 - Review langsung menuju Publish atau Reject. Caption dan foto disesuaikan saat publish, lalu disimpan atomik bersama snapshot postingan.
 - Overview, media library, audit log, dan kontrol dispatcher di dashboard.
 
-Semua pengguna aktif yang terautentikasi memiliki akses aplikasi yang sama. Ready for review langsung menuju Publish atau Reject. Satu project hanya memiliki satu postingan ke satu akun, langsung atau terjadwal. OAuth account linking, analytics Instagram, dan Telegram belum diimplementasikan.
+Semua pengguna aktif yang terautentikasi memiliki akses aplikasi yang sama. Ready for review langsung menuju Publish atau Reject. Satu project hanya memiliki satu postingan ke satu akun, langsung atau terjadwal. Analytics akun dan postingan tersedia melalui Instagram Login. OAuth account linking dan Telegram belum diimplementasikan.
 
 ## Menjalankan
 
@@ -26,7 +26,7 @@ bun run seed:users
 bun run dev
 ```
 
-Jalankan `bun run jobs:dispatch` pada proses terpisah dan aktifkan dispatcher di dashboard setelah konfigurasi n8n siap. Seeder hanya untuk development: tiga akun demo, tidak menimpa akun yang sudah ada. Rincian ada di [panduan database](docs/DATABASE_GUIDE.md).
+Jalankan `bun run jobs:dispatch` pada proses terpisah dan aktifkan dispatcher di dashboard setelah konfigurasi n8n siap. Seeder hanya untuk development: tiga akun demo, tidak menimpa akun yang sudah ada. Rincian ada di [panduan database](docs/operations/database.md).
 
 API default: `http://localhost:4000/api`; dokumentasi API: `/api/docs`; health: `/health`. Frontend berada di [repo frontend lokal](../frontend/README.md).
 
@@ -34,11 +34,11 @@ API default: `http://localhost:4000/api`; dokumentasi API: `/api/docs`; health: 
 
 Bun, Hono, TypeORM/MySQL, Zod, MinIO, Sharp, Nodemailer, dan JWT. Dependency versi aktual ada di `package.json` dan `bun.lock`. Route berada di `src/routes/api.ts`; fitur berada langsung di `src/modules/`; migration dan seeder berada di `src/database/`.
 
-- [Setup dan operasi](README_SETUP.md)
+- [Setup dan operasi](docs/operations/setup.md)
 - [Indeks dokumentasi](docs/README.md)
-- [Arsitektur](docs/ARCHITECTURE.md)
-- [Konfigurasi](docs/ENVIRONMENT.md)
-- [Integrasi n8n](integrations/n8n/README.md)
+- [Arsitektur](docs/architecture/overview.md)
+- [Konfigurasi](docs/operations/environment.md)
+- [Integrasi n8n](docs/operations/n8n.md)
 - [Aturan kontribusi](AGENTS.md)
 
 ## Verifikasi
@@ -49,8 +49,12 @@ bun run test
 bun run build
 ```
 
-Test memakai database MySQL khusus yang dapat dihapus dan adapter eksternal terkontrol. Baca [panduan pengujian](docs/TESTING_GUIDE.md) sebelum menjalankannya. Sync schema selalu nonaktif; baseline development terdiri dari 13 migration ditambah migration publications; total 14 tabel aplikasi.
+Test memakai database MySQL khusus yang dapat dihapus dan adapter eksternal terkontrol. Baca [panduan pengujian](docs/operations/testing.md) sebelum menjalankannya. Sync schema selalu nonaktif; baseline development terdiri dari 13 migration untuk 13 tabel aplikasi, termasuk publications.
 
 ## Instagram publishing
 
-Credential multi-account berada di JSON privat. Jalankan `bun run posts:dispatch` untuk publikasi langsung/terjadwal. Ikuti [panduan publishing](docs/INSTAGRAM_PUBLISHING.md) untuk konfigurasi Meta, MinIO dan pemulihan kegagalan.
+Credential multi-account berada di JSON privat. Jalankan `bun run posts:dispatch` untuk publikasi langsung/terjadwal. Ikuti [panduan publishing](docs/features/instagram-publishing.md) untuk konfigurasi Meta, MinIO dan pemulihan kegagalan.
+
+## Instagram analytics
+
+Statistik akun, perbandingan periode, top posts dan insight Content memakai Graph API dengan cache singkat. Lihat [panduan analytics](docs/features/instagram-analytics.md).
