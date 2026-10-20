@@ -1,4 +1,3 @@
-import { RevisionSerializer } from "./serializers/revision.serialize"
 import { DraftSerializer } from "./serializers/draft.serialize"
 import { ApiResponse } from "../../core/helpers/response"
 import type { Context } from "hono"
@@ -7,15 +6,6 @@ import { actor, id } from "../shared/request-context"
 
 export class DraftController {
     constructor(private readonly service: DraftService) {}
-
-    async edit(c: Context) {
-        const result = await this.service.edit(
-            actor(c),
-            id(c, "draftId"),
-            c.req.valid("json" as never)
-        )
-        return ApiResponse.success(c, RevisionSerializer.single(result))
-    }
 
     async reject(c: Context) {
         const result = await this.service.reject(

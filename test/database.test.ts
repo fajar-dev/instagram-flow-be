@@ -1,4 +1,4 @@
-import { CreateUsers1792368000000 } from "../src/database/migrations/1792368000000-create-users"
+import { CreateUsers1792490400000 } from "../src/database/migrations/1792490400000-create-users"
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test"
 import type { Hono } from "hono"
 import { databaseMigrations } from "../src/database/migrations"
@@ -37,7 +37,6 @@ describe("MySQL database integration", () => {
                 "ai_results",
                 "renders",
                 "drafts",
-                "draft_revisions",
                 "reviews",
                 "audit_logs",
                 "settings",
@@ -52,16 +51,16 @@ describe("MySQL database integration", () => {
         }
     })
 
-    test("fresh baseline has no legacy tables, role or inline media and supports rollback", async () => {
+    test("fresh baseline has no legacy tables, role or inline media and supports rollback and reapply", async () => {
         const runner = AppDataSource.createQueryRunner()
         try {
-            expect(databaseMigrations).toHaveLength(18)
+            expect(databaseMigrations).toHaveLength(13)
             expect(await runner.hasTable("contacts")).toBe(false)
             const timestamps = databaseMigrations
                 .slice(0, 13)
                 .map((Migration) => Number(Migration.name.slice(-13)))
             expect(timestamps).toEqual(
-                Array.from({ length: 13 }, (_, index) => 1792368000000 + index)
+                Array.from({ length: 13 }, (_, index) => 1792490400000 + index)
             )
             expect(await runner.hasColumn("users", "role")).toBe(false)
             expect(await runner.hasColumn("renders", "sanitized_svg")).toBe(false)
@@ -70,6 +69,10 @@ describe("MySQL database integration", () => {
             expect(
                 tables.some((row: object) => String(Object.values(row)[0]).startsWith("social_"))
             ).toBe(false)
+            expect(await runner.hasTable("draft_revisions")).toBe(false)
+            expect(await runner.hasColumn("drafts", "current_revision_id")).toBe(false)
+            expect(await runner.hasColumn("drafts", "caption")).toBe(true)
+            expect(await runner.hasColumn("publications", "revision_id")).toBe(false)
             for (const Migration of [...databaseMigrations].reverse()) {
                 await new Migration().down(runner)
             }
@@ -87,7 +90,7 @@ describe("MySQL database integration", () => {
         const { user, headers } = await registerAndLogin(app)
         const runner = AppDataSource.createQueryRunner()
         try {
-            await new CreateUsers1792368000000().up(runner)
+            await new CreateUsers1792490400000().up(runner)
             expect(await runner.hasTable("contacts")).toBe(false)
         } finally {
             await runner.release()

@@ -2,7 +2,18 @@ import type { Draft } from "../entities/draft.entity"
 
 type PublicFields = Pick<
     Draft,
-    "id" | "jobId" | "currentRevisionId" | "reviewStatus" | "createdAt" | "updatedAt"
+    | "id"
+    | "jobId"
+    | "primaryAssetId"
+    | "title"
+    | "caption"
+    | "hashtags"
+    | "location"
+    | "activity"
+    | "contentHash"
+    | "reviewStatus"
+    | "createdAt"
+    | "updatedAt"
 >
 
 export class DraftSerializer {
@@ -10,7 +21,13 @@ export class DraftSerializer {
         return {
             id: value.id,
             jobId: value.jobId,
-            currentRevisionId: value.currentRevisionId,
+            primaryAssetId: value.primaryAssetId,
+            title: value.title,
+            caption: value.caption,
+            hashtags: value.hashtags,
+            location: value.location,
+            activity: value.activity,
+            contentHash: value.contentHash,
             reviewStatus: value.reviewStatus,
             createdAt: value.createdAt,
             updatedAt: value.updatedAt

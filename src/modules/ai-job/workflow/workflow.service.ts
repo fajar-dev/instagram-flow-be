@@ -55,7 +55,7 @@ export class WorkflowService {
             activity: batch.activity,
             location: batch.location,
             description: batch.description,
-            reviewUrl: `${config.app.frontendUrl}/content/${jobId}/edit`,
+            reviewUrl: `${config.app.frontendUrl}/content/${jobId}`,
             assets: await Promise.all(
                 assets.map(async (a) => {
                     const previewUrl = await this.mediaAccess.signedUrl(a.id)
@@ -135,11 +135,6 @@ export class WorkflowService {
                 for (const render of safeRenders) {
                     await store.save("render", render)
                 }
-                const draft = await store.save("draft", {
-                    id: id(),
-                    jobId,
-                    reviewStatus: "READY_FOR_REVIEW"
-                })
                 const content = {
                     primaryAssetId: input.selectedAssetIds[0],
                     title: input.title,
@@ -148,15 +143,13 @@ export class WorkflowService {
                     location: batch.location,
                     activity: batch.activity
                 }
-                const revision = await store.save("revision", {
+                await store.save("draft", {
                     id: id(),
-                    draftId: draft.id,
-                    revisionNo: 1,
+                    jobId,
+                    reviewStatus: "READY_FOR_REVIEW",
                     ...content,
-                    contentHash: contentHash(content),
-                    createdBy: null
+                    contentHash: contentHash(content)
                 })
-                await store.save("draft", { ...draft, currentRevisionId: revision.id })
                 await store.save("job", {
                     ...job,
                     status: "READY_FOR_REVIEW",

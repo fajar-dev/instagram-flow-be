@@ -5,7 +5,6 @@ import { RenderSerializer } from "../../content/media/serializers/render.seriali
 import { JobSerializer } from "./job.serialize"
 import { AiResultSerializer } from "../workflow/serializers/ai-result.serialize"
 import { DraftSerializer } from "../../content-review/serializers/draft.serialize"
-import { RevisionSerializer } from "../../content-review/serializers/revision.serialize"
 import { ReviewSerializer } from "../../content-review/serializers/review.serialize"
 
 export class JobDetailsSerializer {
@@ -16,8 +15,6 @@ export class JobDetailsSerializer {
             assets: AssetSerializer.collection(value.assets),
             aiResult: value.aiResult ? AiResultSerializer.single(value.aiResult) : null,
             draft: value.draft ? DraftSerializer.single(value.draft) : null,
-            revision: value.revision ? RevisionSerializer.single(value.revision) : null,
-            revisions: RevisionSerializer.collection(value.revisions),
             reviews: ReviewSerializer.collection(value.reviews),
             renders: RenderSerializer.collection(value.renders)
         }

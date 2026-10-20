@@ -8,9 +8,6 @@ export class Review {
     @Column({ type: "varchar", name: "draft_id", length: 36 })
     draftId!: string
 
-    @Column({ type: "varchar", name: "revision_id", length: 36 })
-    revisionId!: string
-
     @Column({ type: "int", name: "reviewer_id" })
     reviewerId!: number
 

@@ -15,7 +15,7 @@ import { WorkflowContextService } from "../shared/context.service"
 import { logger } from "../../core/helpers/logger"
 
 import type { WorkflowStore } from "../shared/interfaces/workflow.repository.interface"
-import type { WorkflowRecords } from "../shared/entities"
+import type { PublishContentInput } from "../content-review/validators/draft.validator"
 
 export class PublishingService {
     constructor(
@@ -46,14 +46,12 @@ export class PublishingService {
                     }
                     return previous[0]!
                 }
-                const revision = await store.get("revision", input.revisionId)
+                const content = input.content
                 if (
-                    draft.currentRevisionId !== input.revisionId ||
-                    !revision ||
-                    revision.draftId !== draftId ||
+                    draft.contentHash !== input.expectedContentHash ||
                     draft.reviewStatus !== "READY_FOR_REVIEW"
                 ) {
-                    throw new ConflictException("Only the current ready revision can be published")
+                    throw new ConflictException("Only current ready content can be published")
                 }
                 if (!batch?.publicationPermission) {
                     throw new BadRequestException("Publication permission is required")
@@ -64,7 +62,7 @@ export class PublishingService {
                         "Schedule must be at least one minute in the future"
                     )
                 }
-                const caption = [revision.caption, revision.hashtags.join(" ")]
+                const caption = [content.caption, content.hashtags.join(" ")]
                     .filter(Boolean)
                     .join("\n\n")
                 if (input.placement === "feed" && Array.from(caption).length > 2200) {
@@ -78,7 +76,7 @@ export class PublishingService {
                     store,
                     batch.id,
                     draft.jobId,
-                    revision,
+                    content,
                     input
                 )
                 // Keep the draft lock until the immutable snapshot and publication are saved.
@@ -88,16 +86,14 @@ export class PublishingService {
                     id: id(),
                     batchId: batch.id,
                     draftId,
-                    revisionId: revision.id,
                     accountKey: account.key,
                     requestKey: key,
                     requestHash: hash,
                     snapshot: {
-                        title: revision.title,
+                        title: content.title,
                         caption,
-                        hashtags: revision.hashtags,
-                        contentHash: revision.contentHash,
-                        revisionNo: revision.revisionNo,
+                        hashtags: content.hashtags,
+                        contentHash: contentHash(content),
                         source: input.source,
                         placement: input.placement,
                         accountLabel: account.label,
@@ -124,9 +120,14 @@ export class PublishingService {
                     "PUBLICATION_QUEUED",
                     "publication",
                     publication.id,
-                    { accountKey: account.key, revisionId: revision.id }
+                    { accountKey: account.key }
                 )
-                await store.save("draft", { ...draft, reviewStatus: "PUBLISH" })
+                await store.save("draft", {
+                    ...draft,
+                    ...content,
+                    contentHash: contentHash(content),
+                    reviewStatus: "PUBLISH"
+                })
                 return publication
             })
         } catch (error) {
@@ -145,21 +146,32 @@ export class PublishingService {
         store: WorkflowStore,
         batchId: string,
         jobId: string,
-        revision: WorkflowRecords["revision"],
+        content: PublishContentInput,
         input: PublicationInput
     ) {
-        const asset = await store.get("asset", revision.primaryAssetId)
+        const asset = await store.get("asset", content.primaryAssetId)
         if (!asset || asset.deletedAt || asset.batchId !== batchId) {
             throw new BadRequestException("Publication asset is unavailable")
         }
         let sourceKey = asset.safePreviewStorageKey
         if (input.source === "design") {
-            if (revision.revisionNo !== 1) {
+            const job = await this.context.job(jobId, store)
+            const batch = await this.context.batch(job.batchId, store)
+            const results = await store.find("aiResult", { jobId })
+            const ai = results[0]
+            const original = ai && {
+                primaryAssetId: ai.selectedAssetIds[0],
+                title: ai.rawTitle,
+                caption: ai.rawCaption,
+                hashtags: ai.rawHashtags,
+                location: batch.location,
+                activity: batch.activity
+            }
+            if (!original || contentHash(content) !== contentHash(original)) {
                 throw new BadRequestException(
                     "Design preview is outdated; select the photo or regenerate content"
                 )
             }
-            const results = await store.find("aiResult", { jobId })
             const renders = await store.find("render", {
                 assetId: asset.id,
                 placement: input.placement

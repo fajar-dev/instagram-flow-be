@@ -4,7 +4,6 @@ type PublicFields = Pick<
     Review,
     | "id"
     | "draftId"
-    | "revisionId"
     | "reviewerId"
     | "decision"
     | "notes"
@@ -18,7 +17,6 @@ export class ReviewSerializer {
         return {
             id: value.id,
             draftId: value.draftId,
-            revisionId: value.revisionId,
             reviewerId: value.reviewerId,
             decision: value.decision,
             notes: value.notes,
