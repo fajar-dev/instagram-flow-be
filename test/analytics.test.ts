@@ -1,3 +1,4 @@
+import { testCache } from "./helpers/cache"
 import { expect, test } from "bun:test"
 import { InstagramService } from "../src/modules/instagram/instagram.service"
 import { GraphInstagramClient } from "../src/modules/instagram/adapters/graph-client"
@@ -122,7 +123,12 @@ test("analytics cache coalesces requests and still verifies account availability
         calls++
         return { data: [{ name: url.searchParams.get("metric"), total_value: { value: 1 } }] }
     })
-    const service = new InstagramAnalyticsService(api, serviceAccounts, {} as IWorkflowRepository)
+    const service = new InstagramAnalyticsService(
+        api,
+        serviceAccounts,
+        {} as IWorkflowRepository,
+        testCache()
+    )
     await Promise.all([
         service.account("test", "last_7_days"),
         service.account("test", "last_7_days")
@@ -143,7 +149,8 @@ test("publication insights require a published record and matching configured ac
     const service = new InstagramAnalyticsService(
         adapter(() => ({})),
         accounts,
-        repository
+        repository,
+        testCache()
     )
     await expect(service.publication("id")).rejects.toThrow("only for published")
     publication.status = "PUBLISHED"
@@ -220,7 +227,12 @@ test("top posts ranks by interactions then reach, retains missing metrics last a
             }
         }
     } as any
-    const service = new InstagramAnalyticsService(api, accounts, {} as IWorkflowRepository)
+    const service = new InstagramAnalyticsService(
+        api,
+        accounts,
+        {} as IWorkflowRepository,
+        testCache()
+    )
     const report = await service.topPosts("test")
     expect(report.items.map((item) => item.media.id)).toEqual(["2", "1", "3"])
     expect(report.items[0]!.engagementRate).toBe(10)
@@ -270,7 +282,12 @@ test("analytics retains domain errors and uses a gateway error for provider fail
     const api = adapter((url) =>
         url.pathname.endsWith("/me") ? { id: "123" } : { id: "789", owner: { id: "999" } }
     )
-    const service = new InstagramAnalyticsService(api, accounts, {} as IWorkflowRepository)
+    const service = new InstagramAnalyticsService(
+        api,
+        accounts,
+        {} as IWorkflowRepository,
+        testCache()
+    )
     try {
         await service.media("test", "789")
         throw new Error("Expected ownership error")
@@ -280,7 +297,8 @@ test("analytics retains domain errors and uses a gateway error for provider fail
     const unavailable = new InstagramAnalyticsService(
         adapter(() => ({ error: { code: 190 } })),
         accounts,
-        {} as IWorkflowRepository
+        {} as IWorkflowRepository,
+        testCache()
     )
     try {
         await unavailable.account("test", "today")

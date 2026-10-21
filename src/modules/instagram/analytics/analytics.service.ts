@@ -1,3 +1,4 @@
+import type { ICache } from "../../../core/cache/cache.interface"
 import {
     BadRequestException,
     BadGatewayException,
@@ -10,40 +11,29 @@ import { rankPosts, withEngagementRate } from "./helpers/insight-metrics"
 import { analyticsRange, previousAnalyticsRange } from "./helpers/analytics-period"
 import type { AnalyticsPeriod, IInstagramAnalyticsApi } from "./interfaces/analytics.interface"
 
-/** Short-lived, bounded cache; secrets and provider paging URLs never reach clients. */
 export class InstagramAnalyticsService {
-    private readonly cache = new Map<string, { expires: number; value: Promise<unknown> }>()
-
     constructor(
         private readonly api: IInstagramAnalyticsApi,
         private readonly accounts: InstagramService,
-        private readonly repository: IWorkflowRepository
+        private readonly repository: IWorkflowRepository,
+        private readonly cache: ICache
     ) {}
 
     private async read<T>(accountKey: string, key: string, loader: () => Promise<T>): Promise<T> {
         const { account } = await this.accounts.requireAccount(accountKey)
         const cacheKey = `${accountKey}:${account.instagramUserId}:${key}`
-        const cached = this.cache.get(cacheKey)
-        if (cached && cached.expires > Date.now()) {
-            return cached.value as Promise<T>
-        }
-        if (this.cache.size >= 128) {
-            this.cache.delete(this.cache.keys().next().value!)
-        }
-        const value = loader().catch((error: unknown) => {
-            // A stale request must not evict a newer entry after expiry or capacity eviction.
-            if (this.cache.get(cacheKey)?.value === value) {
-                this.cache.delete(cacheKey)
+        return this.cache.remember(cacheKey, async () => {
+            try {
+                return await loader()
+            } catch (error) {
+                if (error instanceof BaseException) {
+                    throw error
+                }
+                throw new BadGatewayException(
+                    "Instagram insights are unavailable; check account access and permissions"
+                )
             }
-            if (error instanceof BaseException) {
-                throw error
-            }
-            throw new BadGatewayException(
-                "Instagram insights are unavailable; check account access and permissions"
-            )
         })
-        this.cache.set(cacheKey, { expires: Date.now() + 300000, value })
-        return value
     }
 
     account(key: string, period: AnalyticsPeriod) {
