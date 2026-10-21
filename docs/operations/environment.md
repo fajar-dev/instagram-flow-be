@@ -70,3 +70,14 @@ Panduan setup/tunnel ada di [Setup](setup.md) dan [runbook n8n](n8n.md).
 ## Credential Instagram
 
 INSTAGRAM_CREDENTIALS_FILE menunjuk JSON privat, default secrets/instagram-accounts.json. Token dan app secret hanya ada di file ini; jangan letakkan dalam database atau frontend. JSON memuat graphVersion dan array akun. Lihat [publishing](../features/instagram-publishing.md). Tidak ada environment token Instagram kedua.
+
+## Redis Analytics
+
+| Variable | Default / fungsi |
+| --- | --- |
+| REDIS_HOST | 127.0.0.1; host Redis |
+| REDIS_PORT | 6379; integer positif |
+| REDIS_PASSWORD | Kosong; password hanya di environment privat |
+| REDIS_TLS | false; true untuk endpoint Redis TLS |
+
+Redis menyimpan cache analytics selama 300 detik, bukan credential, job atau jadwal publish. Prefix `ig-flow:<NODE_ENV>:analytics:v1` memisahkan environment; key mencakup identitas akun dan parameter query. Tidak menjalankan FLUSHDB/FLUSHALL dan tidak mengubah konfigurasi server Redis bersama. Jika Redis tidak tersedia, Analytics mengambil langsung dari Meta. `/health` tetap memeriksa database, bukan Redis. Tidak ada perubahan schema MySQL.

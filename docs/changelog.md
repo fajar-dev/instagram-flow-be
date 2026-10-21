@@ -302,3 +302,7 @@ Fixed an unnecessary HTTPS-only validation that blocked the existing public HTTP
 ## 2026-10-19 — Ready → Publish / Reject
 
 Removed intermediate review decisions. One project now targets one account and one publication, enforced with a unique project constraint and serialized decisions. Publish starts delivery directly; Reject preserves the revision/hash guard. The editor locks after either decision, and failed delivery retries the same publication. Content tabs, counts, overview, API contracts, translations and migration history are aligned.
+
+## 21 Oktober 2026 — Redis Analytics
+
+Cache Analytics dipindahkan dari memori proses ke Redis dengan TTL lima menit, lock antar-instance, fallback saat Redis gagal dan proteksi terhadap penulisan oleh pemilik lock kedaluwarsa. Kontrak API/frontend tetap. Environment Redis disimpan privat; pengujian mencakup cache hit, expiry, concurrency dan kegagalan provider/cache.
