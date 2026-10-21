@@ -1,6 +1,6 @@
 # Arsitektur backend IG Flow
 
-Frontend Nuxt mengakses API Hono dengan JWT. API menyimpan state di MySQL dan media di MinIO. Worker outbox mengirim event ke n8n; n8n menghubungi gateway AI berformat OpenAI dan mengembalikan hasil melalui callback service-authenticated.
+Frontend Nuxt mengakses API Hono dengan JWT. API menyimpan state di MySQL, media di MinIO, dan cache Analytics sementara di Redis. Worker outbox mengirim event ke n8n; n8n menghubungi gateway AI berformat OpenAI dan mengembalikan hasil melalui callback service-authenticated.
 
 ## Batas tanggung jawab
 

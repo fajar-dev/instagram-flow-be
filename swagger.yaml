@@ -2848,7 +2848,7 @@ paths:
         '403':
           description: Media does not belong to the configured account
         "200":
-          description: Data uses a five-minute process cache. Unavailable metrics return null. Media metrics are lifetime totals; account period does not filter the media list.
+          description: Data uses a five-minute shared Redis cache. Unavailable metrics return null. Media metrics are lifetime totals; account period does not filter the media list.
           content:
             application/json:
               schema:
@@ -2948,7 +2948,7 @@ paths:
         '403':
           description: Media does not belong to the configured account
         "200":
-          description: Data uses a five-minute process cache. Unavailable metrics return null. Media metrics are lifetime totals; account period does not filter the media list.
+          description: Data uses a five-minute shared Redis cache. Unavailable metrics return null. Media metrics are lifetime totals; account period does not filter the media list.
           content:
             application/json:
               schema:
@@ -2999,7 +2999,7 @@ paths:
         '403':
           description: Media does not belong to the configured account
         "200":
-          description: Data uses a five-minute process cache. Unavailable metrics return null. Media metrics are lifetime totals; account period does not filter the media list.
+          description: Data uses a five-minute shared Redis cache. Unavailable metrics return null. Media metrics are lifetime totals; account period does not filter the media list.
           content:
             application/json:
               schema:
@@ -3037,7 +3037,7 @@ paths:
         '403':
           description: Media does not belong to the configured account
         "200":
-          description: Data uses a five-minute process cache. Unavailable metrics return null. Media metrics are lifetime totals; account period does not filter the media list.
+          description: Data uses a five-minute shared Redis cache. Unavailable metrics return null. Media metrics are lifetime totals; account period does not filter the media list.
           content:
             application/json:
               schema:
