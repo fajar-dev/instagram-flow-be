@@ -44,11 +44,12 @@ Enable dispatcher in the dashboard's integration settings. Find the background t
 
 ## Import and publish
 
-Back up existing workflows and nginx config first. Import using n8n's CLI inside its container, as user `node`, then publish the new workflow ID `igFlowContentV3`. CLI publishing requires a container restart. Preserve unrelated workflows and avoid restarting during active work. Never commit plaintext credential exports; remove temporary credential import files after successful import.
+Back up existing workflows and nginx config first. Import using n8n's CLI inside its container, as user `node`, then publish the new workflow ID `igFlowContentV3`. CLI publishing requires a container restart. Preserve unrelated workflows and avoid restarting during active work. Never commit plaintext credential exports; remove temporary credential import files after successful import. When replacing an existing published workflow, unpublish it during a quiet window before import, then publish the imported current version and restart. n8n may generate a different version ID during import; do not assume the supplied ID is retained. Verify the next execution contains the updated Code nodes, not just the editor draft.
 
 ```sh
 # Run on the n8n server after copying the generated JSON there.
 docker cp ig-flow.workflow.json n8n:/tmp/ig-flow.workflow.json
+docker exec -u node n8n n8n unpublish:workflow --id=igFlowContentV3
 docker exec -u node n8n n8n import:workflow --input=/tmp/ig-flow.workflow.json
 docker exec -u node n8n n8n publish:workflow --id=igFlowContentV3
 docker restart n8n
@@ -59,6 +60,7 @@ docker restart n8n
 - Webhook requires Header Auth. Invalid payload returns 400; valid events receive 202 before AI work.
 - Claim uses `eventId` and actual n8n execution ID. Another execution cannot claim a running/completed job. A retry from the same execution can recover a lost claim response.
 - Manifest contains direct MinIO presigned URLs. No media proxy or extra signing secret is used.
+- Analysis splits uploads into one request per photo, staggered by three seconds and merges all successful responses before validating full asset coverage. Empty/non-final gateway responses fail explicitly instead of producing a JSON syntax error. Global ranking scores order selected candidates across photos (up to five); this is not a single joint comparison of all photos.
 - Analysis uses deterministic image-1, image-2 aliases in manifest order rather than asking the model to copy database UUIDs. Parse Analysis resolves exact aliases back to IDs and rejects unknown/duplicate IDs; it never guesses a photograph from a malformed ID. Analysis must cover every asset exactly once. Invalid/partial model output fails rather than silently omitting files.
 - Exactly one render is produced, matching the scalar event `output` (`feed` or `story`). Story caption and hashtags must be empty. Backend sanitizes SVG, embeds the selected image from object storage and stores generated media in MinIO.
 - Post-claim failures call the authenticated failure endpoint with a fixed safe message and then mark the n8n execution failed. Claim errors stop without claiming ownership of another execution.

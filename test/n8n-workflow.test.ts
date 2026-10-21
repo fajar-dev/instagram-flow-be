@@ -32,10 +32,11 @@ function run(file: string, input: unknown) {
         new URL(`../integrations/n8n/nodes/${file}.js`, import.meta.url),
         "utf8"
     )
-    return new Function("$json", "$", "$execution", source)(
+    return new Function("$json", "$", "$execution", "$input", source)(
         input,
         (name: keyof typeof context) => ({ first: () => ({ json: context[name] }) }),
-        { id: "42" }
+        { id: "42" },
+        { all: () => [{ json: input }] }
     )[0].json
 }
 
@@ -145,4 +146,64 @@ describe("deployable n8n workflow", () => {
         expect(serialized).not.toContain("Bearer ")
         expect(serialized).not.toContain("telegram")
     })
+})
+
+test("vision requests split large uploads without losing aliases or accepting partial analysis", () => {
+    const assets = Array.from({ length: 13 }, (_, index) => ({
+        assetId: `asset-${index + 1}`,
+        aiImageUrl: "https://storage.test/image.jpg"
+    }))
+    const lookup = (name: string) => ({
+        first: () => ({
+            json:
+                name === "Get Manifest"
+                    ? { jobId, assets }
+                    : name === "Validate Event"
+                      ? event
+                      : { model: "test" }
+        })
+    })
+    const source = (file: string) =>
+        readFileSync(new URL(`../integrations/n8n/nodes/${file}.js`, import.meta.url), "utf8")
+    const requests = new Function("$json", "$", source("prepare-analysis"))(
+        { jobId, assets },
+        lookup
+    )
+    expect(
+        buildWorkflow().nodes.find((node) => node.name === "Analyze Photos")!.parameters.options
+            .batching.batch
+    ).toEqual({ batchSize: 1, batchInterval: 3000 })
+    expect(requests).toHaveLength(13)
+    expect(
+        requests.map(
+            (item: any) =>
+                item.json.messages[0].content.filter((part: any) => part.type === "image_url")
+                    .length
+        )
+    ).toEqual(Array(13).fill(1))
+    expect(requests[12].json.messages[0].content[1].text).toBe("assetId: image-13")
+    const replies = requests.map((_item: unknown, chunk: number) => ({
+        json: response({
+            rankings: assets.slice(chunk, chunk + 1).map((_asset, index) => ({
+                assetId: `image-${chunk + index + 1}`,
+                score: 90 - chunk,
+                reason: "Suitable"
+            })),
+            selectedAssetIds: [`image-${chunk + 1}`]
+        })
+    }))
+    const parse = (items: unknown[]) =>
+        new Function("$input", "$", source("parse-analysis"))({ all: () => items }, lookup)[0].json
+    expect(parse(replies).rankings).toHaveLength(13)
+    expect(parse(replies).selectedAssetIds).toEqual([
+        "asset-1",
+        "asset-2",
+        "asset-3",
+        "asset-4",
+        "asset-5"
+    ])
+    expect(() => parse(replies.slice(0, 3))).toThrow("Incomplete or invalid analysis")
+    expect(() =>
+        parse([{ json: { choices: [{ finish_reason: "in_progress", message: { content: "" } }] } }])
+    ).toThrow("empty or incomplete")
 })

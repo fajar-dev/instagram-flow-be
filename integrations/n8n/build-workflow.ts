@@ -71,7 +71,12 @@ export function buildWorkflow() {
                 authentication: "genericCredentialType",
                 genericAuthType: "httpHeaderAuth",
                 ...(body ? { sendBody: true, specifyBody: "json", jsonBody: body } : {}),
-                options: { timeout: 180000 }
+                options: {
+                    timeout: 180000,
+                    ...(name === "Analyze Photos"
+                        ? { batching: { batch: { batchSize: 1, batchInterval: 3000 } } }
+                        : {})
+                }
             },
             {
                 credentials,
