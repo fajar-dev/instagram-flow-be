@@ -306,3 +306,15 @@ Removed intermediate review decisions. One project now targets one account and o
 ## 21 Oktober 2026 — Redis Analytics
 
 Cache Analytics dipindahkan dari memori proses ke Redis dengan TTL lima menit, lock antar-instance, fallback saat Redis gagal dan proteksi terhadap penulisan oleh pemilik lock kedaluwarsa. Kontrak API/frontend tetap. Environment Redis disimpan privat; pengujian mencakup cache hit, expiry, concurrency dan kegagalan provider/cache.
+
+## 21 Oktober 2026 — Pemulihan callback dan analisis foto
+
+Tunnel callback n8n lokal dipulihkan setelah port server 14000 tidak memiliki listener dan Claim Job mendapat 502. Analisis foto dibagi maksimal empat per request karena gateway mengembalikan respons kosong untuk upload 13 foto. Hasil digabung dan tetap wajib mencakup semua aset unik; respons kosong/tidak final ditolak dengan pesan yang jelas.
+
+Verifikasi live: callback kembali terhubung dan Claim Job berhasil. Execution 21 memakai analisis bertahap: tiga dari empat respons berhasil, satu tetap kosong (in_progress, usage 0), sehingga job ditandai FAILED dengan benar. Belum ada hasil READY_FOR_REVIEW untuk upload ini; perbaikan gateway AI masih diperlukan. Suite 191 tes, typecheck, lint dan build lulus.
+
+## 21 Oktober 2026 — Analisis per foto
+
+Gateway tetap gagal untuk kelompok foto tertentu, tetapi setiap fotonya berhasil saat diuji sendiri. Workflow kini mengirim satu foto per request dengan jeda pengiriman tiga detik, lalu memvalidasi cakupan seluruh aset dan mengurutkan kandidat berdasarkan skor. Tidak melewati foto gagal atau mengubah respons kosong menjadi sukses.
+
+Verifikasi end-to-end setelah deployment: execution 23 berhasil mengembalikan job af786323-da1f-4ff8-bd52-4bc8030ed797 ke READY_FOR_REVIEW. Seluruh 13 foto dianalisis, lima kandidat dipilih dan satu render Feed dibuat. Tidak ada posting Instagram yang dikirim. Suite 191 tes, lint, typecheck dan build lulus.
