@@ -22,6 +22,7 @@ describe("runtime configuration", () => {
         for (const key of [
             "PORT",
             "DB_PORT",
+            "REDIS_PORT",
             "MINIO_PORT",
             "SMTP_PORT",
             "MAX_UPLOAD_MB",

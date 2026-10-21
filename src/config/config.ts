@@ -65,6 +65,12 @@ export function createConfig(environment: Record<string, string | undefined>) {
             contract,
             timeoutMs: number("N8N_WEBHOOK_TIMEOUT_MS", 15000)
         },
+        redis: {
+            host: environment.REDIS_HOST || "127.0.0.1",
+            port: number("REDIS_PORT", 6379),
+            password: environment.REDIS_PASSWORD || "",
+            tls: environment.REDIS_TLS === "true"
+        },
         instagram: {
             credentialsFile:
                 environment.INSTAGRAM_CREDENTIALS_FILE || "secrets/instagram-accounts.json"
