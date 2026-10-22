@@ -51,14 +51,19 @@ export class WorkflowService {
         )
         return {
             jobId,
+            designReferences: await this.mediaAccess.designReferences(),
             projectName: batch.projectName,
+            clientName: batch.clientName,
             activity: batch.activity,
             location: batch.location,
             description: batch.description,
             reviewUrl: `${config.app.frontendUrl}/content/${jobId}`,
             assets: await Promise.all(
                 assets.map(async (a) => {
-                    const previewUrl = await this.mediaAccess.signedUrl(a.id)
+                    const previewUrl = await this.mediaAccess.signedUrl(
+                        a.id,
+                        Math.max(config.media.signedTtl, 7500)
+                    )
                     return {
                         assetId: a.id,
                         aiImageUrl: previewUrl,
@@ -105,7 +110,13 @@ export class WorkflowService {
                         "Results must cover every batch asset exactly once"
                     )
                 }
-                if (input.renders.length !== 1 || input.renders[0]?.placement !== job.output) {
+                if (
+                    input.renders.some((r) => r.placement !== job.output) ||
+                    (job.output === "story"
+                        ? input.renders.length !== 1
+                        : input.renders.length !== assets.length ||
+                          new Set(input.renders.map((r) => r.assetId)).size !== assets.length)
+                ) {
                     throw new BadRequestException("Result must contain exactly the selected output")
                 }
                 if (
@@ -142,7 +153,6 @@ export class WorkflowService {
                     await store.save("render", render)
                 }
                 const content = {
-                    primaryAssetId: input.selectedAssetIds[0],
                     title: input.title,
                     caption: input.caption,
                     hashtags: input.hashtags,

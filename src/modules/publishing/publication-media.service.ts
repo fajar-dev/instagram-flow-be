@@ -38,8 +38,4 @@ export class PublicationMediaService {
     async remove(key: string) {
         await this.media.remove(key)
     }
-
-    async read(key: string) {
-        return this.media.get(key)
-    }
 }

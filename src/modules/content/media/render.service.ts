@@ -1,13 +1,12 @@
-import { config } from "../../../config/config"
+import sharp from "sharp"
 import { BadRequestException } from "../../../core/exceptions/base"
 import { logger } from "../../../core/helpers/logger"
-import { sanitizeSvg } from "./adapters/svg-sanitizer"
 import type { IContentMedia } from "./interfaces/content-media.interface"
 import type { Asset } from "./entities/asset.entity"
 import type { ResultInput } from "../../ai-job/workflow/validators/workflow.validator"
 import { id } from "../../shared/workflow.helpers"
 
-/** Sanitizes and stores render bytes; database orchestration belongs to the workflow service. */
+/** Validates AI-produced pixels and normalizes delivery size; never composes a design. */
 export class RenderService {
     constructor(private readonly media: IContentMedia) {}
 
@@ -15,48 +14,68 @@ export class RenderService {
         renders: ResultInput["renders"],
         assets: Asset[],
         output: "feed" | "story",
-        primaryAssetId: string,
+        coverAssetId: string,
         aiResultId: string,
         storedKeys: string[]
     ) {
         const safeRenders = []
         for (const render of renders) {
+            const asset = assets.find((a) => a.id === render.assetId && !a.deletedAt)
             if (
+                !asset ||
                 output !== render.placement ||
-                render.assetId !== primaryAssetId ||
-                render.height !== (render.placement === "story" ? 1920 : 1350)
+                (output === "story" && render.assetId !== coverAssetId) ||
+                render.height !== (output === "story" ? 1920 : 1350)
             ) {
                 throw new BadRequestException("Invalid render placement or primary asset")
             }
-            const asset = assets.find((a) => a.id === render.assetId)!
-            const bytes = await this.media.get(asset.safePreviewStorageKey)
-            const expectedUrl = new URL(
-                await this.media.signedUrl(asset.safePreviewStorageKey, config.media.signedTtl)
-            )
-            const sanitizedSvg = sanitizeSvg(render.svg, bytes, (source) => {
-                try {
-                    const url = new URL(source)
-                    return (
-                        url.origin === expectedUrl.origin && url.pathname === expectedUrl.pathname
-                    )
-                } catch {
-                    return false
+            const bytes = Buffer.from(render.imageBase64, "base64")
+            if (
+                bytes.length > 12 * 1024 * 1024 ||
+                bytes.toString("base64") !== render.imageBase64
+            ) {
+                throw new BadRequestException("Invalid AI image encoding or size")
+            }
+            let image: Buffer
+            try {
+                const decoder = sharp(bytes, { limitInputPixels: 40000000, failOn: "warning" })
+                const metadata = await decoder.metadata()
+                if (
+                    !["jpeg", "png", "webp"].includes(metadata.format || "") ||
+                    (metadata.pages || 1) !== 1 ||
+                    !metadata.width ||
+                    !metadata.height ||
+                    metadata.width < 512 ||
+                    metadata.height < 512
+                ) {
+                    throw new Error("Unsupported AI image")
                 }
-            })
+                image = await decoder
+                    .rotate()
+                    .resize(1080, render.height, {
+                        fit: "contain",
+                        background: "#ffffff"
+                    })
+                    .flatten({ background: "#ffffff" })
+                    .jpeg({ quality: 95 })
+                    .toBuffer()
+            } catch {
+                throw new BadRequestException("Invalid or unsupported AI image")
+            }
             const renderId = id()
-            const storageKey = `renders/${renderId}.svg`
+            const storageKey = `renders/${renderId}.jpg`
             storedKeys.push(storageKey)
-            await this.media.put(storageKey, Buffer.from(sanitizedSvg))
+            await this.media.put(storageKey, image)
             safeRenders.push({
                 id: renderId,
                 aiResultId,
                 placement: render.placement,
-                format: render.format,
-                width: render.width,
+                format: "jpeg",
+                width: 1080,
                 height: render.height,
                 assetId: asset.id,
                 storageKey,
-                renderState: "SVG_PREVIEW"
+                renderState: "AI_IMAGE"
             })
         }
         return safeRenders

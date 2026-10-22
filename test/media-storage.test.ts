@@ -34,13 +34,23 @@ describe("Private MinIO media adapter", () => {
         )
         await expect(adapter.signedUrl("../private", 123)).rejects.toThrow("Invalid media key")
         await adapter.put(originalKey, Buffer.from("photo"))
-        const renderKey = `renders/${crypto.randomUUID()}.svg`
-        await adapter.put(renderKey, Buffer.from("<svg/>"))
+        await expect(adapter.signedUrl("brand/design-reference.png", 123)).resolves.toContain(
+            "brand/design-reference.png"
+        )
+        await expect(adapter.signedUrl("brand/logo.png", 123)).resolves.toContain("brand/logo.png")
+        await expect(adapter.signedUrl("brand/unapproved.png", 123)).rejects.toThrow(
+            "Invalid media key"
+        )
+        await expect(adapter.get(`renders/${crypto.randomUUID()}.svg`)).rejects.toThrow(
+            "Invalid media key"
+        )
+        const renderKey = `renders/${crypto.randomUUID()}.jpg`
+        await adapter.put(renderKey, Buffer.from("jpeg"))
         expect(calls).toContainEqual([
             "upload",
             renderKey,
-            "<svg/>",
-            "image/svg+xml",
+            "jpeg",
+            "image/jpeg",
             "application-bucket"
         ])
         expect(await adapter.get(originalKey)).toEqual(Buffer.from("ab"))

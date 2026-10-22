@@ -37,9 +37,9 @@ Worker memeriksa pekerjaan sekitar setiap tiga detik. Production memerlukan proc
 
 Buka Content yang READY_FOR_REVIEW. Form langsung mengikuti output job yang dipilih sejak upload, bukan memilih placement lagi. Feed menyediakan caption, hashtag, metadata dan foto. Story menyediakan foto/sumber desain tanpa caption/hashtag posting; payload Story harus mengirim caption kosong dan hashtag kosong. Keduanya memilih satu akun, sumber foto/desain, dan Post sekarang atau Jadwalkan. Output request yang berbeda dengan job ditolak. Tanggal/jam input adalah WIB; server menyimpan UTC. Izin publikasi batch harus sudah diberikan.
 
-Foto memakai primary asset yang dipilih dalam form publish. Desain AI hanya tersedia jika konten sama dengan hasil AI dan mempunyai render sesuai. Setelah edit, pilih Foto atau buat ulang konten/desain; aplikasi belum melakukan re-render otomatis. Caption feed menggabungkan caption dan hashtag (maksimal 2.200 karakter). Caption tidak dikirim sebagai teks Story.
+Form memilih renderIds hasil edit AI dalam urutan publikasi. Foto sumber mentah tidak menjadi opsi publikasi. Caption/hashtag dan metadata boleh diedit tanpa merender ulang gambar. Backend tidak menggambar ulang desain. Caption feed menggabungkan caption dan hashtag (maksimal 2.200 karakter). Caption tidak dikirim sebagai teks Story.
 
-Snapshot JPEG final disimpan di bucket MinIO yang sama, ukuran 1080×1350 feed atau 1080×1920 story, dengan padding putih jika rasio sumber berbeda. SVG disimpan sebagai preview AI; worker menggunakan JPEG publikasi, bukan SVG. URL presigned dibuat ketika worker memproses pekerjaan dan harus dapat diambil Meta lewat HTTP/HTTPS publik tanpa header JWT aplikasi. TTL URL adalah satu jam.
+Snapshot JPEG final disimpan di bucket MinIO yang sama, ukuran 1080×1350 feed atau 1080×1920 story, dengan padding putih jika rasio berbeda. Hasil AI baru berupa raster JPEG; preview hanya memakai render JPEG AI. Worker menggunakan snapshot JPEG publikasi. URL presigned dibuat ketika worker memproses pekerjaan dan harus dapat diambil Meta lewat HTTP/HTTPS publik tanpa header JWT aplikasi. TTL URL adalah satu jam.
 
 Panel publikasi menunjukkan akun, status, waktu, preview JPEG final dan link postingan bila tersedia. Satu project hanya memiliki satu postingan; akun lain dipilih untuk project lain. Pembatalan hanya untuk QUEUED/SCHEDULED/FAILED; pembatalan mengubah draft menjadi REJECTED dan tidak membuka publikasi kedua.
 
@@ -48,7 +48,7 @@ Panel publikasi menunjukkan akun, status, waktu, preview JPEG final dan link pos
 Status: QUEUED, SCHEDULED, PROCESSING, PUBLISHING, PUBLISHED, FAILED, UNKNOWN, CANCELLED.
 
 - Request memakai Idempotency-Key; request sama mengembalikan baris yang sama. Key yang sama dengan payload berbeda menghasilkan konflik.
-- Revision harus aktif dan READY_FOR_REVIEW saat antrean dibuat. Draft menjadi PUBLISH, dan tidak dapat diedit atau ditolak lagi. Status teknis QUEUED/SCHEDULED/PROCESSING/PUBLISHED/FAILED/UNKNOWN tetap ditampilkan di panel. Retry FAILED menggunakan record, snapshot, dan akun yang sama.
+- Draft harus aktif dan READY_FOR_REVIEW saat antrean dibuat. Draft menjadi PUBLISH, dan tidak dapat diedit atau ditolak lagi. Status teknis QUEUED/SCHEDULED/PROCESSING/PUBLISHED/FAILED/UNKNOWN tetap ditampilkan di panel. Retry FAILED menggunakan record, snapshot, dan akun yang sama.
 - Worker memakai lease/token database. Intent PUBLISHING dicatat sebelum menghubungi Meta.
 - Container diproses bertahap; worker memeriksa FINISHED sebelum media_publish, serta kuota akun sebelum membuat container.
 - Kegagalan sebelum publish dapat dicoba ulang dengan backoff terbatas. FAILED dapat di-retry dari UI.
@@ -71,3 +71,7 @@ Di Instagram > API setup with Instagram login, tambahkan akun dan terima undanga
 Status review lama yang belum memiliki publikasi dipetakan ke READY_FOR_REVIEW. Draft dengan publikasi menjadi PUBLISH; publikasi CANCELLED menjadi REJECTED. Catatan keputusan historis tetap dipertahankan. Jika satu project mempunyai tepat satu post berhasil dan percobaan FAILED/CANCELLED, percobaan terminal dipindahkan utuh ke audit log sebelum record duplikat dibersihkan. Bila ada beberapa post berhasil atau pekerjaan aktif yang bersaing, migration menolak dan memerlukan rekonsiliasi manual. Migration normalisasi tidak dapat dibalik pada database berisi data tanpa restore backup.
 
 PUBLISH adalah tahap pengiriman, bukan konfirmasi tayang. Satu project berarti satu batch ID, bukan kesamaan teks nama project. Unique publications.batch_id mencegah publikasi ulang lintas akun, perubahan konten, placement, dan percobaan job. Transaksi menggunakan READ COMMITTED dengan lock project lalu draft agar request bersamaan membaca pemenang yang telah commit.
+
+## Carousel Feed
+
+Upload maksimal 19 foto. Pilih 1–10 render AI unik untuk publish, dengan urutan renderIds sebagai urutan Instagram. Satu gambar memakai container tunggal; dua atau lebih memakai child container is_carousel_item dan parent CAROUSEL. Worker menyimpan setiap child ID setelah pembuatan, menunggu FINISHED, kemudian memublikasikan satu parent saja. Retry parent publish yang ambigu tetap UNKNOWN, tidak mengulang publish. Media dan urutan dibekukan dalam snapshot untuk langsung maupun terjadwal. Story tepat satu render. Migration AddCarouselContainers menambah progress child tanpa menghapus publikasi lama; snapshot memakai arrays mediaKeys/renderIds yang wajib, termasuk saat hanya satu gambar.

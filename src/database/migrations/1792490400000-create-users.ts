@@ -4,7 +4,7 @@ export class CreateUsers1792490400000 implements MigrationInterface {
     transaction = false
 
     async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`CREATE TABLE IF NOT EXISTS \`users\` (
+        await queryRunner.query(`CREATE TABLE \`users\` (
   \`id\` int NOT NULL AUTO_INCREMENT,
   \`name\` varchar(255) NOT NULL,
   \`photo\` varchar(255) DEFAULT NULL,

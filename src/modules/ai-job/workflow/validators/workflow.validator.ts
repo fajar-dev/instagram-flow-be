@@ -20,7 +20,7 @@ export const resultSchema = z.object({
                 .passthrough()
         )
         .min(1)
-        .max(30),
+        .max(19),
     title: z.string().trim().min(1).max(300),
     caption: z.string().trim().max(10000),
     hashtags: z.array(z.string().max(100)).max(30),
@@ -28,14 +28,19 @@ export const resultSchema = z.object({
         .array(
             z.object({
                 placement: z.enum(["feed", "story"]),
-                format: z.literal("svg"),
+                format: z.literal("jpeg"),
                 width: z.literal(1080),
                 height: z.union([z.literal(1350), z.literal(1920)]),
-                svg: z.string().max(500000),
+                imageBase64: z
+                    .string()
+                    .min(4)
+                    .max(16 * 1024 * 1024)
+                    .regex(/^[A-Za-z0-9+/]+={0,2}$/),
                 assetId: resourceId
             })
         )
-        .length(1)
+        .min(1)
+        .max(19)
 })
 
 export const failureSchema = z.object({

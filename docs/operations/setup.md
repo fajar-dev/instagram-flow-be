@@ -15,7 +15,7 @@ Baseline final 21 Oktober 2026 berisi 13 migration untuk 13 tabel, termasuk publ
 
 1. Siapkan MinIO yang dapat diakses backend, browser untuk URL presigned, serta n8n/gateway vision.
 2. Import workflow yang dibangun dari `integrations/n8n/`. Atur tiga credential Header Auth di n8n, kemudian publish workflow.
-3. Gunakan `N8N_CONTRACT=camelCase` untuk workflow yang disertakan. Set webhook HTTPS, token webhook, dan token backend service yang berpasangan.
+3. Workflow dan backend menggunakan camelCase. Set webhook HTTPS, token webhook, dan token backend service yang berpasangan.
 4. Sediakan jalur callback dari n8n ke backend. Setup pengujian saat ini memakai SSH reverse tunnel ke MacBook; instruksi lengkap di [runbook n8n](n8n.md).
 5. Jalankan `bun run jobs:dispatch` pada proses terpisah. `bun run jobs:dispatch --once` menjalankan satu sweep.
 6. Aktifkan dispatcher melalui Settings. Status ready memeriksa keberadaan/format konfigurasi, bukan konektivitas live.

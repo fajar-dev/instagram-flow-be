@@ -28,7 +28,7 @@ Reset password memakai tabel terpisah; request/resend membuat token baru. Satu r
 
 ## Database dan command
 
-Sync selalu false, termasuk test. Baseline development dikonsolidasikan pada 21 Oktober 2026 dan berisi 13 migration untuk 13 tabel pada src/database/migrations (1792490400000–1792490400012). Schema jobs langsung memakai output tunggal; tidak ada migration transisi. Ini menggantikan baseline sebelumnya. Perubahan berikutnya menggunakan migration baru kecuali reset development diminta eksplisit. Lihat docs/operations/database.md sebelum mengubah history.
+Sync selalu false, termasuk test. Migration aktif: 13 create-table baseline, satu tabel per file, langsung ke schema final. Carousel child_container_ids sudah berada di migration publications; tidak ada migration transisi atau kolom template_id, primary_asset_id dan media_key. Snapshot memakai urutan renderIds dan mediaKeys. Perubahan berikutnya memakai migration baru kecuali reset development diminta eksplisit. Baca docs/operations/database.md sebelum mengubah schema.
 
 Seeder satu file per seeder pada src/database/seeders; index.ts hanya koordinator, import.meta.main menjaga entrypoint CLI. Migration dan seeder memakai script package, bukan job. Worker AI menjalankan dispatch/recovery konten; worker publishing menangani publikasi Instagram.
 
@@ -55,4 +55,8 @@ Draft menyimpan isi konten langsung. Tidak ada entity, endpoint edit, nomor, ata
 
 ## Output tunggal — 21 Oktober 2026
 
-Setiap job memilih satu `output`: `feed` atau `story` sejak proses upload. Output tidak dapat diganti saat publish. Event n8n memakai scalar `output`; callback berisi tepat satu render sesuai output job. Feed memuat caption/hashtag; Story tidak memiliki caption/hashtag posting (payload kosong). Jangan mengembalikan checkbox multi-output, tab pemilih preview, atau pilihan placement pada form publish.
+Setiap job memilih satu `output`: `feed` atau `story` sejak proses upload. Output tidak dapat diganti saat publish. Event n8n memakai scalar `output`; callback Feed berisi satu render AI per foto upload (maksimal 19), sedangkan Story tetap satu render. Publikasi Feed memilih 1–10 render unik dalam urutan eksplisit; Story tepat satu. Feed memuat caption/hashtag; Story tidak memiliki caption/hashtag posting (payload kosong). Jangan mengembalikan checkbox multi-output, tab pemilih preview, atau pilihan placement pada form publish.
+
+## Kontrak workflow aktif
+
+Integrasi n8n hanya memakai camelCase. Tidak ada adapter snake_case, N8N_CONTRACT, pilihan template, fallback foto mentah/SVG atau snapshot publikasi satu mediaKey. Desain memakai referensi AMTI tetap. Daftar dan statistik job hanya memakai attempt terbaru; retry attempt yang sudah digantikan ditolak.

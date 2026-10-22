@@ -1,64 +1,34 @@
 # Database IG Flow
 
-Backend menggunakan MySQL, TypeORM dan driver mysql2. `synchronize` selalu false, termasuk test. Koneksi memakai timezone UTC; tampilan workflow memakai Asia/Jakarta.
+Backend memakai MySQL, TypeORM dan mysql2. `synchronize` selalu false, termasuk test. Koneksi UTC; tampilan workflow Asia/Jakarta.
 
-## Baseline development aktif
+## Schema aktif
 
-Baseline dikonsolidasikan pada 21 Oktober 2026 dan terdiri dari **13 file untuk 13 tabel**, timestamp `1792490400000` sampai `1792490400012`. Registrasi dan urutan dependency berada di `src/database/migrations/index.ts`.
+Registrasi berada di `src/database/migrations/index.ts`: **13 migration, 13 tabel domain**.
 
-| Tabel | Data |
-| --- | --- |
-| users | Identitas, password hash, status aktif, key avatar |
-| password_reset_tokens | Hash token reset, user/email, expiry |
-| batches | Metadata kegiatan, consent, status unggahan |
-| assets | Metadata dan key original/preview/thumbnail MinIO |
-| jobs | State proses AI, attempt dan idempotency |
-| job_dispatches | Outbox dan state pengiriman n8n |
-| ai_results | Hasil analisis AI |
-| renders | Metadata render dan key MinIO |
-| drafts | Konten aktif, content hash dan keputusan |
-| reviews | Catatan penolakan dan reviewer |
-| audit_logs | Jejak aktivitas |
-| settings | Kontrol dispatcher non-secret |
-| publications | Snapshot postingan, akun, jadwal dan state delivery |
+- 1792490400000–1792490400012: users, password_reset_tokens, batches, assets, jobs, job_dispatches, ai_results, renders, drafts, reviews, audit_logs, settings, publications.
 
-Tabel `migrations` merupakan ledger TypeORM, bukan tabel domain. Tidak ada tabel revisi, Contact, role, atau media biner. Schema sudah langsung mendukung Review → Publish/Reject; publication memiliki unique batch_id untuk satu postingan per project. Seluruh migration hanya membuat/menghapus satu tabel. `down` dijalankan dalam urutan terbalik agar dependency foreign key terjaga.
+Semua file langsung membuat schema final. Kolom child_container_ids berada di baseline publications; tidak ada migration ALTER/normalisasi snapshot lama.
 
-## Command
+Tidak ada tabel Contact, role atau revisi. Job memilih satu output Feed/Story. Draft menyimpan konten dan keputusan Review → Publish/Reject. Publications memiliki unique batch_id: satu proyek, satu akun, satu postingan. Media biner berada di MinIO, bukan database.
+
+## Menjalankan
 
 ```sh
 bun run migration:show
 bun run migration:run
 bun run migration:revert
-bun run migration:create src/database/migrations/nama-perubahan
-bun run migration:generate src/database/migrations/nama-perubahan -d src/config/database.ts
 bun run seed:users
 ```
 
-Database kosong cukup menjalankan `migration:run`. Seeder terpisah; migration tidak mengisi akun demo atau menjalankan job. Migration berikutnya harus memakai file baru kecuali pengguna meminta reset baseline development lagi. `migration:revert` menjalankan down migration terakhir; periksa dampaknya dan backup sebelum menjalankannya.
+Database kosong menjalankan semua migration berurutan. Konsolidasi development 21 Oktober 2026 menggabungkan perubahan carousel dan penghapusan field lama ke baseline. Database development yang sudah menjalankan 15 migration sebelumnya harus diverifikasi schema-nya dan dibackup sebelum dua entri migration transisi dihapus dari ledger; jangan menjalankan ulang CREATE TABLE pada database tersebut. Database dengan schema lain harus dibangun ulang dari baseline pada database kosong.
 
-## Database development yang sudah berisi data
+Jangan menggunakan synchronize. Migration berikutnya menggunakan file baru kecuali konsolidasi diminta eksplisit. Rollback baseline menghapus tabel beserta datanya, sehingga pemulihan memerlukan backup. Test database disposable menguji up/down seluruh rangkaian serta reapply dan schema final.
 
-Baseline ini menggantikan rangkaian migration sebelum production atas permintaan pengguna. Jangan langsung menjalankan baseline baru pada database dengan ledger lama: TypeORM akan mencoba membuat tabel yang sudah ada.
+## Data operasional
 
-Untuk mempertahankan data, backup database beserta ledger, bandingkan schema setiap tabel terhadap database disposable yang dibuat dari baseline baru, dan pastikan kolom, tipe, default, indeks serta foreign key cocok. Setelah cocok, ganti ledger secara transaksional dengan 13 nama/timestamp baseline. Jangan menandai migration applied hanya berdasarkan nama tabel. `migration:show` membaca ledger; ia tidak membuktikan kesamaan schema.
+Retry AI membuat attempt baru; histori tetap tersedia, tetapi daftar dan statistik menghitung attempt terbaru. Snapshot publikasi membekukan urutan gambar dan caption. Idempotency dan unique project publication mencegah posting ganda.
 
-Database lokal pada task ini diselaraskan melalui prosedur tersebut tanpa menghapus data aplikasi. Database lain harus diverifikasi secara terpisah. Alternatif pembuatan ulang database development memerlukan persetujuan untuk penghapusan datanya.
+Seeder terpisah dari migration. Akun demo tidak memiliki role khusus. Token reset password berada di tabel terpisah; reset berhasil menghapus semua token pengguna dalam transaksi.
 
-## Seeder dan reset password
-
-`src/database/seeders/user.seeder.ts` menyediakan fixture serta entrypoint CLI; `index.ts` hanya koordinator. Akun demo: admin@example.com, budi@example.com, siti@example.com; password development `password123`. Email yang sudah ada dilewati. Nama Admin Demo tidak memberi akses khusus.
-
-Request/resend password membuat token baru di password_reset_tokens. Token lama tetap valid sampai kedaluwarsa. Satu reset berhasil mengganti password dan menghapus seluruh token user dalam transaksi dengan lock.
-
-## Backup media
-
-Original, preview, thumbnail, avatar dan render berada di satu bucket privat MinIO. Backup database saja tidak cukup untuk memulihkan media. Credential integrasi berada di environment atau JSON privat server dan tidak disimpan dalam tabel domain.
-
-## Baseline final output tunggal — 21 Oktober 2026
-
-`CreateJobs1792490400004` langsung membuat `jobs.output` enum Feed/Story. Tidak ada lagi kolom daftar output atau migration transisi. Total tetap **13 migration untuk 13 tabel**; timestamp baseline dipertahankan agar tabel dan data development tidak dibuat ulang.
-
-Untuk database kosong, jalankan `bun run migration:run`. Database lokal yang sebelumnya sudah menerapkan migration transisi dikonsolidasikan setelah backup SQL dan perbandingan schema dengan database pengujian yang dibuat dari baseline final. Perbandingan mencakup kolom, default, tipe, indeks, foreign key, aturan referensi dan collation; urutan fisik kolom tidak memengaruhi kontrak. Setelah schema cocok, hanya entry ledger migration transisi yang dihapus secara transaksional. Seluruh jumlah baris aplikasi dipertahankan.
-
-Database development lain dengan riwayat lama harus melalui pemeriksaan yang sama; jangan menghapus ledger tanpa membandingkan schema. Ini merupakan konsolidasi development atas permintaan pengguna, bukan prosedur upgrade production. Backup dan data lama tetap diperlukan untuk rollback historis; baseline final tidak mengembalikan pilihan output ganda.
+Backup database harus disertai bucket MinIO bila ingin memulihkan media. Credential integrasi tidak disimpan dalam tabel domain. Riwayat konsolidasi lama berada di changelog dan arsip audit.

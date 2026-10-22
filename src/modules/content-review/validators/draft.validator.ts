@@ -1,8 +1,6 @@
 import { z } from "zod"
-import { resourceId } from "../../shared/validators/shared.validator"
 
 export const publishContentSchema = z.object({
-    primaryAssetId: resourceId,
     title: z.string().trim().min(1).max(300),
     caption: z.string().trim().min(1).max(10000),
     hashtags: z.array(z.string().max(100)).max(30),

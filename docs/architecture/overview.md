@@ -28,7 +28,7 @@ Repository workflow bersama saat ini melayani transaksi beberapa entitas konten;
 
 ## Proses konten
 
-Batch dibuat, foto dikirim satu per request, lalu process mengunci batch dan membuat job/outbox secara atomik. Dispatcher menyampaikan event. n8n mengklaim job memakai event/execution ID, mengambil manifest berisi preview presigned, menganalisis seluruh foto dan membuat caption/render yang diminta. Backend memvalidasi hasil, menyaring SVG, dan menyimpan hasil/draft serta metadata render.
+Batch dibuat, foto dikirim satu per request, lalu process mengunci batch dan membuat job/outbox secara atomik. Dispatcher menyampaikan event. n8n mengklaim job memakai event/execution ID, mengambil manifest berisi preview presigned, menganalisis seluruh foto dan membuat caption/render yang diminta. Backend memvalidasi hasil dan byte gambar AI, dan menyimpan hasil/draft serta metadata render.
 
 Review langsung menuju Publish atau Reject. Publish mengirim konten final dan expectedContentHash, lalu menyimpan draft final serta snapshot publikasi dalam transaksi yang sama. Reject menggunakan contentHash. Tidak ada endpoint edit terpisah atau riwayat revisi aktif. Idempotency, claim dan transaksi melindungi request ganda; lihat [kontrak API](../reference/api.md).
 
@@ -36,7 +36,7 @@ Review langsung menuju Publish atau Reject. Publish mengirim konten final dan ex
 
 Seluruh pengguna aktif terautentikasi memiliki akses aplikasi yang sama. Uploader/reviewer ID tetap disimpan sebagai jejak aktivitas. Callback n8n memakai service token terpisah, bukan JWT pengguna.
 
-Satu bucket privat digunakan untuk avatar dan konten. MySQL hanya menyimpan metadata/key media. SVG disanitasi, foto dipasangkan dengan aset yang diketahui dari MinIO, dan frontend menampilkan SVG sebagai image, bukan markup HTML. Tidak ada fallback media lokal.
+Satu bucket privat digunakan untuk avatar dan konten. MySQL hanya menyimpan metadata/key media. Gambar AI divalidasi sebagai raster statis lalu dinormalisasi ke JPEG. Preview SVG historis ditampilkan sebagai image, bukan markup HTML; callback baru tidak menerima SVG. Tidak ada fallback media lokal.
 
 ## Entry point dan operasi
 

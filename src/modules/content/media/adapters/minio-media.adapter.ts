@@ -19,8 +19,10 @@ export class MinioMedia implements IContentMedia {
 
     private validateKey(key: string) {
         if (
+            key !== "brand/partner-logo.jpeg" &&
+            !/^brand\/(design-reference|logo)\.png$/.test(key) &&
             !/^publications\/[a-f0-9-]{36}\.jpg$/.test(key) &&
-            !/^renders\/[a-f0-9-]{36}\.svg$/.test(key) &&
+            !/^renders\/[a-f0-9-]{36}\.jpg$/.test(key) &&
             !/^batches\/[a-f0-9-]{36}\/(original|preview|thumbnail)\/[a-f0-9-]{36}\.(jpeg|jpg|png|webp)$/.test(
                 key
             )
@@ -40,13 +42,7 @@ export class MinioMedia implements IContentMedia {
         await this.storage.ensurePrivateBucket(this.bucket)
         const extension = key.split(".").pop()
         const mime =
-            extension === "svg"
-                ? "image/svg+xml"
-                : extension === "png"
-                  ? "image/png"
-                  : extension === "webp"
-                    ? "image/webp"
-                    : "image/jpeg"
+            extension === "png" ? "image/png" : extension === "webp" ? "image/webp" : "image/jpeg"
         await this.storage.upload(key, data, mime, this.bucket)
     }
 

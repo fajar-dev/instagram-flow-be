@@ -1,4 +1,3 @@
-import { CreateUsers1792490400000 } from "../src/database/migrations/1792490400000-create-users"
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test"
 import type { Hono } from "hono"
 import { databaseMigrations } from "../src/database/migrations"
@@ -8,8 +7,7 @@ import {
     createTestApp,
     destroyTestDatabase,
     initTestDatabase,
-    registerAndLogin,
-    request
+    registerAndLogin
 } from "./setup"
 
 let app: Hono
@@ -55,15 +53,19 @@ describe("MySQL database integration", () => {
         const runner = AppDataSource.createQueryRunner()
         try {
             expect(databaseMigrations).toHaveLength(13)
+            expect(await runner.hasColumn("batches", "template_id")).toBe(false)
+            expect(await runner.hasColumn("drafts", "primary_asset_id")).toBe(false)
+            expect(await runner.hasColumn("publications", "media_key")).toBe(false)
+            expect(await runner.hasColumn("publications", "child_container_ids")).toBe(true)
             expect(await runner.hasColumn("jobs", "output")).toBe(true)
             expect(await runner.hasColumn("jobs", "requested_outputs")).toBe(false)
             expect(await runner.hasTable("contacts")).toBe(false)
-            const timestamps = databaseMigrations
-                .slice(0, 13)
-                .map((Migration) => Number(Migration.name.slice(-13)))
-            expect(timestamps).toEqual(
-                Array.from({ length: 13 }, (_, index) => 1792490400000 + index)
+            const timestamps = databaseMigrations.map((Migration) =>
+                Number(Migration.name.slice(-13))
             )
+            expect(timestamps).toEqual([
+                ...Array.from({ length: 13 }, (_, index) => 1792490400000 + index)
+            ])
             expect(await runner.hasColumn("users", "role")).toBe(false)
             expect(await runner.hasColumn("renders", "sanitized_svg")).toBe(false)
             expect(await runner.hasColumn("renders", "storage_key")).toBe(true)
@@ -86,20 +88,6 @@ describe("MySQL database integration", () => {
         } finally {
             await runner.release()
         }
-    })
-
-    test("baseline user migration preserves existing users", async () => {
-        const { user, headers } = await registerAndLogin(app)
-        const runner = AppDataSource.createQueryRunner()
-        try {
-            await new CreateUsers1792490400000().up(runner)
-            expect(await runner.hasTable("contacts")).toBe(false)
-        } finally {
-            await runner.release()
-        }
-        const profile = await request(app, "/api/auth/me", { headers })
-        expect(profile.status).toBe(200)
-        expect(profile.body.data.id).toBe(user.id)
     })
 
     test("restores foreign key checks after cleaning test data", async () => {

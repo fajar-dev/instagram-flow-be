@@ -36,7 +36,7 @@ export class JobService {
             }
             if (retryOfJobId) {
                 const old = jobs.find((j) => j.id === retryOfJobId)
-                if (old && !old.retryable) {
+                if (old && (!old.retryable || jobs.some((job) => job.attemptNo > old.attemptNo))) {
                     throw new ConflictException("Job cannot be retried")
                 }
                 if (!old || old.status !== "FAILED") {
@@ -93,6 +93,9 @@ export class JobService {
     async details(jobId: string) {
         const job = await this.context.job(jobId)
         const batch = await this.context.batch(job.batchId)
+        const attempts = await this.repository.find("job", { batchId: job.batchId })
+        const retryable =
+            job.retryable && !attempts.some((attempt) => attempt.attemptNo > job.attemptNo)
         const assets = (await this.repository.find("asset", { batchId: batch.id })).filter(
             (a) => !a.deletedAt
         )
@@ -105,7 +108,7 @@ export class JobService {
               })
             : []
         return {
-            job,
+            job: { ...job, retryable },
             batch,
             assets,
             aiResult,

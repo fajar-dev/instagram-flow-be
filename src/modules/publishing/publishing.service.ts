@@ -14,9 +14,6 @@ import { idempotencyKey } from "../shared/validators/shared.validator"
 import { WorkflowContextService } from "../shared/context.service"
 import { logger } from "../../core/helpers/logger"
 
-import type { WorkflowStore } from "../shared/interfaces/workflow.repository.interface"
-import type { PublishContentInput } from "../content-review/validators/draft.validator"
-
 export class PublishingService {
     constructor(
         private readonly repository: IPublishingRepository,
@@ -35,7 +32,7 @@ export class PublishingService {
     async enqueue(actor: User, draftId: string, input: PublicationInput, key: string) {
         idempotencyKey.parse(key)
         const hash = contentHash(input)
-        let createdMedia: string | null = null
+        const createdMedia: string[] = []
         try {
             return await this.repository.transaction(async (store) => {
                 const { draft, batch } = await lockDraftProject(store, draftId)
@@ -76,16 +73,22 @@ export class PublishingService {
                     throw new ConflictException("Project already has a publication")
                 }
                 const { account } = await this.accounts.requireAccount(input.accountKey)
-                const sourceKey = await this.resolveSourceKey(
-                    store,
-                    batch.id,
-                    draft.jobId,
-                    content,
-                    input
+                const results = await store.find("aiResult", { jobId: draft.jobId })
+                const available = results[0]
+                    ? await store.find("render", { aiResultId: results[0].id })
+                    : []
+                const selected = input.renderIds.map((renderId) =>
+                    available.find((r) => r.id === renderId && r.placement === input.placement)
                 )
-                // Keep the draft lock until the immutable snapshot and publication are saved.
-                createdMedia = await this.media.prepare(sourceKey, input.placement, id())
-                await this.media.url(createdMedia) // Validate the storage URL protocol before saving the publication.
+                if (selected.some((r) => !r)) {
+                    throw new BadRequestException("Requested design is unavailable")
+                }
+                for (const render of selected) {
+                    const key = await this.media.prepare(render!.storageKey, input.placement, id())
+                    createdMedia.push(key)
+                    await this.media.url(key)
+                }
+                // Freeze order and media bytes together with the publication decision.
                 const publication = await store.save("publication", {
                     id: id(),
                     batchId: batch.id,
@@ -98,12 +101,13 @@ export class PublishingService {
                         caption,
                         hashtags: content.hashtags,
                         contentHash: contentHash(content),
-                        source: input.source,
+                        mediaKeys: createdMedia,
+                        renderIds: input.renderIds,
                         placement: input.placement,
                         accountLabel: account.label,
                         instagramUserId: account.instagramUserId
                     },
-                    mediaKey: createdMedia,
+                    childContainerIds: [],
                     status: input.scheduledAt ? "SCHEDULED" : "QUEUED",
                     scheduledAt,
                     nextAttemptAt: scheduledAt,
@@ -135,58 +139,15 @@ export class PublishingService {
                 return publication
             })
         } catch (error) {
-            if (createdMedia) {
+            if (createdMedia.length) {
                 try {
-                    await this.media.remove(createdMedia)
+                    await Promise.all(createdMedia.map((key) => this.media.remove(key)))
                 } catch {
                     logger.warn("Publication media cleanup required")
                 }
             }
             throw error
         }
-    }
-
-    private async resolveSourceKey(
-        store: WorkflowStore,
-        batchId: string,
-        jobId: string,
-        content: PublishContentInput,
-        input: PublicationInput
-    ) {
-        const asset = await store.get("asset", content.primaryAssetId)
-        if (!asset || asset.deletedAt || asset.batchId !== batchId) {
-            throw new BadRequestException("Publication asset is unavailable")
-        }
-        let sourceKey = asset.safePreviewStorageKey
-        if (input.source === "design") {
-            const job = await this.context.job(jobId, store)
-            const batch = await this.context.batch(job.batchId, store)
-            const results = await store.find("aiResult", { jobId })
-            const ai = results[0]
-            const original = ai && {
-                primaryAssetId: ai.selectedAssetIds[0],
-                title: ai.rawTitle,
-                caption: input.placement === "story" ? "" : ai.rawCaption,
-                hashtags: input.placement === "story" ? [] : ai.rawHashtags,
-                location: batch.location,
-                activity: batch.activity
-            }
-            if (!original || contentHash(content) !== contentHash(original)) {
-                throw new BadRequestException(
-                    "Design preview is outdated; select the photo or regenerate content"
-                )
-            }
-            const renders = await store.find("render", {
-                assetId: asset.id,
-                placement: input.placement
-            })
-            const render = renders.find((r) => results.some((result) => result.id === r.aiResultId))
-            if (!render) {
-                throw new BadRequestException("Requested design is unavailable")
-            }
-            sourceKey = render.storageKey
-        }
-        return sourceKey
     }
 
     async cancel(actor: User, publicationId: string) {
@@ -247,6 +208,7 @@ export class PublishingService {
                 nextAttemptAt: new Date(),
                 attemptCount: 0,
                 containerId: null,
+                childContainerIds: [],
                 containerCreatedAt: null,
                 safeError: null,
                 lockedUntil: null,
@@ -255,13 +217,5 @@ export class PublishingService {
             await this.context.audit(store, actor, "PUBLICATION_RETRIED", "publication", row.id, {})
             return result
         })
-    }
-
-    async image(publicationId: string) {
-        const row = await this.repository.get("publication", publicationId)
-        if (!row) {
-            throw new NotFoundException("Publication not found")
-        }
-        return this.media.read(row.mediaKey)
     }
 }

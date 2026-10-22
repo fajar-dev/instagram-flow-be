@@ -114,7 +114,6 @@ async function fixture(output: "feed" | "story" = "feed") {
         idempotencyKey: crypto.randomUUID()
     })
     const content = {
-        primaryAssetId: assetId,
         title: "Inspection",
         caption: output === "story" ? "" : "AMTI inspection",
         hashtags: output === "story" ? [] : ["#AMTI"],
@@ -128,11 +127,42 @@ async function fixture(output: "feed" | "story" = "feed") {
         ...content,
         contentHash: contentHash(content)
     })
+    const resultId = crypto.randomUUID()
+    const renderId = crypto.randomUUID()
+    await repo.save("aiResult", {
+        id: resultId,
+        jobId,
+        executionId: "fixture",
+        resultVersion: 1,
+        rankings: [],
+        selectedAssetIds: [assetId],
+        rawTitle: content.title,
+        rawCaption: content.caption,
+        rawHashtags: content.hashtags,
+        rawPayloadHash: "a".repeat(64)
+    })
+    await repo.save("render", {
+        id: renderId,
+        aiResultId: resultId,
+        assetId,
+        placement: output,
+        format: "jpeg",
+        width: 24,
+        height: 40,
+        storageKey: key,
+        renderState: "AI_IMAGE"
+    })
     const payload = {
         expectedContentHash: contentHash(content),
-        content,
+        content: {
+            title: content.title,
+            caption: content.caption,
+            hashtags: content.hashtags,
+            location: content.location,
+            activity: content.activity
+        },
         accountKey: "one",
-        source: "photo",
+        renderIds: [renderId] as string[],
         placement: output,
         scheduledAt: null
     }
@@ -168,6 +198,14 @@ class FakeGraph implements IInstagramApi {
             throw new InstagramApiError(190, false)
         }
         return "123"
+    }
+
+    async createChild() {
+        return String(++this.creates)
+    }
+
+    async createCarousel() {
+        return String(++this.creates)
     }
 
     async status() {
@@ -232,8 +270,7 @@ describe("Instagram publishing", () => {
             ["GET", "/api/drafts/x/publications"],
             ["POST", "/api/drafts/x/publications"],
             ["POST", "/api/publications/x/cancel"],
-            ["POST", "/api/publications/x/retry"],
-            ["GET", "/api/publications/x/image"]
+            ["POST", "/api/publications/x/retry"]
         ]) {
             expect((await app.request(path!, { method })).status).toBe(401)
         }
@@ -265,6 +302,29 @@ describe("Instagram publishing", () => {
             await rm(dir, { recursive: true, force: true })
         }
     })
+    test("Graph carousel preserves child order and separates caption from child requests", async () => {
+        const requests: URLSearchParams[] = []
+        const service = new InstagramService({
+            read: async () => ({
+                graphVersion: "v24.0",
+                app: { appId: "", appSecret: "" },
+                accounts: [account("one")]
+            })
+        })
+        const api = new GraphInstagramApi(service, (async (_url: any, options: any) => {
+            requests.push(new URLSearchParams(options.body))
+            return Response.json({ id: String(requests.length) })
+        }) as any)
+        const first = await api.createChild("one", "https://storage.test/first.jpg")
+        const second = await api.createChild("one", "https://storage.test/second.jpg")
+        await api.createCarousel("one", [second, first], "Caption")
+        expect(requests[0]!.get("is_carousel_item")).toBe("true")
+        expect(requests[0]!.has("caption")).toBe(false)
+        expect(requests[2]!.get("children")).toBe("2,1")
+        expect(requests[2]!.get("media_type")).toBe("CAROUSEL")
+        expect(requests[2]!.get("caption")).toBe("Caption")
+    })
+
     test("Graph adapter keeps tokens in Authorization and sanitizes provider errors", async () => {
         const service = new InstagramService({
             read: async () => ({
@@ -351,11 +411,8 @@ describe("Instagram publishing", () => {
         const rows = await repo.find("publication", { draftId: f.draftId })
         expect(rows).toHaveLength(1)
         expect(JSON.stringify(responses[0]!.body)).not.toContain("mediaKey")
-        const image = await app.request(`/api/publications/${rows[0]!.id}/image`, {
-            headers: f.headers
-        })
-        expect(image.status).toBe(200)
-        const metadata = await sharp(Buffer.from(await image.arrayBuffer())).metadata()
+        const image = await contentMedia.get(rows[0]!.snapshot.mediaKeys[0]!)
+        const metadata = await sharp(image).metadata()
         expect([metadata.format, metadata.width, metadata.height]).toEqual(["jpeg", 1080, 1350])
         await repo.save("draft", { id: f.draftId, caption: "changed later" })
         expect((await repo.get("publication", rows[0]!.id))!.snapshot.caption).toBe(
@@ -460,7 +517,9 @@ describe("Instagram publishing", () => {
         await repo.save("batch", { id: f.batchId, publicationPermission: false })
         expect((await f.enqueue()).status).toBe(400)
         await repo.save("batch", { id: f.batchId, publicationPermission: true })
-        expect((await f.enqueue({ ...f.payload, source: "design" })).status).toBe(400)
+        expect((await f.enqueue({ ...f.payload, renderIds: [crypto.randomUUID()] })).status).toBe(
+            400
+        )
         expect(await repo.find("publication", { draftId: f.draftId })).toHaveLength(0)
     })
     test("publish atomically saves final edits and rejects invalid content or foreign photos", async () => {
@@ -472,7 +531,7 @@ describe("Instagram publishing", () => {
             (
                 await f.enqueue({
                     ...f.payload,
-                    content: { ...f.payload.content, primaryAssetId: crypto.randomUUID() }
+                    renderIds: [crypto.randomUUID()]
                 })
             ).status
         ).toBe(400)
@@ -514,57 +573,57 @@ describe("Instagram publishing", () => {
             prepare.mockRestore()
         }
     })
-    test("design publishing requires the unchanged AI content and matching render", async () => {
+    test("design publishing preserves image context but allows caption edits", async () => {
         const f = await fixture()
-        const draft = (await repo.get("draft", f.draftId))!
-        const asset = (await repo.get("asset", draft.primaryAssetId))!
-        const resultId = crypto.randomUUID()
-        await repo.save("aiResult", {
-            id: resultId,
-            jobId: draft.jobId,
-            executionId: "test",
-            resultVersion: 1,
-            rankings: [],
-            selectedAssetIds: [asset.id],
-            rawTitle: draft.title,
-            rawCaption: draft.caption,
-            rawHashtags: draft.hashtags,
-            rawPayloadHash: "a".repeat(64)
-        })
-        await repo.save("render", {
-            id: crypto.randomUUID(),
-            aiResultId: resultId,
-            assetId: asset.id,
-            placement: "feed",
-            format: "jpeg",
-            width: 24,
-            height: 40,
-            storageKey: asset.safePreviewStorageKey,
-            renderState: "READY"
-        })
         expect(
             (
                 await f.enqueue({
                     ...f.payload,
-                    source: "design",
-                    content: { ...f.payload.content, caption: "Edited" }
-                })
-            ).status
-        ).toBe(400)
-        expect(
-            (
-                await f.enqueue({
-                    ...f.payload,
-                    source: "design",
                     placement: "story",
                     content: { ...f.payload.content, caption: "", hashtags: [] }
                 })
             ).status
         ).toBe(400)
-        const response = await f.enqueue({ ...f.payload, source: "design" })
+        const response = await f.enqueue({
+            ...f.payload,
+            content: { ...f.payload.content, caption: "Edited caption" }
+        })
         expect(response.status).toBe(202)
-        expect(response.body.data.source).toBe("design")
+        expect(response.body.data.imageCount).toBe(1)
     })
+    test("carousel validates selection, freezes order and creates one parent publication", async () => {
+        const f = await fixture()
+        const original = (await repo.get("render", f.payload.renderIds[0]!))!
+        const second = await repo.save("render", { ...original, id: crypto.randomUUID() })
+        expect((await f.enqueue({ ...f.payload, renderIds: [] })).status).toBe(422)
+        expect(
+            (await f.enqueue({ ...f.payload, renderIds: [original.id, original.id] })).status
+        ).toBe(422)
+        expect(
+            (
+                await f.enqueue({
+                    ...f.payload,
+                    renderIds: Array.from({ length: 11 }, () => crypto.randomUUID())
+                })
+            ).status
+        ).toBe(422)
+        const result = await f.enqueue({ ...f.payload, renderIds: [second.id, original.id] })
+        expect(result.status).toBe(202)
+        const row = (await repo.get("publication", result.body.data.id))!
+        expect(row.snapshot.renderIds).toEqual([second.id, original.id])
+        expect(row.snapshot.mediaKeys).toHaveLength(2)
+        const graph = new FakeGraph()
+        const worker = new PublicationWorker(repo, graph, instagramService, publicationMedia)
+        for (let step = 0; step < 4; step++) {
+            await repo.save("publication", { id: row.id, nextAttemptAt: new Date(0) })
+            await worker.process(row.id)
+        }
+        expect(graph.creates).toBe(3)
+        expect(graph.publishes).toBe(1)
+        expect((await repo.get("publication", row.id))!.status).toBe("PUBLISHED")
+        expect((await repo.get("publication", row.id))!.childContainerIds).toEqual(["1", "2"])
+    })
+
     test("schedule stays queued until due and can be cancelled without calling Meta", async () => {
         const f = await fixture()
         expect(

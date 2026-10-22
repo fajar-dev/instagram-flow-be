@@ -25,6 +25,8 @@ export interface IInstagramApi {
         caption: string,
         placement: "feed" | "story"
     ): Promise<string>
+    createChild(key: string, imageUrl: string): Promise<string>
+    createCarousel(key: string, children: string[], caption: string): Promise<string>
     status(key: string, containerId: string): Promise<string>
     publish(key: string, containerId: string): Promise<string>
     permalink(key: string, mediaId: string): Promise<string | null>
