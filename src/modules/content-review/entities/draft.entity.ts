@@ -10,9 +10,6 @@ export class Draft {
     @Column({ type: "varchar", name: "job_id", length: 36 })
     jobId!: string
 
-    @Column({ type: "varchar", name: "primary_asset_id", length: 36 })
-    primaryAssetId!: string
-
     @Column({ type: "varchar", name: "title", length: 300 })
     title!: string
 

@@ -4,7 +4,6 @@ type PublicFields = Pick<
     Draft,
     | "id"
     | "jobId"
-    | "primaryAssetId"
     | "title"
     | "caption"
     | "hashtags"
@@ -21,7 +20,6 @@ export class DraftSerializer {
         return {
             id: value.id,
             jobId: value.jobId,
-            primaryAssetId: value.primaryAssetId,
             title: value.title,
             caption: value.caption,
             hashtags: value.hashtags,

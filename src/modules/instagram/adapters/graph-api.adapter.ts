@@ -53,6 +53,37 @@ export class GraphInstagramApi extends GraphInstagramClient implements IInstagra
         return String(data.id)
     }
 
+    async createChild(key: string, imageUrl: string) {
+        const { account } = await this.accounts.requireAccount(key)
+        const data = await this.request(
+            key,
+            `${account.instagramUserId}/media`,
+            "POST",
+            { image_url: imageUrl, is_carousel_item: "true" },
+            graphIdentity
+        )
+        return String(data.id)
+    }
+
+    async createCarousel(key: string, children: string[], caption: string) {
+        if (
+            children.length < 2 ||
+            children.length > 10 ||
+            new Set(children).size !== children.length
+        ) {
+            throw new InstagramApiError(100, false)
+        }
+        const { account } = await this.accounts.requireAccount(key)
+        const data = await this.request(
+            key,
+            `${account.instagramUserId}/media`,
+            "POST",
+            { media_type: "CAROUSEL", children: children.join(","), caption },
+            graphIdentity
+        )
+        return String(data.id)
+    }
+
     async status(key: string, containerId: string) {
         return String(
             (await this.request(key, containerId, "GET", { fields: "status_code" }, graphStatus))

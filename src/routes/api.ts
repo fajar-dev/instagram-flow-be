@@ -112,7 +112,7 @@ const contentBodyLimit = bodyLimit({
     onError: (c) => ApiResponse.error(c, "Request too large", 413)
 })
 const callbackBodyLimit = bodyLimit({
-    maxSize: 1200000,
+    maxSize: 64 * 1024 * 1024,
     onError: (c) => ApiResponse.error(c, "Request too large", 413)
 })
 
@@ -265,9 +265,6 @@ routes.post("/publications/:publicationId/cancel", authMiddleware, workflowMutat
 )
 routes.post("/publications/:publicationId/retry", authMiddleware, workflowMutationLimit, (c) =>
     publishingController.retry(c)
-)
-routes.get("/publications/:publicationId/image", authMiddleware, (c) =>
-    publishingController.image(c)
 )
 
 // API documentation

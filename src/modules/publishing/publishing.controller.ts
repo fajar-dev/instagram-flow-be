@@ -53,11 +53,4 @@ export class PublishingController {
             )
         )
     }
-
-    async image(c: Context) {
-        const data = await this.service.image(resourceId.parse(c.req.param("publicationId")))
-        c.header("Content-Type", "image/jpeg")
-        c.header("Cache-Control", "private, no-store")
-        return c.body(new Uint8Array(data))
-    }
 }

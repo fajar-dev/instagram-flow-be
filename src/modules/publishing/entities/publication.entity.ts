@@ -5,7 +5,8 @@ export interface PublicationSnapshot {
     caption: string
     hashtags: string[]
     contentHash: string
-    source: "photo" | "design"
+    mediaKeys: string[]
+    renderIds: string[]
     placement: "feed" | "story"
     accountLabel: string
     instagramUserId: string
@@ -37,8 +38,6 @@ export class Publication {
 
     @Column({ type: "json" }) snapshot!: PublicationSnapshot
 
-    @Column({ name: "media_key", type: "varchar", length: 255 }) mediaKey!: string
-
     @Column({ type: "varchar", length: 20 }) status!: PublicationStatus
 
     @Column({ name: "scheduled_at", type: "datetime", precision: 6 }) scheduledAt!: Date
@@ -50,6 +49,9 @@ export class Publication {
 
     @Column({ name: "lock_token", type: "varchar", length: 36, nullable: true }) lockToken!:
         string | null
+
+    @Column({ name: "child_container_ids", type: "json", nullable: true })
+    childContainerIds!: string[] | null
 
     @Column({ name: "container_id", type: "varchar", length: 128, nullable: true }) containerId!:
         string | null

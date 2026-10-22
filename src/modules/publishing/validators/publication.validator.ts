@@ -4,7 +4,11 @@ import { publishContentSchema } from "../../content-review/validators/draft.vali
 const fields = {
     expectedContentHash: z.string().length(64),
     accountKey: z.string().regex(/^[a-z0-9_-]{1,64}$/),
-    source: z.enum(["photo", "design"]),
+    renderIds: z
+        .array(z.string().uuid())
+        .min(1)
+        .max(10)
+        .refine((ids) => new Set(ids).size === ids.length),
     scheduledAt: z.string().datetime({ offset: true }).nullable()
 }
 
@@ -16,6 +20,7 @@ export const publicationSchema = z.discriminatedUnion("placement", [
         .object({
             ...fields,
             placement: z.literal("story"),
+            renderIds: z.array(z.string().uuid()).length(1),
             content: publishContentSchema
                 .extend({ caption: z.literal(""), hashtags: z.array(z.string()).length(0) })
                 .strict()

@@ -87,14 +87,61 @@ export class PublicationWorker {
                 return
             }
             if (!row.containerId) {
-                await update({ status: "PROCESSING", attemptCount: row.attemptCount + 1 })
-                const url = await this.media.url(row.mediaKey)
-                const containerId = await this.api.create(
-                    row.accountKey,
-                    url,
-                    row.snapshot.caption,
-                    row.snapshot.placement
-                )
+                await update({ status: "PROCESSING" })
+                const keys = row.snapshot.mediaKeys
+                let containerId: string
+                if (keys.length > 1) {
+                    const children = [...(row.childContainerIds || [])]
+                    if (children.length < keys.length) {
+                        const url = await this.media.url(keys[children.length]!)
+                        children.push(await this.api.createChild(row.accountKey, url))
+                        await release({
+                            childContainerIds: children,
+                            containerCreatedAt: row.containerCreatedAt || new Date(),
+                            nextAttemptAt: new Date(Date.now() + 1000)
+                        })
+                        return
+                    }
+                    // Check readiness before creating the parent. Child order is the frozen selection order.
+                    for (const child of children) {
+                        const state = await this.api.status(row.accountKey, child)
+                        if (
+                            state === "IN_PROGRESS" &&
+                            row.containerCreatedAt &&
+                            Date.now() - row.containerCreatedAt.getTime() > 20 * 60000
+                        ) {
+                            await release({
+                                status: "FAILED",
+                                safeError: "Instagram media processing timed out"
+                            })
+                            return
+                        }
+                        if (state === "IN_PROGRESS") {
+                            await release({ nextAttemptAt: new Date(Date.now() + 15000) })
+                            return
+                        }
+                        if (state !== "FINISHED") {
+                            await release({
+                                status: "FAILED",
+                                safeError: "Instagram media container failed or expired"
+                            })
+                            return
+                        }
+                    }
+                    containerId = await this.api.createCarousel(
+                        row.accountKey,
+                        children,
+                        row.snapshot.caption
+                    )
+                } else {
+                    const url = await this.media.url(keys[0]!)
+                    containerId = await this.api.create(
+                        row.accountKey,
+                        url,
+                        row.snapshot.caption,
+                        row.snapshot.placement
+                    )
+                }
                 await update({ containerId, containerCreatedAt: new Date() })
                 await release({ nextAttemptAt: new Date(Date.now() + 15000) })
                 return
