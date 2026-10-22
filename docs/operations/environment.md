@@ -41,7 +41,7 @@ Frontend memakai client ID publik yang sesuai. Client secret hanya di backend. L
 | MINIO_BUCKET | hono-be; satu bucket privat untuk semua media |
 | SIGNED_MEDIA_URL_TTL_SECONDS | 3600, dibatasi maksimum 86400 |
 | MAX_UPLOAD_MB | 15 per file |
-| MAX_BATCH_FILES | 30, dibatasi maksimum 30 |
+| MAX_BATCH_FILES | 19, dibatasi maksimum 19 |
 
 Endpoint MinIO harus dapat dijangkau oleh konsumennya. Manifest n8n memakai presigned preview langsung; URL tidak boleh diubah host/path/query setelah signing. Tidak ada MEDIA_SIGNING_SECRET, bucket media kedua, atau proxy generik.
 
@@ -52,14 +52,13 @@ Endpoint MinIO harus dapat dijangkau oleh konsumennya. Manifest n8n memakai pres
 | N8N_WEBHOOK_URL | Kosong; URL HTTPS webhook proses |
 | N8N_WEBHOOK_AUTH_TOKEN | Kosong; credential backend → n8n |
 | N8N_BACKEND_SERVICE_TOKEN | Kosong; credential callback n8n → backend |
-| N8N_CONTRACT | legacy; pilihan legacy atau camelCase |
 | N8N_WEBHOOK_TIMEOUT_MS | 15000; timeout pengiriman event, bukan durasi AI |
-| MAX_FILES_PER_AI_JOB | 20, dibatasi maksimum 30 |
-| PROCESSING_TIMEOUT_SECONDS | 1800; watchdog |
+| MAX_FILES_PER_AI_JOB | 19, dibatasi maksimum 19 |
+| PROCESSING_TIMEOUT_SECONDS | 7500; watchdog, minimum 7500 untuk workflow multi-gambar |
 | OUTBOX_RETRY_MAX | 5 |
 | OUTBOX_RETRY_BACKOFF_SECONDS | 30 |
 
-Workflow yang disertakan di integrations/n8n memakai **camelCase**; ubah N8N_CONTRACT dari default template ketika menggunakannya. Endpoint/model AI dan API key dikelola di n8n Configuration/credential, tidak di frontend atau tabel settings.
+Workflow yang disertakan di integrations/n8n memakai **camelCase**; tidak ada pengaturan pemilihan format kontrak. Endpoint/model AI dan API key dikelola di n8n Configuration/credential, tidak di frontend atau tabel settings.
 
 Parser angka menerima integer positif; input tidak valid menghentikan startup. Batas batch dan job dapat berbeda: upload lolos belum berarti seluruh batch memenuhi batas proses. Frontend memperoleh batas dari GET /api/batches/limits.
 

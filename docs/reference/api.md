@@ -8,19 +8,19 @@ Endpoint pengguna memakai `Authorization: Bearer <accessToken>` dan memeriksa ak
 
 Response JSON dashboard sukses berisi `success`, `statusCode`, `message`, `data`, dan opsional `meta`. Error berisi `success: false`, `statusCode`, `message`, `errors`. Pagination meta berisi total, perPage, currentPage, lastPage, from, to. Gunakan ApiResponse dan serializer, bukan shape JSON baru.
 
-Callback sukses n8n memakai format flat sesuai adapter legacy/camelCase. Response error tetap melalui error handler aplikasi. Media download/preview dapat berupa binary; endpoint URL preview memberikan URL presigned. Jangan memaksa seluruh endpoint media menjadi envelope JSON.
+Callback sukses n8n memakai format flat camelCase. Response error tetap melalui error handler aplikasi. Media download/preview dapat berupa binary; endpoint URL preview memberikan URL presigned. Jangan memaksa seluruh endpoint media menjadi envelope JSON.
 
 ## Query dan mutation
 
 Validator list bersama menerima page integer >=1, limit 1–100, q, sortBy dan order ASC/DESC. Default limit user 10 dan reporting 20. Reporting juga memvalidasi days 1–365 serta filter status/batch/output/uploader. Gunakan allowlist sorting repository.
 
-Process dan retry memakai header Idempotency-Key; validator menerima 8–128 karakter alfanumerik, underscore atau dash. Callback menggunakan event ID, execution ID dan validasi hasil untuk mencegah claim bersaing serta duplikasi hasil. Publish mengirim expectedContentHash dan object content (primaryAssetId, title, caption, hashtags, location, activity), bersama accountKey, source, placement, scheduledAt. Reject mengirim contentHash dan notes. Konflik konten/status menghasilkan 409. Tidak ada endpoint PATCH draft.
+Process dan retry memakai header Idempotency-Key; validator menerima 8–128 karakter alfanumerik, underscore atau dash. Callback menggunakan event ID, execution ID dan validasi hasil untuk mencegah claim bersaing serta duplikasi hasil. Publish mengirim expectedContentHash dan object content (title, caption, hashtags, location, activity), bersama renderIds berurutan, accountKey, placement, scheduledAt. Reject mengirim contentHash dan notes. Konflik konten/status menghasilkan 409. Tidak ada endpoint PATCH draft.
 
 Body divalidasi Zod; validasi schema umumnya 422, input domain invalid 400, auth 401, resource tidak ditemukan 404, konflik 409, batas body 413 dan rate limit 429. Pesan diterjemahkan melalui Accept-Language; properti dan status domain tetap camelCase/nilai kontrak tetap.
 
 ## Endpoint aktif
 
-Daftar ini dicocokkan dengan registrasi route pada 20 Oktober 2026. Perbarui saat menambah/menghapus route.
+Daftar ini dicocokkan dengan registrasi route pada 21 Oktober 2026. Perbarui saat menambah/menghapus route.
 
 | Method | Path | Akses |
 | --- | --- | --- |
@@ -73,7 +73,6 @@ Daftar ini dicocokkan dengan registrasi route pada 20 Oktober 2026. Perbarui saa
 | POST | `/api/drafts/:draftId/publications` | JWT user aktif |
 | POST | `/api/publications/:publicationId/cancel` | JWT user aktif |
 | POST | `/api/publications/:publicationId/retry` | JWT user aktif |
-| GET | `/api/publications/:publicationId/image` | JWT user aktif |
 | GET | `/api/instagram/accounts/:accountKey/insights` | JWT user aktif |
 | GET | `/api/instagram/accounts/:accountKey/media` | JWT user aktif |
 | GET | `/api/instagram/accounts/:accountKey/top-posts` | JWT user aktif |

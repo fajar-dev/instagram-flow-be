@@ -1,12 +1,12 @@
 # Integrasi n8n — IG Flow
 
-The documented testing topology keeps the backend on the MacBook. This runbook describes configuration; it does not assert that the remote services or tunnel are currently online. n8n runs in Docker on `festrack`; private media uses the existing MinIO bucket. The workflow implements upload event → claim → manifest → OpenAI-compatible photo analysis → caption → feed/story SVG → backend result → internal review. This AI workflow does not publish to Instagram. Instagram Login publishing is handled separately by the backend posts:dispatch worker; see [panduan publikasi Instagram](../features/instagram-publishing.md).
+The documented testing topology keeps the backend on the MacBook. This runbook describes configuration; it does not assert that the remote services or tunnel are currently online. n8n runs in Docker on `festrack`; private media uses the existing MinIO bucket. The workflow implements upload event → claim → manifest → OpenAI-compatible photo analysis → caption → AI image editing (feed/story) → backend result → internal review. This AI workflow does not publish to Instagram. Instagram Login publishing is handled separately by the backend posts:dispatch worker; see [panduan publikasi Instagram](../features/instagram-publishing.md).
 
 Semua command berikut dijalankan dari direktori `backend/`.
 
 ## Source and build
 
-`integrations/n8n/nodes/` contains individual Code-node programs, tested against the backend contract and SVG sanitizer. `integrations/n8n/build-workflow.ts` assembles the importable `ig-flow.workflow.json`. Code-node programs use the n8n sandbox globals, not backend services. They are deployment assets, not another application module.
+`integrations/n8n/nodes/` contains individual Code-node programs, tested against the backend callback contract. `integrations/n8n/build-workflow.ts` assembles the importable `ig-flow.workflow.json`. Code-node programs use the n8n sandbox globals, not backend services. They are deployment assets, not another application module.
 
 ```sh
 bun run integrations/n8n/build-workflow.ts
@@ -20,7 +20,7 @@ The builder currently supplies the testing backend URL, gateway endpoint and mod
 | `igFlowBackendAuth` | IG Flow Backend | Backend `N8N_BACKEND_SERVICE_TOKEN` |
 | `igFlowAiGateway` | IG Flow AI Gateway | AI provider API key |
 
-Backend `.env` must contain `N8N_CONTRACT=camelCase`, both secrets, and `N8N_WEBHOOK_URL=https://n8n.fajarchan.my.id/webhook/ig-flow/process`. No secret is embedded in the exported workflow. Imported credential IDs must match the workflow references.
+Backend `.env` must contain both secrets, and `N8N_WEBHOOK_URL=https://n8n.fajarchan.my.id/webhook/ig-flow/process`. No secret is embedded in the exported workflow. Imported credential IDs must match the workflow references.
 
 ## Run locally with the server callback tunnel
 
@@ -60,9 +60,10 @@ docker restart n8n
 - Webhook requires Header Auth. Invalid payload returns 400; valid events receive 202 before AI work.
 - Claim uses `eventId` and actual n8n execution ID. Another execution cannot claim a running/completed job. A retry from the same execution can recover a lost claim response.
 - Manifest contains direct MinIO presigned URLs. No media proxy or extra signing secret is used.
-- Analysis splits uploads into one request per photo, staggered by three seconds and merges all successful responses before validating full asset coverage. Empty/non-final gateway responses fail explicitly instead of producing a JSON syntax error. Global ranking scores order selected candidates across photos (up to five); this is not a single joint comparison of all photos.
+- Analysis splits uploads into one request per photo, staggered by three seconds and merges all successful responses before validating full asset coverage. Empty/non-final gateway responses fail explicitly instead of producing a JSON syntax error. The parser derives up to five cover candidates from validated ranking scores across photos; it does not depend on a model-provided selection list. Every photo must still have exactly one valid score and reason. This is not a single joint comparison of all photos.
 - Analysis uses deterministic image-1, image-2 aliases in manifest order rather than asking the model to copy database UUIDs. Parse Analysis resolves exact aliases back to IDs and rejects unknown/duplicate IDs; it never guesses a photograph from a malformed ID. Analysis must cover every asset exactly once. Invalid/partial model output fails rather than silently omitting files.
-- Exactly one render is produced, matching the scalar event `output` (`feed` or `story`). Story caption and hashtags must be empty. Backend sanitizes SVG, embeds the selected image from object storage and stores generated media in MinIO.
+- Before image editing, n8n downloads each unique reference/source URL without service credentials, validates JPEG/PNG signatures and size limits (12 MiB each, 48 MiB total), then sends inline image data to the gateway. This avoids upstream provider URL-download timeouts. Failed downloads fail the job; there is no raw-photo fallback. Execution data contains private images: restrict access and retain it only as needed for debugging.
+- Feed produces one edited render per uploaded asset (up to 19); Story produces one. The scalar event output remains feed or story. Story caption and hashtags must be empty. Callback includes imageBase64 from the image model. Backend validates raster bytes and normalizes size before storing the result in MinIO; it does not draw a template.
 - Post-claim failures call the authenticated failure endpoint with a fixed safe message and then mark the n8n execution failed. Claim errors stop without claiming ownership of another execution.
 - Result retries reuse the same payload; backend hashes it and accepts exact duplicates without creating a second draft.
 - The workflow ends at READY_FOR_REVIEW. Users then choose Publish or Reject in the dashboard; publishing is handled by posts:dispatch. This AI workflow does not send Telegram messages or publish posts.
@@ -79,3 +80,15 @@ A job already acknowledged by n8n can remain DISPATCHED when claim cannot reach 
 ## Upgrade single-output contract
 
 Pause dispatch and finish active executions before applying the output migration and publishing the rebuilt workflow. The new event uses scalar `output`, not an array; rebuild with `bun run integrations/n8n/build-workflow.ts`. Upgrade frontend/backend/workflow together. An old two-render callback is rejected rather than silently choosing a placement.
+
+## Codex image editing gateway — 21 October 2026
+
+The tested 9router 0.5.95 adapter exposes reference-image editing through JSON `POST /v1/images/generations` with `model: cx/gpt-image-2`, `images: [presignedUrl]`, and `output_format: jpeg`. The ordinary Responses route removes the image tool, and multipart `/images/edits` returned a server error; do not switch endpoints without testing the adapter.
+
+Its built image adapter originally hardcoded `gpt-5.5` as the orchestration model, which this Codex account rejected. Both the source adapter and compiled image route were patched to `gpt-6.1-sol`. Image pixels still come from `gpt-image-2`; this is separate from the analysis/caption model. The reproducible patch is `integrations/n8n/deployment/patch-codex-image-model.mjs`. Back up the container files before applying. Copy it into the gateway container and run with Node, then restart the gateway in a quiet window. Container recreation/image upgrades remove this patch: apply against a compatible build or upgrade to a gateway supporting the correct model configuration, then retest. Do not modify provider credentials.
+
+The callback nginx body limit and backend callback limit are 64 MiB for the complete callback (individual images remain limited to 16 MiB base64). Image requests have a five-minute timeout; workflow timeout is two hours, with two image requests running per batch and signed source URLs valid for at least 7500 seconds. A failed/empty image response reports failure and never substitutes a local template. Prompt uses source photos and factual metadata; human review remains required.
+
+## Referensi desain AMTI
+
+Jalankan `bun run brand:upload <referensi.png> <amti-logo.png> <partner-logo.jpeg>` sebelum memakai workflow pada bucket baru. Manifest menyediakan URL presigned referensi dan logo. Prepare Design mengirim referensi sebagai image 1, logo AMTI sebagai image 2, logo Graha Survei sebagai image 3, lalu foto asli; jangan memperlakukan contoh poster sebagai dokumentasi proyek. Lihat [panduan desain](../features/post-templates.md).

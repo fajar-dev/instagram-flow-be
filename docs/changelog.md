@@ -1,3 +1,23 @@
+## 21 Oktober 2026 — Audit alur aktif
+
+## 21 Oktober 2026 — Konsolidasi migration development
+
+- 13 migration create-table langsung ke schema final; perubahan carousel disatukan ke publications.
+- Hapus migration transisi dan kolom template/foto utama/media tunggal dari baseline.
+- Tes fresh install, rollback, dan reapply disesuaikan; migration users tidak lagi menyamarkan tabel yang sudah ada.
+
+Menghapus adapter n8n snake_case dan N8N_CONTRACT, template selector backend, primary asset pada draft/form, pembacaan render SVG, snapshot source/mediaKey serta endpoint preview publikasi satu gambar yang tidak dipakai. Kontrak aktif: camelCase, hasil AI JPEG, renderIds/mediaKeys berurutan. Migration 1792590000000 menghapus kolom yang tidak dipakai; tidak ada fallback runtime untuk data lama.
+
+Daftar/statistik job memakai attempt terbaru. Retry dari attempt yang sudah digantikan ditolak dan tombol retry pada detail historis dinonaktifkan melalui retryable. Preview konten ditolak mengambil render AI, bukan foto mentah. Compiler backend mendeteksi local/parameter yang tidak terpakai. Dokumentasi API, operasional, aturan dan tests mengikuti kontrak aktif.
+
+## 21 Oktober 2026 — Status proyek setelah retry
+
+Daftar jobs, jumlah tab Content dan statistik Overview hanya menghitung attempt terbaru per batch, sebelum filter status/tanggal. Percobaan gagal sebelumnya tetap tersimpan untuk audit tetapi tidak muncul lagi sebagai proyek Failed setelah retry. Jika retry kembali gagal, proyek dihitung satu kali dengan job terbaru.
+
+## 21 Oktober 2026 — Perbaikan validasi analisis foto
+
+Memperbaiki kegagalan Parse Analysis ketika AI mengembalikan ranking yang valid tetapi daftar pilihan kosong. Kandidat cover sekarang ditentukan dari skor tervalidasi; kontrak analisis hanya meminta skor dan alasan untuk setiap foto. Validasi asset ID, duplikasi, cakupan foto dan rentang skor tetap ketat. Replay 15 respons dari execution 34 berhasil. Pengujian ulang juga menemukan timeout unduhan URL pada penyedia gambar; workflow sekarang mengunduh referensi/foto di n8n, memvalidasi ukuran dan format, lalu mengirim data gambar langsung ke gateway. Tidak mengubah API aplikasi. Verifikasi: 200 tes backend, typecheck, lint dan build lulus. Workflow sudah diaktifkan di server; retry batch 15 foto pada execution 36 berhasil, job mencapai READY_FOR_REVIEW dengan 15 render AI JPEG 1080×1350. Tidak melakukan publikasi Instagram.
+
 ## 21 Oktober 2026 — Konsolidasi baseline development
 
 Menggabungkan schema output tunggal langsung ke migration create-jobs dan menghapus migration transisi. Baseline kembali menjadi 13 file untuk 13 tabel. Test baseline tetap memverifikasi rollback/reapply; test khusus migration transisi dihapus. Database aplikasi diselaraskan melalui backup, perbandingan schema dengan database test, lalu rekonsiliasi ledger tanpa reset tabel aplikasi.
@@ -318,3 +338,39 @@ Verifikasi live: callback kembali terhubung dan Claim Job berhasil. Execution 21
 Gateway tetap gagal untuk kelompok foto tertentu, tetapi setiap fotonya berhasil saat diuji sendiri. Workflow kini mengirim satu foto per request dengan jeda pengiriman tiga detik, lalu memvalidasi cakupan seluruh aset dan mengurutkan kandidat berdasarkan skor. Tidak melewati foto gagal atau mengubah respons kosong menjadi sukses.
 
 Verifikasi end-to-end setelah deployment: execution 23 berhasil mengembalikan job af786323-da1f-4ff8-bd52-4bc8030ed797 ke READY_FOR_REVIEW. Seluruh 13 foto dianalisis, lima kandidat dipilih dan satu render Feed dibuat. Tidak ada posting Instagram yang dikirim. Suite 191 tes, lint, typecheck dan build lulus.
+
+## 21 Oktober 2026 — Pengeditan gambar oleh AI
+
+- Gaya desain pada upload menjadi prompt n8n untuk model gambar Codex, bukan komposisi SVG backend.
+- Gateway image adapter memakai model pengarah yang didukung; konfigurasi/patch terdokumentasi dalam runbook.
+- Callback menerima satu gambar base64, memvalidasi raster dan menyimpan JPEG ke MinIO. SVG lama tetap terbaca, tetapi bukan kontrak callback baru.
+- Hapus renderer template, endpoint design-preview dan preview otomatis per ketikan. Caption/hashtag tetap dapat diubah tanpa membatalkan desain; metadata visual dilindungi dari ketidaksesuaian.
+- Pengujian tidak memublikasikan postingan ke Instagram.
+
+Verifikasi live 21 Oktober: execution 27 (Feed) dan 28 (Story) sukses. Dua foto per job dianalisis, hasil edit gambar AI dikirim lewat callback dan disimpan sebagai JPEG 1080×1350 / 1080×1920 dengan state AI_IMAGE. Keduanya READY_FOR_REVIEW; endpoint detail/gambar terautentikasi mengembalikan HTTP 200. Tidak ada posting Instagram dikirim. Backend 193 tes dan frontend 52 tes lulus; lint, typecheck dan build lulus. Pemeriksaan visual dilakukan pada gambar hasil workflow; browser UI tidak diuji ulang karena izin localhost masih diblokir pada sesi sebelumnya.
+
+## 21 Oktober 2026 — Konsolidasi migration desain AI
+
+Atas permintaan reset baseline development, template_id digabung ke CreateBatches; migration ALTER tambahan dihapus. Kembali menjadi 13 migration untuk 13 tabel dengan synchronize false. Database lokal dibackup, schema dibandingkan dengan baseline pada database disposable, kemudian satu entry ledger tambahan dihapus tanpa mengubah data aplikasi atau media. Tes mencakup pembuatan database kosong, down/up seluruh baseline dan default template.
+
+## 21 Oktober 2026 — Referensi visual poster AMTI
+
+Desain memakai contoh visual dan logo AMTI asli dari bucket MinIO yang sama, terpisah dari foto proyek. Prompt mengikuti fotografi penuh, tipografi condensed italic putih/kuning dan kolase diagonal. Headline dipersingkat; contoh tidak menjadi sumber fakta/foto proyek. Ditambahkan command brand:upload untuk provisioning dua PNG pada lingkungan baru dan URL presigned referensi di manifest n8n.
+
+Verifikasi: execution 29 sukses untuk job d0687511-67dd-4afe-9909-6fedd0f6c10b. Empat foto proyek dianalisis dan diedit dengan dua referensi visual terpisah; hasil JPEG Feed 1080×1350 tersimpan di MinIO dan READY_FOR_REVIEW. Pemeriksaan visual mengonfirmasi kolase diagonal, headline putih/kuning, logo dan fotografi penuh. Backend 194 tes, lint, typecheck dan build lulus. Pengujian ini tidak mengirim postingan ke Instagram.
+
+## 21 Oktober 2026 — Logo resmi dan ikon footer
+
+Referensi gambar memakai logo horizontal AMTI beserta tagline dan logo Graha Survei Indonesia yang diberikan pengguna. Keduanya disimpan di MinIO dan dikirim terpisah dari foto proyek. Footer sekarang meminta ikon website, Instagram, WhatsApp dan LinkedIn dengan label dari contoh AMTI pengguna. Header menampilkan partner kiri dan AMTI kanan. Command brand:upload menerima PNG referensi, PNG AMTI dan JPEG partner.
+
+Verifikasi live: execution 31 sukses untuk job cecb8d67-4b47-4d3e-a9fa-1e802f8a5b95, READY_FOR_REVIEW dengan JPEG AI_IMAGE 1080×1350. Pemeriksaan visual mengonfirmasi kedua logo beserta tagline dan empat ikon footer (website, Instagram, WhatsApp, LinkedIn). Backend 194 tes lulus, lint/typecheck/build lulus. Tidak ada posting Instagram dikirim.
+
+## 21 Oktober 2026 — Layout logo sudut dan footer satu baris
+
+Mengganti referensi visual dengan contoh terbaru pengguna. Panel logo menempel pada tepi kiri/kanan, menyisakan ruang tengah; footer berupa pita putih tipis satu baris dengan empat ikon dan data kontak AMTI. Menghapus instruksi footer dua baris. Workflow n8n diperbarui dan execution 32 sukses: job 4db21f5c-6bf3-4fdc-8122-c776697f2554 READY_FOR_REVIEW, JPEG 1080×1350. Hasil gambar diperiksa langsung: panel sudut dan footer satu baris tampil. Backend 194 tes, typecheck, lint dan build lulus. Tidak dipublikasikan ke Instagram.
+
+## 21 Oktober 2026 — Carousel Feed
+
+Feed mendukung upload 19 foto, edit AI untuk setiap foto, pemilihan maksimal 10 slide dan urutan eksplisit. UI pilihan foto utama diganti pilihan hasil edit dan drag reorder; Story tetap satu gambar. Publishing menyimpan snapshot media berurutan dan progress child container; langsung/jadwal menggunakan satu parent carousel. Kontrak API dan workflow n8n diperbarui.
+
+Verifikasi carousel: 197 tes backend dan 53 tes frontend lulus, typecheck/lint/build lulus. Execution n8n 33 menghasilkan dua render AI dan job 5c344a10-00d3-4a40-a47f-396edafca548 READY_FOR_REVIEW. Meta menerima dua child container dan parent carousel sampai FINISHED pada akun beta_dev12; tidak ada media_publish dipanggil. Migration aditif sudah diterapkan setelah backup. Pengujian browser terhalang izin localhost; pengujian UI interaktif belum dilakukan.

@@ -135,11 +135,8 @@ components:
     PublishContent:
       type: object
       additionalProperties: false
-      required: [primaryAssetId, title, caption, hashtags, location, activity]
+      required: [title, caption, hashtags, location, activity]
       properties:
-        primaryAssetId:
-          type: string
-          format: uuid
         title:
           type: string
           minLength: 1
@@ -165,11 +162,8 @@ components:
     StoryContent:
       type: object
       additionalProperties: false
-      required: [primaryAssetId, title, caption, hashtags, location, activity]
+      required: [title, caption, hashtags, location, activity]
       properties:
-        primaryAssetId:
-          type: string
-          format: uuid
         title:
           type: string
           minLength: 1
@@ -207,7 +201,7 @@ components:
         - expectedContentHash
         - content
         - accountKey
-        - source
+        - renderIds
         - placement
         - scheduledAt
       properties:
@@ -220,11 +214,15 @@ components:
         accountKey:
           type: string
           pattern: ^[a-z0-9_-]{1,64}$
-        source:
-          type: string
-          enum:
-            - photo
-            - design
+        renderIds:
+          type: array
+          minItems: 1
+          maxItems: 10
+          uniqueItems: true
+          description: Edited render IDs from this job, in Instagram slide order.
+          items:
+            type: string
+            format: uuid
         placement:
           type: string
           enum: [feed]
@@ -240,7 +238,7 @@ components:
         - expectedContentHash
         - content
         - accountKey
-        - source
+        - renderIds
         - placement
         - scheduledAt
       properties:
@@ -253,11 +251,15 @@ components:
         accountKey:
           type: string
           pattern: ^[a-z0-9_-]{1,64}$
-        source:
-          type: string
-          enum:
-            - photo
-            - design
+        renderIds:
+          type: array
+          minItems: 1
+          maxItems: 1
+          uniqueItems: true
+          description: Edited render IDs from this job, in Instagram slide order.
+          items:
+            type: string
+            format: uuid
         placement:
           type: string
           enum: [story]
@@ -282,11 +284,15 @@ components:
           type: string
         caption:
           type: string
-        source:
-          type: string
-          enum:
-            - photo
-            - design
+        imageCount:
+          type: integer
+          minimum: 1
+          maximum: 10
+        renderIds:
+          type: array
+          items:
+            type: string
+            format: uuid
         placement:
           type: string
           enum:
@@ -540,7 +546,7 @@ paths:
     get:
       tags: [Reporting]
       summary: Count Content tabs by job and current draft status
-      description: Counts use the same date scope as Content lists. Completed jobs are represented by draft review status, not counted twice as ready jobs.
+      description: Counts use the same date scope as Content lists and only the latest job attempt per batch. Superseded failed attempts are excluded. Completed jobs are represented by draft review status, not counted twice as ready jobs.
       security:
         - bearerAuth: []
       parameters:
@@ -1459,7 +1465,7 @@ paths:
       description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and output (feed/story).
       tags:
         - AI Jobs
-      summary: List scoped jobs
+      summary: List latest job attempts per batch
       security:
         - bearerAuth:
             []
@@ -1622,7 +1628,7 @@ paths:
           schema:
             type: string
             format: uuid
-      description: Default N8N_CONTRACT=legacy requires snake_case; camelCase accepted only when configured. Service bearer is distinct from user JWT.
+      description: Integration requests and responses use camelCase. Service bearer is distinct from user JWT.
       requestBody:
         required: true
         content:
@@ -1648,7 +1654,7 @@ paths:
                         - READY_FOR_REVIEW
                     selectedAssetIds:
                       minItems: 1
-                      maxItems: 20
+                      maxItems: 5
                       type: array
                       items:
                         type: string
@@ -1693,8 +1699,9 @@ paths:
                         type: string
                         maxLength: 100
                     renders:
+                      description: One AI image per uploaded Feed photo (up to 19); exactly one for Story.
                       minItems: 1
-                      maxItems: 1
+                      maxItems: 19
                       type: array
                       items:
                         type: object
@@ -1707,7 +1714,7 @@ paths:
                           format:
                             type: string
                             enum:
-                              - svg
+                              - jpeg
                           width:
                             type: number
                             enum:
@@ -1720,9 +1727,11 @@ paths:
                               - type: number
                                 enum:
                                   - 1920
-                          svg:
+                          imageBase64:
                             type: string
-                            maxLength: 500000
+                            maxLength: 16777216
+                            minLength: 4
+                            pattern: "^[A-Za-z0-9+/]+={0,2}$"
                           assetId:
                             type: string
                             format: uuid
@@ -1732,7 +1741,7 @@ paths:
                           - format
                           - width
                           - height
-                          - svg
+                          - imageBase64
                           - assetId
                         additionalProperties: false
                   required:
@@ -1749,14 +1758,14 @@ paths:
                   additionalProperties: false
                 - type: object
                   properties:
-                    job_id:
+                    jobId:
                       type: string
                       format: uuid
                       pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                    execution_id:
+                    executionId:
                       type: string
                       pattern: "^[a-zA-Z0-9_-]{1,128}$"
-                    result_version:
+                    resultVersion:
                       type: integer
                       minimum: 1
                       maximum: 1000
@@ -1764,9 +1773,9 @@ paths:
                       type: string
                       enum:
                         - READY_FOR_REVIEW
-                    selected_asset_ids:
+                    selectedAssetIds:
                       minItems: 1
-                      maxItems: 20
+                      maxItems: 5
                       type: array
                       items:
                         type: string
@@ -1779,7 +1788,7 @@ paths:
                       items:
                         type: object
                         properties:
-                          asset_id:
+                          assetId:
                             type: string
                             format: uuid
                             pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -1791,7 +1800,7 @@ paths:
                             type: string
                             maxLength: 2000
                         required:
-                          - asset_id
+                          - assetId
                           - score
                           - reason
                         additionalProperties:
@@ -1811,8 +1820,9 @@ paths:
                         type: string
                         maxLength: 100
                     renders:
+                      description: One AI image per uploaded Feed photo (up to 19); exactly one for Story.
                       minItems: 1
-                      maxItems: 1
+                      maxItems: 19
                       type: array
                       items:
                         type: object
@@ -1825,7 +1835,7 @@ paths:
                           format:
                             type: string
                             enum:
-                              - svg
+                              - jpeg
                           width:
                             type: number
                             enum:
@@ -1838,10 +1848,12 @@ paths:
                               - type: number
                                 enum:
                                   - 1920
-                          svg:
+                          imageBase64:
                             type: string
-                            maxLength: 500000
-                          asset_id:
+                            maxLength: 16777216
+                            minLength: 4
+                            pattern: "^[A-Za-z0-9+/]+={0,2}$"
+                          assetId:
                             type: string
                             format: uuid
                             pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -1850,15 +1862,15 @@ paths:
                           - format
                           - width
                           - height
-                          - svg
-                          - asset_id
+                          - imageBase64
+                          - assetId
                         additionalProperties: false
                   required:
-                    - job_id
-                    - execution_id
-                    - result_version
+                    - jobId
+                    - executionId
+                    - resultVersion
                     - status
-                    - selected_asset_ids
+                    - selectedAssetIds
                     - rankings
                     - title
                     - caption
@@ -2211,7 +2223,7 @@ paths:
     get:
       tags:
         - Content
-      summary: "Authenticated sanitized SVG preview, not publish-ready"
+      summary: "Authenticated AI image preview"
       security:
         - bearerAuth:
             []
@@ -2404,7 +2416,7 @@ paths:
           schema:
             type: string
             format: uuid
-      description: Default N8N_CONTRACT=legacy requires snake_case; camelCase accepted only when configured. Service bearer is distinct from user JWT.
+      description: Integration requests and responses use camelCase. Service bearer is distinct from user JWT.
       requestBody:
         required: true
         content:
@@ -2426,16 +2438,16 @@ paths:
                   additionalProperties: false
                 - type: object
                   properties:
-                    execution_id:
+                    executionId:
                       type: string
                       pattern: "^[a-zA-Z0-9_-]{1,128}$"
-                    event_id:
+                    eventId:
                       type: string
                       format: uuid
                       pattern: "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   required:
-                    - execution_id
-                    - event_id
+                    - executionId
+                    - eventId
                   additionalProperties: false
   "/jobs/{jobId}/manifest":
     parameters:
@@ -2444,6 +2456,7 @@ paths:
       tags:
         - Integration
       summary: Claimed job manifest with expiring private preview URLs
+      description: "Service-authenticated manifest includes clientName, project metadata, assets with presigned photo URLs, and designReferences (styleUrl, logoUrl and partnerLogoUrl). Brand references guide layout only and are not project photos."
       security:
         - n8nServiceAuth:
             []
@@ -2501,7 +2514,7 @@ paths:
           schema:
             type: string
             format: uuid
-      description: Default N8N_CONTRACT=legacy requires snake_case; camelCase accepted only when configured. Service bearer is distinct from user JWT.
+      description: Integration requests and responses use camelCase. Service bearer is distinct from user JWT.
       requestBody:
         required: true
         content:
@@ -2533,25 +2546,25 @@ paths:
                   additionalProperties: false
                 - type: object
                   properties:
-                    execution_id:
+                    executionId:
                       type: string
                       pattern: "^[a-zA-Z0-9_-]{1,128}$"
                     stage:
                       type: string
                       maxLength: 80
-                    error_code:
+                    errorCode:
                       type: string
                       maxLength: 80
-                    safe_message:
+                    safeMessage:
                       type: string
                       maxLength: 1000
                     retryable:
                       type: boolean
                   required:
-                    - execution_id
+                    - executionId
                     - stage
-                    - error_code
-                    - safe_message
+                    - errorCode
+                    - safeMessage
                     - retryable
                   additionalProperties: false
 
@@ -2713,32 +2726,6 @@ paths:
           description: Content, state or idempotency conflict
         "422":
           description: Validation failed
-  /publications/{publicationId}/image:
-    get:
-      tags:
-        - Publishing
-      summary: Read the frozen JPEG publication image
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: publicationId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Private JPEG; no-store
-          content:
-            image/jpeg:
-              schema:
-                type: string
-                format: binary
-        "401":
-          description: Active user authentication required
-        "404":
-          description: Resource not found
   /publications/{publicationId}/cancel:
     post:
       tags:
