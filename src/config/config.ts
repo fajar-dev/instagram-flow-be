@@ -25,10 +25,6 @@ export function createConfig(environment: Record<string, string | undefined>) {
 
     const port = number("PORT", 4000)
     const bucket = environment.MINIO_BUCKET || "hono-be"
-    const contract = environment.N8N_CONTRACT || "legacy"
-    if (!["legacy", "camelCase"].includes(contract)) {
-        throw new Error("[CONFIG] Unsupported N8N_CONTRACT")
-    }
 
     return {
         app: {
@@ -49,12 +45,12 @@ export function createConfig(environment: Record<string, string | undefined>) {
         },
         media: {
             maxUploadMb: number("MAX_UPLOAD_MB", 15),
-            maxBatchFiles: Math.min(30, number("MAX_BATCH_FILES", 30)),
+            maxBatchFiles: Math.min(19, number("MAX_BATCH_FILES", 19)),
             signedTtl: Math.min(86400, number("SIGNED_MEDIA_URL_TTL_SECONDS", 3600))
         },
         jobs: {
-            maxJobFiles: Math.min(30, number("MAX_FILES_PER_AI_JOB", 20)),
-            processingTimeout: number("PROCESSING_TIMEOUT_SECONDS", 1800),
+            maxJobFiles: Math.min(19, number("MAX_FILES_PER_AI_JOB", 19)),
+            processingTimeout: Math.max(7500, number("PROCESSING_TIMEOUT_SECONDS", 7500)),
             retryMax: number("OUTBOX_RETRY_MAX", 5),
             retryBackoff: number("OUTBOX_RETRY_BACKOFF_SECONDS", 30)
         },
@@ -62,7 +58,6 @@ export function createConfig(environment: Record<string, string | undefined>) {
             webhookUrl: environment.N8N_WEBHOOK_URL || "",
             webhookToken: environment.N8N_WEBHOOK_AUTH_TOKEN || "",
             serviceToken: environment.N8N_BACKEND_SERVICE_TOKEN || "",
-            contract,
             timeoutMs: number("N8N_WEBHOOK_TIMEOUT_MS", 15000)
         },
         redis: {

@@ -72,9 +72,16 @@ export function buildWorkflow() {
                 genericAuthType: "httpHeaderAuth",
                 ...(body ? { sendBody: true, specifyBody: "json", jsonBody: body } : {}),
                 options: {
-                    timeout: 180000,
-                    ...(name === "Analyze Photos"
-                        ? { batching: { batch: { batchSize: 1, batchInterval: 3000 } } }
+                    timeout: name === "Edit Image" ? 300000 : 180000,
+                    ...(["Analyze Photos", "Edit Image"].includes(name)
+                        ? {
+                              batching: {
+                                  batch: {
+                                      batchSize: name === "Edit Image" ? 2 : 1,
+                                      batchInterval: 3000
+                                  }
+                              }
+                          }
                         : {})
                 }
             },
@@ -122,7 +129,7 @@ export function buildWorkflow() {
         options: { responseCode: 202 }
     })
     node("Configuration", "code", 2, {
-        jsCode: "return [{json:{backendUrl:'https://n8n.fajarchan.my.id/ig-flow-api',aiUrl:'http://43.173.33.252:20128/v1/chat/completions',model:'cx/gpt-5.6-luna'}}];"
+        jsCode: "return [{json:{backendUrl:'https://n8n.fajarchan.my.id/ig-flow-api',aiUrl:'http://43.173.33.252:20128/v1/chat/completions',model:'cx/gpt-5.6-luna',imageUrl:'http://43.173.33.252:20128/v1/images/generations',imageModel:'cx/gpt-image-2'}}];"
     })
     // Never fail a job if the claim failed: another execution may own it.
     http(
@@ -140,6 +147,30 @@ export function buildWorkflow() {
     code("Prepare Caption", "prepare-caption.js")
     http("Generate Caption", "={{ $('Configuration').first().json.aiUrl }}", ai, "={{ $json }}")
     code("Parse Caption", "parse-caption.js")
+    code("Prepare Image Inputs", "prepare-image-inputs.js")
+    node(
+        "Download Design Images",
+        "httpRequest",
+        4.2,
+        {
+            url: "={{ $json.url }}",
+            options: {
+                timeout: 60000,
+                batching: { batch: { batchSize: 3, batchInterval: 250 } },
+                response: { response: { responseFormat: "file", outputPropertyName: "data" } }
+            }
+        },
+        {
+            retryOnFail: true,
+            maxTries: 3,
+            waitBetweenTries: 2000,
+            onError: "continueErrorOutput"
+        }
+    )
+    link("Download Design Images", "Callback Failure", 1)
+    code("Materialize Images", "materialize-images.js")
+    code("Prepare Design", "prepare-design.js")
+    http("Edit Image", "={{ $('Configuration').first().json.imageUrl }}", ai, "={{ $json }}")
     code("Render Result", "render-result.js")
     http("Callback Result", jobUrl("result"), backend, "={{ $json }}")
     http(
@@ -170,6 +201,11 @@ export function buildWorkflow() {
         "Prepare Caption",
         "Generate Caption",
         "Parse Caption",
+        "Prepare Image Inputs",
+        "Download Design Images",
+        "Materialize Images",
+        "Prepare Design",
+        "Edit Image",
         "Render Result",
         "Callback Result"
     ]
@@ -196,7 +232,7 @@ export function buildWorkflow() {
             executionOrder: "v1",
             saveDataSuccessExecution: "all",
             saveDataErrorExecution: "all",
-            executionTimeout: 1200
+            executionTimeout: 7200
         },
         pinData: {}
     }

@@ -31,9 +31,7 @@ export class MediaController {
     }
 
     async render(c: Context) {
-        return binary(
-            Buffer.from(await this.service.renderFile(id(c, "renderId"))),
-            "image/svg+xml"
-        )
+        const file = await this.service.renderFile(id(c, "renderId"))
+        return binary(file.data, file.mime)
     }
 }

@@ -1,5 +1,5 @@
 const responses = $input.all()
-const result = { rankings: [], selectedAssetIds: [] }
+const result = { rankings: [] }
 for (const response of responses) {
     const choice = response.json.choices?.[0]
     const raw = choice?.message?.content
@@ -16,16 +16,10 @@ for (const response of responses) {
     } catch {
         throw new Error("AI gateway returned invalid analysis JSON")
     }
-    if (
-        !Array.isArray(part?.rankings) ||
-        !Array.isArray(part?.selectedAssetIds) ||
-        !part.selectedAssetIds.length ||
-        part.selectedAssetIds.length > 5
-    ) {
+    if (!Array.isArray(part?.rankings) || !part.rankings.length) {
         throw new Error("Incomplete or invalid analysis")
     }
     result.rankings.push(...part.rankings)
-    result.selectedAssetIds.push(...part.selectedAssetIds)
 }
 const assets = $("Get Manifest").first().json.assets
 const ids = new Set(assets.map((asset) => asset.assetId))
@@ -35,9 +29,7 @@ const resolveId = (value) => aliases.get(value) ?? value
 if (Array.isArray(result.rankings)) {
     result.rankings = result.rankings.map((row) => ({ ...row, assetId: resolveId(row?.assetId) }))
 }
-if (Array.isArray(result.selectedAssetIds)) {
-    result.selectedAssetIds = result.selectedAssetIds.map(resolveId)
-}
+
 if (
     !Array.isArray(result.rankings) ||
     result.rankings.length !== ids.size ||
@@ -51,18 +43,15 @@ if (
             typeof row.reason !== "string" ||
             !row.reason.trim() ||
             row.reason.length > 2000
-    ) ||
-    !Array.isArray(result.selectedAssetIds) ||
-    !result.selectedAssetIds.length ||
-    new Set(result.selectedAssetIds).size !== result.selectedAssetIds.length ||
-    result.selectedAssetIds.some((id) => !ids.has(id))
+    )
 ) {
     throw new Error("Incomplete or invalid analysis")
 }
-// Rank candidates across chunks only after verifying full coverage and unique asset IDs.
-const scores = new Map(result.rankings.map((row) => [row.assetId, row.score]))
-result.selectedAssetIds.sort((left, right) => scores.get(right) - scores.get(left))
-result.selectedAssetIds = result.selectedAssetIds.slice(0, 5)
+// Derive cover candidates from validated scores; model selection lists are not authoritative.
+const selectedAssetIds = [...result.rankings]
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 5)
+    .map((row) => row.assetId)
 return [
     {
         json: {
@@ -71,7 +60,7 @@ return [
                 score,
                 reason
             })),
-            selectedAssetIds: result.selectedAssetIds
+            selectedAssetIds
         }
     }
 ]

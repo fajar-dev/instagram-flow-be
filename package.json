@@ -16,12 +16,12 @@
     "jobs:dispatch": "bun run src/commands/job-dispatch.ts",
     "posts:dispatch": "bun run src/commands/publication-dispatch.ts",
     "lint": "eslint src test integrations/n8n",
-    "format": "eslint src test integrations/n8n --fix && prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"integrations/n8n/**/*.ts\" \"integrations/n8n/nodes/*.js\" && eslint src test integrations/n8n --fix && bun run integrations/n8n/build-workflow.ts"
+    "format": "eslint src test integrations/n8n --fix && prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"integrations/n8n/**/*.ts\" \"integrations/n8n/nodes/*.js\" && eslint src test integrations/n8n --fix && bun run integrations/n8n/build-workflow.ts",
+    "brand:upload": "bun run src/commands/upload-design-reference.ts"
   },
   "dependencies": {
     "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-validator": "^0.7.6",
-    "@xmldom/xmldom": "^0.9.12",
     "bcryptjs": "^3.0.3",
     "google-auth-library": "^10.7.0",
     "hono": "^4.12.8",

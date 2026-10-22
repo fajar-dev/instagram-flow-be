@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
     "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "jsx": "react-jsx",

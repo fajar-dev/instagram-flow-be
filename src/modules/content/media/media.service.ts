@@ -22,6 +22,18 @@ export class MediaService {
         private readonly thumbnails: ThumbnailService
     ) {}
 
+    async designReferences() {
+        const [styleUrl, logoUrl, partnerLogoUrl] = await Promise.all([
+            this.media.signedUrl(
+                "brand/design-reference.png",
+                Math.max(config.media.signedTtl, 7500)
+            ),
+            this.media.signedUrl("brand/logo.png", Math.max(config.media.signedTtl, 7500)),
+            this.media.signedUrl("brand/partner-logo.jpeg", Math.max(config.media.signedTtl, 7500))
+        ])
+        return { styleUrl, logoUrl, partnerLogoUrl }
+    }
+
     async upload(actor: User, batchId: string, file: File) {
         await this.context.batch(batchId)
         const { original, metadata, preview } = await readUploadImage(
@@ -97,12 +109,12 @@ export class MediaService {
         )
     }
 
-    async signedUrl(assetId: string) {
+    async signedUrl(assetId: string, ttl = config.media.signedTtl) {
         const asset = await this.repository.get("asset", assetId)
         if (!asset || asset.deletedAt) {
             throw new NotFoundException("Asset not found")
         }
-        return this.media.signedUrl(asset.safePreviewStorageKey, config.media.signedTtl)
+        return this.media.signedUrl(asset.safePreviewStorageKey, ttl)
     }
 
     async assetFile(assetId: string, original = false) {
@@ -126,7 +138,10 @@ export class MediaService {
         }
         const ai = await this.repository.get("aiResult", render.aiResultId)
         await this.context.job(ai!.jobId)
-        return this.media.get(render.storageKey)
+        return {
+            data: await this.media.get(render.storageKey),
+            mime: "image/jpeg"
+        }
     }
 
     async deleteAsset(actor: User, assetId: string) {

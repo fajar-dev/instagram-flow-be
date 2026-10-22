@@ -1,13 +1,17 @@
 import { describe, expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
 import { buildWorkflow } from "../integrations/n8n/build-workflow"
-import { sanitizeSvg } from "../src/modules/content/media/adapters/svg-sanitizer"
 
 const jobId = "11111111-1111-4111-8111-111111111111"
 const assetId = "22222222-2222-4222-8222-222222222222"
 const event = { jobId, eventId: jobId, output: "feed" }
 const manifest = {
     jobId,
+    designReferences: {
+        styleUrl: "https://storage.test/style.png",
+        logoUrl: "https://storage.test/logo.png",
+        partnerLogoUrl: "https://storage.test/partner.jpeg"
+    },
     assets: [
         {
             assetId,
@@ -20,14 +24,23 @@ const analysis = {
     rankings: [{ assetId, score: 90, reason: "Suitable" }],
     selectedAssetIds: [assetId]
 }
+const imageData = (url: string) => `data:image/png;base64,${Buffer.from(url).toString("base64")}`
 const context = {
+    get "Materialize Images"() {
+        const urls = [
+            ...Object.values(manifest.designReferences),
+            ...manifest.assets.map((asset) => asset.renderImageUrl)
+        ]
+        return { images: Object.fromEntries(urls.map((url) => [url, imageData(url)])) }
+    },
     "Validate Event": event,
     "Get Manifest": manifest,
     "Parse Analysis": analysis,
-    Configuration: { model: "test" }
+    "Parse Caption": { title: "AMTI", caption: "Test", hashtags: [] },
+    Configuration: { model: "test", imageModel: "cx/gpt-image-2" }
 }
 
-function run(file: string, input: unknown) {
+function runAll(file: string, input: unknown, inputs = [input]) {
     const source = readFileSync(
         new URL(`../integrations/n8n/nodes/${file}.js`, import.meta.url),
         "utf8"
@@ -36,8 +49,12 @@ function run(file: string, input: unknown) {
         input,
         (name: keyof typeof context) => ({ first: () => ({ json: context[name] }) }),
         { id: "42" },
-        { all: () => [{ json: input }] }
-    )[0].json
+        { all: () => inputs.map((json) => ({ json })) }
+    )
+}
+
+function run(file: string, input: unknown) {
+    return runAll(file, input)[0].json
 }
 
 const response = (value: unknown) => ({
@@ -76,11 +93,13 @@ describe("deployable n8n workflow", () => {
             )
         ).toThrow()
         expect(() => run("parse-analysis", response({ ...analysis, rankings: [] }))).toThrow()
-        expect(() =>
-            run("parse-analysis", response({ ...analysis, selectedAssetIds: [jobId] }))
-        ).toThrow()
+        for (const selectedAssetIds of [[], [jobId], undefined]) {
+            expect(run("parse-analysis", response({ ...analysis, selectedAssetIds }))).toEqual(
+                analysis
+            )
+        }
     })
-    test("caption validation and XML-safe render match backend sanitizer", () => {
+    test("caption validation and AI image result match the callback contract", () => {
         const content = run(
             "parse-caption",
             response({
@@ -90,22 +109,43 @@ describe("deployable n8n workflow", () => {
             })
         )
         expect(content.hashtags).toEqual(["#AMTI"])
-        const result = run("render-result", content)
+        const result = run("render-result", { data: [{ b64_json: "aW1hZ2U=" }] })
         expect(result.renders.map((r: any) => r.height)).toEqual([1350])
-        for (const render of result.renders) {
-            expect(render.svg).toContain("AMTI &amp; &lt;QA&gt;")
-            expect(
-                sanitizeSvg(
-                    render.svg,
-                    Buffer.from("test"),
-                    (url) => url === manifest.assets[0]!.renderImageUrl
-                )
-            ).toContain("data:image/jpeg;base64,")
-        }
+        expect(result.renders[0].format).toBe("jpeg")
+        expect(result.renders[0].imageBase64).toBe("aW1hZ2U=")
+        expect(() => run("render-result", { data: [] })).toThrow()
+        expect(() => run("render-result", { data: [{ url: "https://example.test" }] })).toThrow()
+        const request = run("prepare-design", {})
+        expect(request.images).toEqual([
+            imageData(manifest.designReferences.styleUrl),
+            imageData(manifest.designReferences.logoUrl),
+            imageData(manifest.designReferences.partnerLogoUrl),
+            imageData(manifest.assets[0]!.renderImageUrl)
+        ])
+        expect(request.model).toBe("cx/gpt-image-2")
         expect(() =>
             run("parse-caption", response({ title: "", caption: "test", hashtags: [] }))
         ).toThrow()
     })
+    test("design request separates brand references from project assets and rejects missing references", () => {
+        const request = run("prepare-design", {})
+        expect(request.images.slice(0, 3)).toEqual([
+            imageData(manifest.designReferences.styleUrl),
+            imageData(manifest.designReferences.logoUrl),
+            imageData(manifest.designReferences.partnerLogoUrl)
+        ])
+        expect(request.images.slice(3)).toEqual([imageData(manifest.assets[0]!.renderImageUrl)])
+        for (const key of ["styleUrl", "logoUrl", "partnerLogoUrl"] as const) {
+            const previous = manifest.designReferences[key]
+            try {
+                manifest.designReferences[key] = ""
+                expect(() => run("prepare-design", {})).toThrow("reference")
+            } finally {
+                manifest.designReferences[key] = previous
+            }
+        }
+    })
+
     test("Story generates one portrait render and no Feed caption", () => {
         const previous = event.output
         event.output = "story"
@@ -114,7 +154,8 @@ describe("deployable n8n workflow", () => {
                 "parse-caption",
                 response({ title: "AMTI Story", caption: "", hashtags: [] })
             )
-            const result = run("render-result", content)
+            expect(content.caption).toBe("")
+            const result = run("render-result", { data: [{ b64_json: "aW1hZ2U=" }] })
             expect(result.renders).toHaveLength(1)
             expect(result.renders[0].placement).toBe("story")
             expect(result.renders[0].height).toBe(1920)
@@ -206,4 +247,83 @@ test("vision requests split large uploads without losing aliases or accepting pa
     expect(() =>
         parse([{ json: { choices: [{ finish_reason: "in_progress", message: { content: "" } }] } }])
     ).toThrow("empty or incomplete")
+})
+
+test("Feed edits all 19 source photographs and retains slide identity in the callback", () => {
+    const originals = manifest.assets
+    try {
+        manifest.assets = Array.from({ length: 19 }, (_, index) => ({
+            ...originals[0]!,
+            assetId: index === 0 ? assetId : crypto.randomUUID()
+        }))
+        const requests = runAll("prepare-design", {})
+        expect(requests).toHaveLength(19)
+        expect(requests[1].json.images[3]).toBe(imageData(manifest.assets[1]!.renderImageUrl))
+        const responses = requests.map(() => ({ data: [{ b64_json: "aW1hZ2U=" }] }))
+        const result = runAll("render-result", responses[0], responses)[0].json
+        expect(result.renders.map((r: any) => r.assetId)).toEqual(
+            manifest.assets.map((a) => a.assetId)
+        )
+        expect(() => runAll("render-result", responses[0], responses.slice(1))).toThrow()
+    } finally {
+        manifest.assets = originals
+    }
+})
+
+test("analysis ranks all candidates even when a model declines to select a photo", () => {
+    const previous = manifest.assets
+    try {
+        const second = crypto.randomUUID()
+        manifest.assets = [previous[0]!, { ...previous[0]!, assetId: second }]
+        const inputs = [
+            response({
+                rankings: [{ assetId: "image-1", score: 25, reason: "Kurang tajam" }],
+                selectedAssetIds: []
+            }),
+            response({ rankings: [{ assetId: "image-2", score: 90, reason: "Jelas" }] })
+        ]
+        const result = runAll("parse-analysis", inputs[0], inputs)[0].json
+        expect(result.rankings).toHaveLength(2)
+        expect(result.selectedAssetIds).toEqual([second, assetId])
+        expect(() => runAll("parse-analysis", inputs[0], [inputs[0], inputs[0]])).toThrow()
+    } finally {
+        manifest.assets = previous
+    }
+})
+
+test("image references are downloaded once without sending service credentials to storage", () => {
+    const inputs = runAll("prepare-image-inputs", {})
+    expect(inputs).toHaveLength(4)
+    const workflow = buildWorkflow()
+    const download = workflow.nodes.find((node) => node.name === "Download Design Images")!
+    expect(download.credentials).toBeUndefined()
+    expect(download.parameters.options.response.response.responseFormat).toBe("file")
+    expect(download.onError).toBe("continueErrorOutput")
+    expect(
+        run("prepare-design", {}).images.every((url: string) => url.startsWith("data:image/"))
+    ).toBe(true)
+})
+
+test("materialized image inputs preserve bytes and reject non-image responses", async () => {
+    const source = readFileSync(
+        new URL("../integrations/n8n/nodes/materialize-images.js", import.meta.url),
+        "utf8"
+    )
+    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
+    const execute = new AsyncFunction("$", "$input", source)
+    const sources = [{ json: { url: "https://storage.test/photo" } }]
+    const invoke = (bytes: Buffer, downloads = [{}]) =>
+        execute.call(
+            { helpers: { getBinaryDataBuffer: async () => bytes } },
+            () => ({ all: () => sources }),
+            { all: () => downloads }
+        )
+    const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00])
+    const result = await invoke(jpeg)
+    expect(result[0].json.images[sources[0]!.json.url]).toBe(
+        `data:image/jpeg;base64,${jpeg.toString("base64")}`
+    )
+    await expect(invoke(Buffer.from("<html>error</html>"))).rejects.toThrow("JPEG or PNG")
+    await expect(invoke(jpeg, [])).rejects.toThrow("Incomplete")
+    await expect(invoke(Buffer.alloc(12 * 1024 * 1024 + 1))).rejects.toThrow("size limit")
 })

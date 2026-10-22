@@ -2,7 +2,6 @@ import { config } from "../../config/config"
 import type { IWorkflowRepository } from "../shared/interfaces/workflow.repository.interface"
 import { WorkflowContextService } from "../shared/context.service"
 import { SettingsService } from "../integration/settings.service"
-import { toLegacy } from "./workflow/adapters/n8n.adapter"
 
 export interface IWebhookTransport {
     send(payload: unknown): Promise<number>
@@ -61,9 +60,7 @@ export class JobDispatcher {
             }
             let status = 0
             try {
-                status = await this.transport.send(
-                    config.n8n.contract === "legacy" ? toLegacy(payload) : payload
-                )
+                status = await this.transport.send(payload)
             } catch {
                 /* retry without logging URLs or headers */
             }

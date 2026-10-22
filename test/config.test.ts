@@ -45,8 +45,8 @@ describe("runtime configuration", () => {
             PORT: ""
         })
         expect(config.app.port).toBe(4000)
-        expect(config.media.maxBatchFiles).toBe(30)
-        expect(config.jobs.maxJobFiles).toBe(30)
+        expect(config.media.maxBatchFiles).toBe(19)
+        expect(config.jobs.maxJobFiles).toBe(19)
         expect(config.media.signedTtl).toBe(86400)
     })
 
@@ -63,9 +63,7 @@ describe("runtime configuration", () => {
         ).toThrow("JWT_REFRESH_SECRET")
     })
 
-    test("requires production secrets and a supported webhook contract", () => {
+    test("requires production secrets", () => {
         expect(() => createConfig({ NODE_ENV: "production" })).toThrow("JWT_SECRET")
-        expect(() => createConfig({ N8N_CONTRACT: "unknown" })).toThrow("Unsupported N8N_CONTRACT")
-        expect(createConfig({ N8N_CONTRACT: "camelCase" }).n8n.contract).toBe("camelCase")
     })
 })
