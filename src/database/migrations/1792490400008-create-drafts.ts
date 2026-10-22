@@ -10,7 +10,6 @@ export class CreateDrafts1792490400008 implements MigrationInterface {
   \`review_status\` varchar(40) NOT NULL,
   \`created_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   \`updated_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-  \`primary_asset_id\` varchar(36) NOT NULL,
   \`title\` varchar(300) NOT NULL,
   \`caption\` text NOT NULL,
   \`hashtags\` json NOT NULL,
