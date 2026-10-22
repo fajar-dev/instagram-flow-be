@@ -17,6 +17,12 @@ export class TypeOrmReportingRepository implements IReportingRepository {
         } else if (kind !== "batch") {
             query.innerJoin("batches", "batch", "batch.id = item.batch_id")
         }
+        if (kind === "job") {
+            // Pick the current attempt before applying status/date filters.
+            query.andWhere(
+                "NOT EXISTS (SELECT 1 FROM jobs newer WHERE newer.batch_id = item.batch_id AND newer.attempt_no > item.attempt_no)"
+            )
+        }
         const batch = kind === "batch" ? "item" : "batch"
         if (filters.uploaderId) {
             query.andWhere(`${batch}.uploader_id = :uploader`, { uploader: filters.uploaderId })

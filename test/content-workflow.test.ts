@@ -16,8 +16,6 @@ import { config } from "../src/config/config"
 import { TypeOrmWorkflowRepository } from "../src/modules/shared/repositories/workflow.repository"
 import { createTestWorkflow } from "./fixtures/workflow.module"
 import { JobDispatcher } from "../src/modules/ai-job/dispatch.service"
-import { fromLegacy, toLegacy } from "../src/modules/ai-job/workflow/adapters/n8n.adapter"
-import { sanitizeSvg } from "../src/modules/content/media/adapters/svg-sanitizer"
 import { workflowEntityMap } from "../src/modules/shared/entities"
 import { createBatchData } from "./helpers"
 
@@ -34,7 +32,6 @@ beforeAll(async () => {
     config.n8n.serviceToken = "test-service-token"
     config.minio.accessKey = "test-access-key"
     config.minio.secretKey = "test-storage-secret"
-    config.n8n.contract = "legacy"
     config.app.appUrl = "https://api.test"
     await initTestDatabase()
     app = createTestApp()
@@ -109,6 +106,12 @@ async function queued(headers: Record<string, string>) {
     return { batchId: b.id, assetId: a.id, jobId, eventId: dispatch.eventId }
 }
 
+const generatedImage = (
+    await sharp({ create: { width: 600, height: 750, channels: 3, background: "#223344" } })
+        .jpeg()
+        .toBuffer()
+).toString("base64")
+
 function result(job: { jobId: string; assetId: string; batchId: string }) {
     return {
         jobId: job.jobId,
@@ -123,11 +126,11 @@ function result(job: { jobId: string; assetId: string; batchId: string }) {
         renders: [
             {
                 placement: "feed",
-                format: "svg",
+                format: "jpeg",
                 width: 1080,
                 height: 1350,
                 assetId: job.assetId,
-                svg: `<svg xmlns="http://www.w3.org/2000/svg"><image href="http://storage.test/${config.minio.bucket}/batches/${job.batchId}/preview/${job.assetId}.jpg?signature=test"/></svg>`
+                imageBase64: generatedImage
             }
         ]
     }
@@ -137,7 +140,7 @@ async function claim(job: { jobId: string; eventId: string }) {
     return request(app, `/api/jobs/${job.jobId}/claim`, {
         method: "POST",
         headers: serviceHeaders,
-        body: { execution_id: "42", event_id: job.eventId }
+        body: { executionId: "42", eventId: job.eventId }
     })
 }
 
@@ -200,7 +203,7 @@ describe("Content workflow", () => {
         await request(app, `/api/jobs/${job.jobId}/result`, {
             method: "POST",
             headers: serviceHeaders,
-            body: toLegacy(result(job))
+            body: result(job)
         })
         expect((await counts()).READY_FOR_REVIEW).toBe(1)
         const detail = (await request(app, `/api/jobs/${job.jobId}`, { headers: user.headers }))
@@ -345,7 +348,7 @@ describe("Content workflow", () => {
                 await request(app, `/api/jobs/${job.jobId}/result`, {
                     method: "POST",
                     headers: serviceHeaders,
-                    body: toLegacy(result(job))
+                    body: result(job)
                 })
             ).status
         ).toBe(409)
@@ -407,7 +410,7 @@ describe("Content workflow", () => {
             "Object storage unavailable"
         )
         expect(removed).toHaveLength(1)
-        expect(removed[0]).toMatch(/^renders\/.*\.svg$/)
+        expect(removed[0]).toMatch(/^renders\/.*\.jpg$/)
         expect((await repository.get("job", job.jobId))!.status).toBe("PROCESSING")
         expect(await repository.find("aiResult", { jobId: job.jobId })).toHaveLength(0)
     })
@@ -424,7 +427,7 @@ describe("Content workflow", () => {
         const decoded = await sharp(Buffer.from(await preview.arrayBuffer())).metadata()
         expect(decoded.exif).toBeUndefined()
     })
-    test("upload and legacy processing limits reject excess images explicitly", async () => {
+    test("upload and AI processing limits reject excess images explicitly", async () => {
         const user = await actor("limits@example.com")
         const b = await batch(user.headers)
         expect((await upload(b.id, user.headers, Buffer.alloc(15 * 1024 * 1024 + 1))).status).toBe(
@@ -503,7 +506,7 @@ describe("Content workflow", () => {
             request(app, `/api/jobs/${jobId}/claim`, {
                 method: "POST",
                 headers: serviceHeaders,
-                body: { execution_id: "43", event_id: d.eventId }
+                body: { executionId: "43", eventId: d.eventId }
             })
         ])
         expect(claims.filter((r) => r.body.claimed)).toHaveLength(1)
@@ -511,11 +514,11 @@ describe("Content workflow", () => {
         const replay = await request(app, `/api/jobs/${jobId}/claim`, {
             method: "POST",
             headers: serviceHeaders,
-            body: { execution_id: owner, event_id: d.eventId }
+            body: { executionId: owner, eventId: d.eventId }
         })
         expect(replay.body.claimed).toBe(true)
     })
-    test("legacy callback, signed manifest and direct rejection", async () => {
+    test("camelCase callback, signed manifest and direct rejection", async () => {
         const user = await actor("review@example.com")
         const job = await queued(user.headers)
         await claim(job)
@@ -526,16 +529,23 @@ describe("Content workflow", () => {
         const manifest = await request(app, `/api/jobs/${job.jobId}/manifest`, {
             headers: serviceHeaders
         })
-        expect(manifest.body.assets[0].asset_id).toBe(job.assetId)
-        expect(manifest.body.review_url).toBe(`${config.app.frontendUrl}/content/${job.jobId}`)
-        const signed = new URL(manifest.body.assets[0].ai_image_url)
+        expect(manifest.body.assets[0].assetId).toBe(job.assetId)
+        expect(new URL(manifest.body.designReferences.styleUrl).pathname).toContain(
+            "brand/design-reference.png"
+        )
+        expect(new URL(manifest.body.designReferences.logoUrl).pathname).toContain("brand/logo.png")
+        expect(new URL(manifest.body.designReferences.partnerLogoUrl).pathname).toContain(
+            "brand/partner-logo.jpeg"
+        )
+        expect(manifest.body.reviewUrl).toBe(`${config.app.frontendUrl}/content/${job.jobId}`)
+        const signed = new URL(manifest.body.assets[0].aiImageUrl)
         expect(signed.origin).toBe("http://storage.test")
         expect(signed.pathname).toBe(
             `/${config.minio.bucket}/batches/${job.batchId}/preview/${job.assetId}.jpg`
         )
-        expect(manifest.body.assets[0].render_image_url).toBe(manifest.body.assets[0].ai_image_url)
+        expect(manifest.body.assets[0].renderImageUrl).toBe(manifest.body.assets[0].aiImageUrl)
         expect((await app.request(`/api/media-access/${job.assetId}`)).status).toBe(404)
-        const payload = toLegacy(result(job))
+        const payload = result(job)
         const post = () =>
             request(app, `/api/jobs/${job.jobId}/result`, {
                 method: "POST",
@@ -548,10 +558,10 @@ describe("Content workflow", () => {
             method: "POST",
             headers: serviceHeaders,
             body: {
-                execution_id: "42",
+                executionId: "42",
                 stage: "TELEGRAM",
-                error_code: "NOTIFICATION",
-                safe_message: "Failed",
+                errorCode: "NOTIFICATION",
+                safeMessage: "Failed",
                 retryable: false
             }
         })
@@ -562,11 +572,13 @@ describe("Content workflow", () => {
         let detail = (await request(app, `/api/jobs/${job.jobId}`, { headers: user.headers })).body
             .data
         expect(detail.renders[0].sanitizedSvg).toBeUndefined()
-        const svg = await (
-            await app.request(`/api/renders/${detail.renders[0].id}`, { headers: user.headers })
-        ).text()
-        expect(svg).toContain("data:image/jpeg;base64,")
-        expect(svg).not.toContain("token=")
+        const imageResponse = await app.request(`/api/renders/${detail.renders[0].id}`, {
+            headers: user.headers
+        })
+        expect(imageResponse.headers.get("Content-Type")).toContain("image/jpeg")
+        const metadata = await sharp(Buffer.from(await imageResponse.arrayBuffer())).metadata()
+        expect(metadata.width).toBe(1080)
+        expect(metadata.height).toBe(1350)
         expect(detail.revision).toBeUndefined()
         expect(detail.draft.title).toBe(result(job).title)
         expect(
@@ -600,7 +612,7 @@ describe("Content workflow", () => {
         detail = (await request(app, `/api/jobs/${job.jobId}`, { headers: user.headers })).body.data
         expect(detail.draft.reviewStatus).toBe("REJECTED")
     })
-    test("callback cannot return a different output or two renders", async () => {
+    test("callback cannot return a different output or mismatched slide coverage", async () => {
         const user = await actor("output-callback@example.com")
         const job = await queued(user.headers)
         await claim(job)
@@ -612,7 +624,7 @@ describe("Content workflow", () => {
                 await request(app, `/api/jobs/${job.jobId}/result`, {
                     method: "POST",
                     headers: serviceHeaders,
-                    body: toLegacy(value)
+                    body: value
                 })
             ).status
         ).toBe(400)
@@ -622,10 +634,10 @@ describe("Content workflow", () => {
                 await request(app, `/api/jobs/${job.jobId}/result`, {
                     method: "POST",
                     headers: serviceHeaders,
-                    body: toLegacy(value)
+                    body: value
                 })
             ).status
-        ).toBe(422)
+        ).toBe(400)
     })
 
     test("wrong execution, partial ranking and malicious SVG cannot finalize a job", async () => {
@@ -639,7 +651,7 @@ describe("Content workflow", () => {
                 await request(app, `/api/jobs/${job.jobId}/result`, {
                     method: "POST",
                     headers: serviceHeaders,
-                    body: toLegacy(value)
+                    body: value
                 })
             ).status
         ).toBe(409)
@@ -650,7 +662,7 @@ describe("Content workflow", () => {
                 await request(app, `/api/jobs/${job.jobId}/result`, {
                     method: "POST",
                     headers: serviceHeaders,
-                    body: toLegacy(value)
+                    body: value
                 })
             ).status
         ).toBe(400)
@@ -661,18 +673,20 @@ describe("Content workflow", () => {
                 await request(app, `/api/jobs/${job.jobId}/result`, {
                     method: "POST",
                     headers: serviceHeaders,
-                    body: toLegacy(value)
+                    body: value
                 })
             ).status
         ).toBe(400)
         value.renders[0].height = 1350
-        value.renders[0].svg = "<svg><script>alert(1)</script></svg>"
+        value.renders[0].imageBase64 = Buffer.from("<svg><script>alert(1)</script></svg>").toString(
+            "base64"
+        )
         expect(
             (
                 await request(app, `/api/jobs/${job.jobId}/result`, {
                     method: "POST",
                     headers: serviceHeaders,
-                    body: toLegacy(value)
+                    body: value
                 })
             ).status
         ).toBe(400)
@@ -683,10 +697,10 @@ describe("Content workflow", () => {
         const job = await queued(user.headers)
         await claim(job)
         const failure = {
-            execution_id: "42",
+            executionId: "42",
             stage: "WORKFLOW",
-            error_code: "ERROR",
-            safe_message: "secret=private-password https://private",
+            errorCode: "ERROR",
+            safeMessage: "secret=private-password https://private",
             retryable: true
         }
         await request(app, `/api/jobs/${job.jobId}/failure`, {
@@ -707,10 +721,54 @@ describe("Content workflow", () => {
                 await request(app, `/api/jobs/${job.jobId}/result`, {
                     method: "POST",
                     headers: serviceHeaders,
-                    body: toLegacy(result(job))
+                    body: result(job)
                 })
             ).status
         ).toBe(409)
+    })
+    test("retried projects leave Failed lists and counts while retaining historical attempts", async () => {
+        const user = await actor("retry-reporting@example.com")
+        const job = await queued(user.headers)
+        const jobs = AppDataSource.getRepository(workflowEntityMap.job)
+        const get = async (path: string) =>
+            (await request(app, path, { headers: user.headers })).body
+        await jobs.update(job.jobId, { status: "FAILED", retryable: true })
+        expect((await get("/api/jobs?status=FAILED")).meta.total).toBe(1)
+        expect((await get("/api/overview")).data.failed).toBe(1)
+
+        const retry = await request(app, `/api/jobs/${job.jobId}/retry`, {
+            method: "POST",
+            headers: { ...user.headers, "Idempotency-Key": crypto.randomUUID() }
+        })
+        expect(retry.status).toBe(202)
+        const nextId = retry.body.data.jobId
+        for (const status of ["QUEUED", "PROCESSING", "READY_FOR_REVIEW"]) {
+            await jobs.update(nextId, { status })
+            expect((await get("/api/jobs?status=FAILED")).meta.total).toBe(0)
+            expect((await get("/api/content/counts")).data.FAILED).toBe(0)
+            expect((await get("/api/overview")).data.failed).toBe(0)
+            expect((await get("/api/jobs")).data.map((item: { id: string }) => item.id)).toEqual([
+                nextId
+            ])
+        }
+        expect((await get(`/api/jobs/${job.jobId}`)).data.job.retryable).toBe(false)
+        const staleRetry = await request(app, `/api/jobs/${job.jobId}/retry`, {
+            method: "POST",
+            headers: { ...user.headers, "Idempotency-Key": crypto.randomUUID() }
+        })
+        expect(staleRetry.status).toBe(409)
+        await jobs.update(nextId, { status: "FAILED" })
+        expect(
+            (await get("/api/jobs?status=FAILED")).data.map((item: { id: string }) => item.id)
+        ).toEqual([nextId])
+        expect((await get("/api/content/counts")).data.FAILED).toBe(1)
+        expect((await get("/api/overview")).data.failed).toBe(1)
+        expect((await jobs.findOneByOrFail({ id: job.jobId })).status).toBe("FAILED")
+
+        // A date filter must not resurrect an older failed attempt.
+        await jobs.update(nextId, { createdAt: new Date(Date.now() - 40 * 86400000) })
+        expect((await get("/api/jobs?status=FAILED&days=30")).meta.total).toBe(0)
+        expect((await get("/api/content/counts?days=30")).data.FAILED).toBe(0)
     })
     test("archived assets do not consume the active photo limit", async () => {
         const user = await actor("archived-limit@example.com")
@@ -743,10 +801,10 @@ describe("Content workflow", () => {
             method: "POST",
             headers: serviceHeaders,
             body: {
-                execution_id: "42",
+                executionId: "42",
                 stage: "WORKFLOW",
-                error_code: "INVALID",
-                safe_message: "Invalid input",
+                errorCode: "INVALID",
+                safeMessage: "Invalid input",
                 retryable: false
             }
         })
@@ -843,28 +901,6 @@ describe("Content workflow", () => {
         await success.tick()
         expect((await repository.get("job", job.jobId))!.status).toBe("PROCESSING")
     })
-})
-
-test("adapter preserves provider fields and actual V0.2 snake_case keys", () => {
-    const fixture = {
-        job_id: "job_1",
-        execution_id: "42",
-        assets: [{ asset_id: "asset_1", ai_image_url: "https://example.test" }],
-        model: "model",
-        messages: []
-    }
-    expect(toLegacy(fromLegacy(fixture))).toEqual(fixture)
-})
-test("SVG disallows external fetch, scripts, entities and active attributes", () => {
-    for (const svg of [
-        '<svg><image href="http://127.0.0.1"/></svg>',
-        '<svg onload="alert(1)"/>',
-        '<!DOCTYPE svg [<!ENTITY x SYSTEM "file:///etc/passwd">]><svg/>',
-        "<svg><foreignObject/></svg>",
-        '<svg><rect fill="url(http://private)"/></svg>'
-    ]) {
-        expect(() => sanitizeSvg(svg, Buffer.from(""), () => false)).toThrow()
-    }
 })
 
 test("asset serializer never exposes storage paths or newly added private fields", () => {
