@@ -1,5 +1,3 @@
-import { hostname } from "zod"
-
 /** Single runtime environment parser. Never log environment values or secrets. */
 export function createConfig(environment: Record<string, string | undefined>) {
     const env = environment.NODE_ENV || "development"

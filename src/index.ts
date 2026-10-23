@@ -3,12 +3,27 @@ import { AppDataSource } from "./config/database"
 import { config } from "./config/config"
 import { logger } from "./core/helpers/logger"
 
-AppDataSource.initialize()
-    .then(() => logger.info("Database connected successfully"))
-    .catch((err) => logger.error("Database connection failed", { err }))
+async function startServer() {
+    try {
+        await AppDataSource.initialize()
+        logger.info("Database connected successfully")
 
-export default {
-    hostname: config.app.hostname,
-    port: config.app.port,
-    fetch: createApp().fetch
+        const server = Bun.serve({
+            hostname: config.app.hostname,
+            port: config.app.port,
+            fetch: createApp().fetch
+        })
+        logger.info("HTTP server listening", {
+            hostname: server.hostname,
+            port: server.port
+        })
+    } catch (err) {
+        logger.error("Application startup failed", { err })
+        if (AppDataSource.isInitialized) {
+            await AppDataSource.destroy()
+        }
+        process.exitCode = 1
+    }
 }
+
+void startServer()
