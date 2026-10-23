@@ -1,3 +1,5 @@
+import { hostname } from "zod"
+
 /** Single runtime environment parser. Never log environment values or secrets. */
 export function createConfig(environment: Record<string, string | undefined>) {
     const env = environment.NODE_ENV || "development"
@@ -29,6 +31,7 @@ export function createConfig(environment: Record<string, string | undefined>) {
     return {
         app: {
             name: environment.APP_NAME || "hono-be",
+            hostname: environment.APP_HOSTNAME || "0.0.0.0",
             port,
             appUrl: environment.APP_URL || `http://localhost:${port}`,
             frontendUrl: environment.FRONTEND_URL || "http://localhost:3000",

@@ -8,6 +8,7 @@ AppDataSource.initialize()
     .catch((err) => logger.error("Database connection failed", { err }))
 
 export default {
+    hostname: config.app.hostname,
     port: config.app.port,
     fetch: createApp().fetch
 }
