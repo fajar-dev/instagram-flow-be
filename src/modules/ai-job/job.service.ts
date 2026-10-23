@@ -1,5 +1,7 @@
 import { config } from "../../config/config"
 import { BadRequestException, ConflictException } from "../../core/exceptions/base"
+import type { IUserRepository } from "../user/interfaces/user.repository.interface"
+import type { Rejection } from "../content-draft/entities/rejection.entity"
 import type { User } from "../user/entities/user.entity"
 import type { IWorkflowRepository } from "../shared/interfaces/workflow.repository.interface"
 import { id } from "../shared/workflow.helpers"
@@ -8,7 +10,8 @@ import { WorkflowContextService } from "../shared/context.service"
 export class JobService {
     constructor(
         private readonly repository: IWorkflowRepository,
-        private readonly context: WorkflowContextService
+        private readonly context: WorkflowContextService,
+        private readonly users: Pick<IUserRepository, "findById">
     ) {}
 
     async process(
@@ -107,14 +110,63 @@ export class JobService {
                   placement: job.output
               })
             : []
+        const rejections = draft
+            ? await this.repository.find("rejection", { draftId: draft.id })
+            : []
+        const uploader = await this.users.findById(batch.uploaderId)
         return {
+            uploader: { id: batch.uploaderId, name: uploader?.name ?? null },
             job: { ...job, retryable },
             batch,
             assets,
             aiResult,
             draft,
-            reviews: draft ? await this.repository.find("review", { draftId: draft.id }) : [],
+            rejections,
+            decisions: draft ? await this.decisions(draft.id, rejections) : [],
             renders
         }
+    }
+
+    private async decisions(draftId: string, rejections: Rejection[]) {
+        const records: {
+            action: "PUBLISH" | "REJECTED" | "CANCELLED"
+            actorId: number | null
+            createdAt: Date
+        }[] = rejections.map((rejection) => ({
+            action: "REJECTED",
+            actorId: rejection.rejectedBy,
+            createdAt: rejection.createdAt
+        }))
+        const publications = await this.repository.find("publication", { draftId })
+        for (const publication of publications) {
+            records.push({
+                action: "PUBLISH",
+                actorId: publication.createdBy,
+                createdAt: publication.createdAt
+            })
+            if (publication.status === "CANCELLED") {
+                const cancellations = await this.repository.find("auditLog", {
+                    entityType: "publication",
+                    entityId: publication.id,
+                    event: "PUBLICATION_CANCELLED"
+                })
+                for (const cancellation of cancellations) {
+                    records.push({
+                        action: "CANCELLED",
+                        actorId: cancellation.actorId,
+                        createdAt: cancellation.createdAt
+                    })
+                }
+            }
+        }
+        return Promise.all(
+            records
+                .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+                .map(async (record) => {
+                    const user =
+                        record.actorId === null ? null : await this.users.findById(record.actorId)
+                    return { ...record, actorName: user?.name ?? null }
+                })
+        )
     }
 }

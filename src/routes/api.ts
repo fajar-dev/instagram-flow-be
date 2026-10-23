@@ -13,14 +13,14 @@ import { config } from "../config/config"
 import { ApiResponse } from "../core/helpers/response"
 import { batchController, mediaController } from "../modules/content/content.module"
 import { jobController, workflowController } from "../modules/ai-job/ai-job.module"
-import { draftController } from "../modules/content-review/content-review.module"
-import { settingsController } from "../modules/integration/integration.module"
+import { draftController } from "../modules/content-draft/content-draft.module"
+import { settingsController } from "../modules/settings/settings.module"
 import { reportingController } from "../modules/reporting/reporting.module"
 import { serviceOnly, workflowMutationLimit } from "../modules/shared/workflow.middleware"
 import { batchSchema } from "../modules/content/validators/batch.validator"
 import { processSchema } from "../modules/ai-job/validators/job.validator"
-import { rejectSchema } from "../modules/content-review/validators/draft.validator"
-import { settingsSchema } from "../modules/integration/validators/settings.validator"
+import { rejectSchema } from "../modules/content-draft/validators/draft.validator"
+import { settingsSchema } from "../modules/settings/validators/settings.validator"
 import { serveStatic } from "hono/bun"
 import { swaggerUI } from "@hono/swagger-ui"
 import { AppDataSource } from "../config/database"
@@ -109,7 +109,7 @@ routes.put(
 )
 routes.delete("/user/:id", authMiddleware, (c) => userController.destroy(c))
 
-// Content, AI jobs, review, reporting and integration
+// Content, AI jobs, drafts, reporting and settings
 const json = (schema: z.ZodType) => zValidator("json", schema, validationHook)
 const contentBodyLimit = bodyLimit({
     maxSize: (config.media.maxUploadMb + 1) * 1024 * 1024,
@@ -183,8 +183,8 @@ routes.post("/jobs/:jobId/retry", authMiddleware, workflowMutationLimit, content
     jobController.retry(c)
 )
 
-// Content review
-routes.get("/review", authMiddleware, zValidator("query", querySchema, validationHook), (c) =>
+// Content drafts and rejection
+routes.get("/drafts", authMiddleware, zValidator("query", querySchema, validationHook), (c) =>
     reportingController.browse(c, "draft")
 )
 routes.post(

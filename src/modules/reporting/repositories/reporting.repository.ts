@@ -39,7 +39,7 @@ export class TypeOrmReportingRepository implements IReportingRepository {
             })
         }
         if (filters.status && kind !== "asset") {
-            query.andWhere(`item.${kind === "draft" ? "review_status" : "status"} = :status`, {
+            query.andWhere(`item.${kind === "draft" ? "decision_status" : "status"} = :status`, {
                 status: filters.status
             })
         }
@@ -131,9 +131,9 @@ export class TypeOrmReportingRepository implements IReportingRepository {
                 .groupBy("item.status")
                 .getRawMany<{ status: string; count: string }>(),
             this.query("draft", { days })
-                .select("item.review_status", "status")
+                .select("item.decision_status", "status")
                 .addSelect("COUNT(*)", "count")
-                .groupBy("item.review_status")
+                .groupBy("item.decision_status")
                 .getRawMany<{ status: string; count: string }>()
         ])
         const counts: Record<string, number> = Object.fromEntries(
@@ -156,7 +156,7 @@ export class TypeOrmReportingRepository implements IReportingRepository {
     async overview(days?: number) {
         const count = (kind: "job" | "asset" | "draft" | "batch", status?: string) =>
             this.query(kind, { days, status }).getCount()
-        const [batches, assets, queued, dispatched, processing, ready, failed, publish] =
+        const [batches, assets, queued, dispatched, processing, ready, failed, publish, rejected] =
             await Promise.all([
                 count("batch"),
                 count("asset"),
@@ -165,7 +165,8 @@ export class TypeOrmReportingRepository implements IReportingRepository {
                 count("job", "PROCESSING"),
                 count("draft", "READY_FOR_REVIEW"),
                 count("job", "FAILED"),
-                count("draft", "PUBLISH")
+                count("draft", "PUBLISH"),
+                count("draft", "REJECTED")
             ])
         return {
             batches,
@@ -173,7 +174,8 @@ export class TypeOrmReportingRepository implements IReportingRepository {
             processing: queued + dispatched + processing,
             ready,
             failed,
-            publish
+            publish,
+            rejected
         }
     }
 }

@@ -1,4 +1,4 @@
-export type AnalyticsPeriod = "today" | "this_week" | "this_month" | "last_7_days" | "last_30_days"
+export type AnalyticsPeriod = "today" | "this_week" | "this_month"
 
 export interface InsightMetric {
     name: string

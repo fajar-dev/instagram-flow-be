@@ -1,9 +1,7 @@
 import { z } from "zod"
 
 export const analyticsQuery = z.object({
-    period: z
-        .enum(["today", "this_week", "this_month", "last_7_days", "last_30_days"])
-        .default("this_week")
+    period: z.enum(["today", "this_week", "this_month"]).default("this_week")
 })
 
 export const analyticsPostsQuery = z.object({

@@ -3,7 +3,7 @@ import { listQuerySchema } from "../../../core/validators/list-query.validator"
 
 export const resourceId = z.string().uuid()
 
-export const integrationId = z.string().regex(/^[a-zA-Z0-9_-]{1,128}$/)
+export const executionIdSchema = z.string().regex(/^[a-zA-Z0-9_-]{1,128}$/)
 
 export const idempotencyKey = z
     .string()

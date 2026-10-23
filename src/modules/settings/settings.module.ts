@@ -4,7 +4,7 @@ import { WorkflowContextService } from "../shared/context.service"
 import { SettingsService } from "./settings.service"
 import { SettingsController } from "./settings.controller"
 
-export function createIntegrationModule(
+export function createSettingsModule(
     repository: IWorkflowRepository = workflowRepository,
     context: WorkflowContextService = workflowContext
 ) {
@@ -12,4 +12,4 @@ export function createIntegrationModule(
     return { settings, settingsController: new SettingsController(settings) }
 }
 
-export const { settings: settingsService, settingsController } = createIntegrationModule()
+export const { settings: settingsService, settingsController } = createSettingsModule()

@@ -3,7 +3,7 @@ import type { IContentMedia } from "../../src/modules/content/media/interfaces/c
 import type { IWebhookTransport } from "../../src/modules/ai-job/dispatch.service"
 import { WorkflowContextService } from "../../src/modules/shared/context.service"
 import { createContentModule } from "../../src/modules/content/content.module"
-import { createIntegrationModule } from "../../src/modules/integration/integration.module"
+import { createSettingsModule } from "../../src/modules/settings/settings.module"
 import { createAiJobModule } from "../../src/modules/ai-job/ai-job.module"
 
 /** Isolated test composition: no reporting or HTTP route facade. */
@@ -14,7 +14,7 @@ export function createTestWorkflow(
 ) {
     const context = new WorkflowContextService(repository)
     const content = createContentModule(repository, media, context)
-    const { settings } = createIntegrationModule(repository, context)
+    const { settings } = createSettingsModule(repository, context)
     return {
         context,
         settings,

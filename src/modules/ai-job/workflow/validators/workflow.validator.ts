@@ -1,11 +1,11 @@
 import { z } from "zod"
-import { resourceId, integrationId } from "../../../shared/validators/shared.validator"
+import { resourceId, executionIdSchema } from "../../../shared/validators/shared.validator"
 
-export const claimSchema = z.object({ executionId: integrationId, eventId: resourceId })
+export const claimSchema = z.object({ executionId: executionIdSchema, eventId: resourceId })
 
 export const resultSchema = z.object({
     jobId: resourceId,
-    executionId: integrationId,
+    executionId: executionIdSchema,
     resultVersion: z.number().int().min(1).max(1000),
     status: z.literal("READY_FOR_REVIEW"),
     selectedAssetIds: z.array(resourceId).min(1).max(5),
@@ -44,7 +44,7 @@ export const resultSchema = z.object({
 })
 
 export const failureSchema = z.object({
-    executionId: integrationId,
+    executionId: executionIdSchema,
     stage: z.string().max(80),
     errorCode: z.string().max(80),
     safeMessage: z.string().max(1000),

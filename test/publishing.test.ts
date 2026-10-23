@@ -1,3 +1,4 @@
+import { AppDataSource } from "../src/config/database"
 import { afterAll, beforeAll, beforeEach, describe, expect, spyOn, test } from "bun:test"
 import { mkdtemp, writeFile, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
@@ -123,7 +124,7 @@ async function fixture(output: "feed" | "story" = "feed") {
     await repo.save("draft", {
         id: draftId,
         jobId,
-        reviewStatus: "READY_FOR_REVIEW",
+        decisionStatus: "READY_FOR_REVIEW",
         ...content,
         contentHash: contentHash(content)
     })
@@ -172,7 +173,7 @@ async function fixture(output: "feed" | "story" = "feed") {
             headers: { ...auth.headers, "Idempotency-Key": requestKey },
             body
         })
-    return { ...auth, draftId, batchId, payload, enqueue }
+    return { ...auth, jobId, draftId, batchId, payload, enqueue }
 }
 
 class FakeGraph implements IInstagramApi {
@@ -441,7 +442,7 @@ describe("Instagram publishing", () => {
         expect(results.map((r) => r.status).sort()).toEqual([202, 409])
         const rows = await repo.find("publication", { batchId: f.batchId })
         expect(rows).toHaveLength(1)
-        expect((await repo.get("draft", f.draftId))!.reviewStatus).toBe("PUBLISH")
+        expect((await repo.get("draft", f.draftId))!.decisionStatus).toBe("PUBLISH")
         const counts = await request(app, "/api/content/counts?days=30", { headers: f.headers })
         expect(counts.body.data.PUBLISH).toBe(1)
         expect(counts.body.data.READY_FOR_REVIEW).toBe(0)
@@ -472,7 +473,7 @@ describe("Instagram publishing", () => {
             ...draft,
             id: secondDraft,
             jobId: secondJob,
-            reviewStatus: "READY_FOR_REVIEW"
+            decisionStatus: "READY_FOR_REVIEW"
         })
         expect(
             (
@@ -500,7 +501,7 @@ describe("Instagram publishing", () => {
         ])
         expect(results.filter((r) => r.status === 200 || r.status === 202)).toHaveLength(1)
         expect(results.filter((r) => r.status === 409)).toHaveLength(1)
-        const state = (await repo.get("draft", f.draftId))!.reviewStatus
+        const state = (await repo.get("draft", f.draftId))!.decisionStatus
         expect(["PUBLISH", "REJECTED"]).toContain(state)
         expect(await repo.find("publication", { batchId: f.batchId })).toHaveLength(
             state === "PUBLISH" ? 1 : 0
@@ -508,9 +509,9 @@ describe("Instagram publishing", () => {
     })
     test("rejects rejected, stale, unauthorized media permission and outdated design", async () => {
         const f = await fixture()
-        await repo.save("draft", { id: f.draftId, reviewStatus: "REJECTED" })
+        await repo.save("draft", { id: f.draftId, decisionStatus: "REJECTED" })
         expect((await f.enqueue()).status).toBe(409)
-        await repo.save("draft", { id: f.draftId, reviewStatus: "READY_FOR_REVIEW" })
+        await repo.save("draft", { id: f.draftId, decisionStatus: "READY_FOR_REVIEW" })
         expect(
             (await f.enqueue({ ...f.payload, expectedContentHash: "b".repeat(64) })).status
         ).toBe(409)
@@ -549,7 +550,7 @@ describe("Instagram publishing", () => {
         const saved = (await repo.get("draft", f.draftId))!
         expect(saved.caption).toBe("Ready to post")
         expect(saved.contentHash).toBe(contentHash(finalContent))
-        expect(saved.reviewStatus).toBe("PUBLISH")
+        expect(saved.decisionStatus).toBe("PUBLISH")
     })
     test("media preparation failure leaves content ready and unchanged", async () => {
         const f = await fixture()
@@ -567,7 +568,7 @@ describe("Instagram publishing", () => {
             ).toBe(500)
             const saved = (await repo.get("draft", f.draftId))!
             expect(saved.caption).toBe(f.payload.content.caption)
-            expect(saved.reviewStatus).toBe("READY_FOR_REVIEW")
+            expect(saved.decisionStatus).toBe("READY_FOR_REVIEW")
             expect(await repo.find("publication", { draftId: f.draftId })).toHaveLength(0)
         } finally {
             prepare.mockRestore()
@@ -648,7 +649,7 @@ describe("Instagram publishing", () => {
             headers: f.headers
         })
         expect(cancelled.body.data.status).toBe("CANCELLED")
-        expect((await repo.get("draft", f.draftId))!.reviewStatus).toBe("REJECTED")
+        expect((await repo.get("draft", f.draftId))!.decisionStatus).toBe("REJECTED")
         expect((await f.enqueue()).status).toBe(409)
         expect(
             (
@@ -720,4 +721,89 @@ describe("Instagram publishing", () => {
         await worker(api).process(id)
         expect((await repo.get("publication", id))!.status).toBe("PUBLISHED")
     })
+})
+
+test("detail retains the publishing actor after another user cancels", async () => {
+    const f = await fixture()
+    const before = await request(app, `/api/jobs/${f.jobId}`, { headers: f.headers })
+    expect(before.body.data.decisions).toEqual([])
+    const key = crypto.randomUUID()
+    const queued = await f.enqueue(f.payload, key)
+    expect(queued.status).toBe(202)
+    const other = await registerAndLogin(app, {
+        name: "Canceller",
+        email: "canceller@example.com",
+        password: "password123"
+    })
+    const replay = await request(app, `/api/drafts/${f.draftId}/publications`, {
+        method: "POST",
+        headers: { ...other.headers, "Idempotency-Key": key },
+        body: f.payload
+    })
+    expect(replay.status).toBe(202)
+    const cancelled = await request(app, `/api/publications/${queued.body.data.id}/cancel`, {
+        method: "POST",
+        headers: other.headers
+    })
+    expect(cancelled.status).toBe(200)
+    const detail = (await request(app, `/api/jobs/${f.jobId}`, { headers: other.headers })).body
+        .data
+    expect(detail.uploader).toEqual({ id: f.user.id, name: "Publisher" })
+    expect(detail.decisions).toHaveLength(2)
+    expect(detail.decisions[0]).toEqual({
+        action: "PUBLISH",
+        actorId: f.user.id,
+        actorName: "Publisher",
+        createdAt: expect.any(String)
+    })
+    expect(detail.decisions[1]).toEqual({
+        action: "CANCELLED",
+        actorId: other.user.id,
+        actorName: "Canceller",
+        createdAt: expect.any(String)
+    })
+})
+
+test("rejection records the deciding user and replay does not replace them", async () => {
+    const f = await fixture()
+    const other = await registerAndLogin(app, {
+        name: "Reviewer",
+        email: "reviewer@example.com",
+        password: "password123"
+    })
+    const body = { contentHash: f.payload.expectedContentHash, notes: "Not suitable" }
+    for (const headers of [other.headers, f.headers]) {
+        const rejected = await request(app, `/api/drafts/${f.draftId}/reject`, {
+            method: "POST",
+            headers,
+            body
+        })
+        expect(rejected.status).toBe(200)
+    }
+    const detail = (await request(app, `/api/jobs/${f.jobId}`, { headers: f.headers })).body.data
+    expect(detail.reviews).toBeUndefined()
+    expect(detail.draft.reviewStatus).toBeUndefined()
+    expect(detail.rejections[0].rejectedBy).toBe(other.user.id)
+    expect(detail.rejections[0].reviewerId).toBeUndefined()
+    expect(detail.rejections[0].decision).toBeUndefined()
+    const runner = AppDataSource.createQueryRunner()
+    try {
+        const [saved] = await runner.query(
+            "SELECT rejected_by, notes FROM rejections WHERE draft_id = ?",
+            [f.draftId]
+        )
+        expect(saved.rejected_by).toBe(other.user.id)
+        expect(saved.notes).toBe("Not suitable")
+        expect((await repo.get("draft", f.draftId))?.decisionStatus).toBe("REJECTED")
+    } finally {
+        await runner.release()
+    }
+    expect(detail.decisions).toEqual([
+        {
+            action: "REJECTED",
+            actorId: other.user.id,
+            actorName: "Reviewer",
+            createdAt: expect.any(String)
+        }
+    ])
 })

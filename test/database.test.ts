@@ -35,7 +35,7 @@ describe("MySQL database integration", () => {
                 "ai_results",
                 "renders",
                 "drafts",
-                "reviews",
+                "rejections",
                 "audit_logs",
                 "settings",
                 "publications"
@@ -53,6 +53,11 @@ describe("MySQL database integration", () => {
         const runner = AppDataSource.createQueryRunner()
         try {
             expect(databaseMigrations).toHaveLength(13)
+            expect(await runner.hasTable("reviews")).toBe(false)
+            expect(await runner.hasColumn("rejections", "rejected_by")).toBe(true)
+            expect(await runner.hasColumn("rejections", "decision")).toBe(false)
+            expect(await runner.hasColumn("drafts", "review_status")).toBe(false)
+            expect(await runner.hasColumn("drafts", "decision_status")).toBe(true)
             expect(await runner.hasColumn("batches", "template_id")).toBe(false)
             expect(await runner.hasColumn("drafts", "primary_asset_id")).toBe(false)
             expect(await runner.hasColumn("publications", "media_key")).toBe(false)
