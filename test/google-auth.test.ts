@@ -1,6 +1,6 @@
 import { expect, test, spyOn } from "bun:test"
 import { OAuth2Client, LoginTicket, type TokenPayload } from "google-auth-library"
-import { AuthHelper } from "../src/core/helpers/auth"
+import { GoogleAuthAdapter } from "../src/modules/auth/adapters/google-auth.adapter"
 
 test("Google code exchange requires a verified email and never exposes provider errors", async () => {
     const token = spyOn(OAuth2Client.prototype, "getToken").mockImplementation(async () => ({
@@ -12,15 +12,15 @@ test("Google code exchange requires a verified email and never exposes provider 
         async () => new LoginTicket("", payload)
     )
     try {
-        expect(await AuthHelper.verifyGoogleCode("code")).toEqual({ email: "user@example.com" })
+        expect(await new GoogleAuthAdapter().verify("code")).toEqual({ email: "user@example.com" })
         payload = { ...payload, email_verified: false }
-        await expect(AuthHelper.verifyGoogleCode("code")).rejects.toThrow(
+        await expect(new GoogleAuthAdapter().verify("code")).rejects.toThrow(
             "Invalid Google credentials"
         )
         verify.mockImplementationOnce(async () => {
             throw new Error("private upstream payload")
         })
-        await expect(AuthHelper.verifyGoogleCode("code")).rejects.toThrow(
+        await expect(new GoogleAuthAdapter().verify("code")).rejects.toThrow(
             "Invalid Google credentials"
         )
     } finally {

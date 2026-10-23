@@ -1,3 +1,5 @@
+import { spyOn } from "bun:test"
+import { MicrosoftAuthAdapter } from "../src/modules/auth/adapters/microsoft-auth.adapter"
 import { describe, test, expect, beforeAll, afterAll, beforeEach } from "bun:test"
 import { Hono } from "hono"
 import {
@@ -573,5 +575,37 @@ describe("PUT /api/auth/password", () => {
 
         expect(status).toBe(422)
         expect(body.success).toBe(false)
+    })
+})
+
+describe("Microsoft login", () => {
+    test("uses the registered active account and returns the standard session", async () => {
+        const { user } = await registerAndLogin(app)
+        const verify = spyOn(MicrosoftAuthAdapter.prototype, "verify").mockResolvedValue({
+            email: user.email
+        })
+        try {
+            const result = await request(app, "/api/auth/microsoft", {
+                method: "POST",
+                body: { code: "code", codeVerifier: "a".repeat(43) }
+            })
+            expect(result.status).toBe(200)
+            expect(result.body.data.user.id).toBe(user.id)
+            expect(result.body.data.user.hasPassword).toBe(true)
+            expect(result.body.data.user.password).toBeUndefined()
+            expect(result.body.data.accessToken).toBeString()
+            expect(result.body.data.refreshToken).toBeString()
+            verify.mockResolvedValue({ email: "unregistered@example.com" })
+            expect(
+                (
+                    await request(app, "/api/auth/microsoft", {
+                        method: "POST",
+                        body: { code: "code", codeVerifier: "a".repeat(43) }
+                    })
+                ).status
+            ).toBe(400)
+        } finally {
+            verify.mockRestore()
+        }
     })
 })

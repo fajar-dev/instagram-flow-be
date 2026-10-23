@@ -1,3 +1,5 @@
+import { GoogleAuthAdapter } from "./adapters/google-auth.adapter"
+import { MicrosoftAuthAdapter } from "./adapters/microsoft-auth.adapter"
 import { mail } from "../../core/helpers/mail"
 import { userService } from "../user/user.module"
 import { AuthService } from "./auth.service"
@@ -6,6 +8,12 @@ import { TypeOrmPasswordResetTokenRepository } from "./repositories/password-res
 
 const passwordResetTokens = new TypeOrmPasswordResetTokenRepository()
 
-export const authService = new AuthService(userService, passwordResetTokens, mail)
+export const authService = new AuthService(
+    userService,
+    passwordResetTokens,
+    mail,
+    new MicrosoftAuthAdapter(),
+    new GoogleAuthAdapter()
+)
 
 export const authController = new AuthController(authService)

@@ -36,6 +36,7 @@ import {
     ResetPasswordValidator,
     RefreshTokenValidator,
     GoogleLoginValidator,
+    MicrosoftLoginValidator,
     UpdateProfileValidator,
     UpdatePasswordValidator
 } from "../modules/auth/validators/auth.validator"
@@ -61,6 +62,9 @@ routes.post("/auth/login", zValidator("json", LoginValidator, validationHook), (
 )
 routes.post("/auth/google", zValidator("json", GoogleLoginValidator, validationHook), (c) =>
     authController.google(c)
+)
+routes.post("/auth/microsoft", zValidator("json", MicrosoftLoginValidator, validationHook), (c) =>
+    authController.microsoft(c)
 )
 routes.post(
     "/auth/forgot-password",

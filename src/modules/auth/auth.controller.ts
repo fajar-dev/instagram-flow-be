@@ -14,47 +14,41 @@ export class AuthController {
         return ApiResponse.success(c, serialized, "User registered successfully", 201)
     }
 
-    async login(c: Context) {
-        const body = c.req.valid("json" as never)
-        const data = await this.service.login(body)
-        const serializedUser = await AuthSerializer.single(data.user)
+    private async sessionResponse(
+        c: Context,
+        data: Awaited<ReturnType<AuthService["login"]>>,
+        message = "Logged in successfully"
+    ) {
         return ApiResponse.success(
             c,
             {
-                user: serializedUser,
+                user: await AuthSerializer.single(data.user),
                 accessToken: data.accessToken,
                 refreshToken: data.refreshToken
             },
-            "Logged in successfully"
+            message
         )
     }
 
+    async login(c: Context) {
+        return this.sessionResponse(c, await this.service.login(c.req.valid("json" as never)))
+    }
+
     async google(c: Context) {
-        const body = c.req.valid("json" as never)
-        const data = await this.service.googleLogin(body)
-        const serializedUser = await AuthSerializer.single(data.user)
-        return ApiResponse.success(
+        return this.sessionResponse(c, await this.service.googleLogin(c.req.valid("json" as never)))
+    }
+
+    async microsoft(c: Context) {
+        return this.sessionResponse(
             c,
-            {
-                user: serializedUser,
-                accessToken: data.accessToken,
-                refreshToken: data.refreshToken
-            },
-            "Logged in successfully"
+            await this.service.microsoftLogin(c.req.valid("json" as never))
         )
     }
 
     async refreshToken(c: Context) {
-        const body = c.req.valid("json" as never)
-        const tokens = await this.service.refreshToken(body)
-        const serializedUser = await AuthSerializer.single(tokens.user)
-        return ApiResponse.success(
+        return this.sessionResponse(
             c,
-            {
-                user: serializedUser,
-                accessToken: tokens.accessToken,
-                refreshToken: tokens.refreshToken
-            },
+            await this.service.refreshToken(c.req.valid("json" as never)),
             "Token refreshed successfully"
         )
     }

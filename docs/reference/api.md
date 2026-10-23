@@ -27,6 +27,7 @@ Daftar ini dicocokkan dengan registrasi route pada 21 Oktober 2026. Perbarui saa
 | POST | `/api/auth/register` | Publik |
 | POST | `/api/auth/login` | Publik |
 | POST | `/api/auth/google` | Publik |
+| POST | `/api/auth/microsoft` | Publik |
 | POST | `/api/auth/forgot-password` | Publik |
 | GET | `/api/auth/validate-reset-token` | Publik |
 | POST | `/api/auth/reset-password` | Publik |
@@ -84,3 +85,5 @@ Daftar ini dicocokkan dengan registrasi route pada 21 Oktober 2026. Perbarui saa
 Health mengembalikan state inisialisasi DataSource, timestamp, uptime, environment dan checks.database. Response 200/503 tidak membuktikan koneksi MinIO/SMTP/n8n. Endpoint publishing memerlukan JWT pengguna aktif; tidak ada endpoint Contact.
 
 Analytics memakai HTTP 502 untuk kegagalan upstream Meta atau payload respons tidak valid; kesalahan domain tetap memakai status aslinya (misalnya 403 untuk media akun lain). Upload avatar `/api/upload` hanya menerima gambar statis JPG/PNG/WEBP yang dapat didecode, sesuai MAX_UPLOAD_MB, lalu menyimpan JPEG aman ke MinIO; body berlebih menghasilkan 413.
+
+Login Microsoft menerima `{ code, codeVerifier }` dari popup PKCE. Redirect URI ditentukan server, bukan request. Lihat [alur autentikasi](../features/authentication.md).

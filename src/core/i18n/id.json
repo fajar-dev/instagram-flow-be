@@ -41,7 +41,8 @@
         "Authentication token is required": "Token autentikasi wajib disertakan",
         "Missing or invalid authorization header": "Header otorisasi tidak ada atau tidak valid",
         "Missing or invalid API key": "API key tidak ada atau tidak valid",
-        "Invalid Google credentials": "Kredensial Google tidak valid"
+        "Invalid Google credentials": "Kredensial Google tidak valid",
+        "Invalid Microsoft credentials": "Kredensial Microsoft tidak valid"
     },
     "user": {
         "User created successfully": "Pengguna berhasil dibuat",

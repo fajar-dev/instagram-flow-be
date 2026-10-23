@@ -20,6 +20,7 @@
     "brand:upload": "bun run src/commands/upload-design-reference.ts"
   },
   "dependencies": {
+    "@azure/msal-node": "^7.1.1",
     "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-validator": "^0.7.6",
     "bcryptjs": "^3.0.3",

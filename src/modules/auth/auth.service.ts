@@ -1,3 +1,4 @@
+import type { MicrosoftCodeVerifier } from "./interfaces/microsoft-code-verifier.interface"
 import { User } from "../user/entities/user.entity"
 import {
     RegisterValidator,
@@ -5,7 +6,8 @@ import {
     ForgotPasswordValidator,
     ResetPasswordValidator,
     RefreshTokenValidator,
-    GoogleLoginValidator
+    GoogleLoginValidator,
+    MicrosoftLoginValidator
 } from "./validators/auth.validator"
 import {
     UnauthorizedException,
@@ -18,7 +20,8 @@ import { config } from "../../config/config"
 import crypto from "crypto"
 import type { IMailer } from "../../core/interfaces/mailer.interface"
 import { UserService } from "../user/user.service"
-import { AuthHelper } from "../../core/helpers/auth"
+import { generateSessionTokens } from "./helpers/session-tokens"
+import type { GoogleCodeVerifier } from "./interfaces/google-code-verifier.interface"
 import { minio } from "../../core/helpers/minio"
 
 import { IPasswordResetTokenRepository } from "./interfaces/password-reset-token.repository.interface"
@@ -30,7 +33,9 @@ export class AuthService {
     constructor(
         private readonly userService: UserService,
         private readonly passwordResetTokens: IPasswordResetTokenRepository,
-        private readonly mailer: IMailer
+        private readonly mailer: IMailer,
+        private readonly microsoft: MicrosoftCodeVerifier,
+        private readonly google: GoogleCodeVerifier
     ) {}
 
     async register(data: RegisterValidator) {
@@ -49,19 +54,24 @@ export class AuthService {
     }
 
     async googleLogin(data: GoogleLoginValidator) {
-        const payload = await AuthHelper.verifyGoogleCode(data.code)
-        let user = await this.userService.getByEmailWithPassword(payload.email)
+        const payload = await this.google.verify(data.code)
+        return this.loginWithEmail(payload.email)
+    }
 
+    async microsoftLogin(data: MicrosoftLoginValidator) {
+        const payload = await this.microsoft.verify(data.code, data.codeVerifier)
+        return this.loginWithEmail(payload.email)
+    }
+
+    private async loginWithEmail(email: string) {
+        const user = await this.userService.getByEmailWithPassword(email)
         if (!user) {
             throw new BadRequestException("User not registered")
         }
-
         if (!user.isActive) {
             throw new BadRequestException("Account is inactive")
         }
-
-        const { accessToken, refreshToken } = await AuthHelper.generateTokens(user)
-        return { user, accessToken, refreshToken }
+        return { user, ...(await generateSessionTokens(user)) }
     }
 
     async login(data: LoginValidator) {
@@ -83,7 +93,7 @@ export class AuthService {
             throw new UnauthorizedException("Invalid credentials")
         }
 
-        const { accessToken, refreshToken } = await AuthHelper.generateTokens(user)
+        const { accessToken, refreshToken } = await generateSessionTokens(user)
         return { user, accessToken, refreshToken }
     }
 
@@ -128,7 +138,7 @@ export class AuthService {
             config.app.jwtRefreshSecret,
             "Invalid or expired refresh token"
         )
-        const { accessToken, refreshToken } = await AuthHelper.generateTokens(user)
+        const { accessToken, refreshToken } = await generateSessionTokens(user)
         return { user, accessToken, refreshToken }
     }
 

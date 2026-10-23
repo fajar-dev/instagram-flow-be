@@ -20,7 +20,7 @@
 
 Nama default lama di parser/template/container dipertahankan untuk kompatibilitas lingkungan. Identitas produk dokumentasi adalah IG Flow. Mengubah nama database atau bucket tidak memindahkan data lama secara otomatis. Tidak ada environment untuk mengaktifkan synchronize.
 
-## Email dan Google
+## Email dan login sosial
 
 | Variable | Default / fungsi |
 | --- | --- |
@@ -28,6 +28,9 @@ Nama default lama di parser/template/container dipertahankan untuk kompatibilita
 | SMTP_USER, SMTP_PASS | Credential SMTP; default kosong |
 | SMTP_FROM | Default label Hono BE dengan noreply@example.com; sesuaikan pengirim IG Flow yang valid |
 | GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET | Google OAuth backend; default kosong |
+| MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET | Microsoft confidential client; secret hanya di backend |
+| MICROSOFT_TENANT_ID | Tenant organisasi atau common sesuai registrasi Entra |
+| MICROSOFT_REDIRECT_URI | URI Web callback yang terdaftar di Entra; default FRONTEND_URL/auth/microsoft/callback |
 
 Frontend memakai client ID publik yang sesuai. Client secret hanya di backend. Login email/password tidak bergantung pada Google. Request reset password memerlukan SMTP yang benar-benar menerima email.
 
@@ -80,3 +83,5 @@ INSTAGRAM_CREDENTIALS_FILE menunjuk JSON privat, default secrets/instagram-accou
 | REDIS_TLS | false; true untuk endpoint Redis TLS |
 
 Redis menyimpan cache analytics selama 300 detik, bukan credential, job atau jadwal publish. Prefix `ig-flow:<NODE_ENV>:analytics:v1` memisahkan environment; key mencakup identitas akun dan parameter query. Tidak menjalankan FLUSHDB/FLUSHALL dan tidak mengubah konfigurasi server Redis bersama. Jika Redis tidak tersedia, Analytics mengambil langsung dari Meta. `/health` tetap memeriksa database, bukan Redis. Tidak ada perubahan schema MySQL.
+
+Detail konfigurasi popup: [Autentikasi](../features/authentication.md).
