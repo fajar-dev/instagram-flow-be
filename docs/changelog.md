@@ -1,5 +1,11 @@
 ## 21 Oktober 2026 — Audit alur aktif
 
+## 23 Oktober 2026 — Deployment server
+
+- Pusatkan panduan PM2, Supervisor dan nginx beserta contoh konfigurasi di DEPLOYMENT.md; hapus folder deployment root dan referensi lamanya.
+- API festrack tetap di PM2; kedua worker di Supervisor. Tambahkan proxy health dan batas request nginx untuk upload/callback.
+- Verifikasi workflow n8n satu foto Feed hingga READY_FOR_REVIEW tanpa publikasi Instagram.
+
 ## 23 Oktober 2026 — Startup HTTP pada PM2
 
 - Jalankan Bun.serve secara eksplisit setelah database terhubung agar build tetap membuka port saat dimuat PM2.

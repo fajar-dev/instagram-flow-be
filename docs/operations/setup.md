@@ -54,3 +54,7 @@ curl http://127.0.0.1:8002/health
 Contoh di atas memakai `PORT=8002` dan `APP_HOSTNAME=0.0.0.0`. Entry point memanggil `Bun.serve()` secara eksplisit, termasuk ketika PM2 memuatnya melalui `require()`. Status PM2 online atau pesan koneksi database saja belum membuktikan HTTP sudah listening; periksa log `HTTP server listening` dan endpoint `/health`. Startup gagal tidak meneruskan HTTP dan keluar dengan status gagal.
 
 Root `/` tidak memiliki halaman frontend. Swagger tersedia di `/api/docs`; endpoint aplikasi memakai prefix `/api`. Reverse proxy harus mempertahankan prefix tersebut (contoh `proxy_pass http://127.0.0.1:8002;` tanpa trailing slash pada location `/api/`). Akses port langsung dari internet juga memerlukan aturan firewall/security group yang sesuai.
+
+## Deployment server
+
+Panduan PM2 untuk API, Supervisor untuk worker, konfigurasi nginx dan verifikasi tersedia di [DEPLOYMENT.md](../../DEPLOYMENT.md).

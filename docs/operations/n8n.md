@@ -1,6 +1,6 @@
 # Integrasi n8n — IG Flow
 
-The documented testing topology keeps the backend on the MacBook. This runbook describes configuration; it does not assert that the remote services or tunnel are currently online. n8n runs in Docker on `festrack`; private media uses the existing MinIO bucket. The workflow implements upload event → claim → manifest → OpenAI-compatible photo analysis → caption → AI image editing (feed/story) → backend result → internal review. This AI workflow does not publish to Instagram. Instagram Login publishing is handled separately by the backend posts:dispatch worker; see [panduan publikasi Instagram](../features/instagram-publishing.md).
+Production menjalankan backend dan n8n pada server yang sama. Callback diarahkan nginx ke backend server; tunnel MacBook hanya untuk development. n8n runs in Docker on `festrack`; private media uses the existing MinIO bucket. The workflow implements upload event → claim → manifest → OpenAI-compatible photo analysis → caption → AI image editing (feed/story) → backend result → internal review. This AI workflow does not publish to Instagram. Instagram Login publishing is handled separately by the backend posts:dispatch worker; see [panduan publikasi Instagram](../features/instagram-publishing.md).
 
 Semua command berikut dijalankan dari direktori `backend/`.
 
@@ -12,7 +12,7 @@ Semua command berikut dijalankan dari direktori `backend/`.
 bun run integrations/n8n/build-workflow.ts
 ```
 
-The builder currently supplies the testing backend URL, gateway endpoint and model in the `Configuration` node. For another environment, update those non-secret values in `integrations/n8n/build-workflow.ts`, rebuild the JSON and inspect it before import; editing only the generated JSON is overwritten by the next build. Keep secrets in encrypted n8n credentials. Three **Header Auth** credentials are required, with header name `Authorization` and value `Bearer <secret>`:
+The builder supplies the callback bridge URL, gateway endpoint and model in the `Configuration` node. For another environment, update those non-secret values in `integrations/n8n/build-workflow.ts`, rebuild the JSON and inspect it before import; editing only the generated JSON is overwritten by the next build. Keep secrets in encrypted n8n credentials. Three **Header Auth** credentials are required, with header name `Authorization` and value `Bearer <secret>`:
 
 | Credential ID | Name | Secret source |
 | --- | --- | --- |
@@ -21,6 +21,16 @@ The builder currently supplies the testing backend URL, gateway endpoint and mod
 | `igFlowAiGateway` | IG Flow AI Gateway | AI provider API key |
 
 Backend `.env` must contain both secrets, and `N8N_WEBHOOK_URL=https://n8n.fajarchan.my.id/webhook/ig-flow/process`. No secret is embedded in the exported workflow. Imported credential IDs must match the workflow references.
+
+## Production callback dan dispatcher
+
+Konfigurasi nginx dan Supervisor tersedia di [DEPLOYMENT.md](../../DEPLOYMENT.md). Callback festrack diteruskan langsung ke backend port 8002. API dikelola PM2; dispatcher AI dan worker publishing dikelola Supervisor. API saja tidak mengirim antrean: dispatcher pada Settings harus enabled.
+
+Backend membutuhkan N8N_WEBHOOK_URL HTTPS, N8N_WEBHOOK_AUTH_TOKEN dan N8N_BACKEND_SERVICE_TOKEN yang cocok dengan credential n8n. Workflow tetap memakai URL Configuration dengan suffix `/ig-flow-api`.
+
+Verifikasi production harus mencakup: health backend, callback tanpa token mendapat 401 (bukan 502), webhook terautentikasi menerima event, Claim Job, manifest/media, hasil gambar AI dan callback hingga READY_FOR_REVIEW. Pemeriksaan koneksi saja tidak membuktikan workflow AI berhasil. Job pengujian tidak perlu dipublikasikan ke Instagram.
+
+Verifikasi festrack pada 23 Oktober 2026: execution n8n `39` memproses satu foto Feed hingga job `4625a613-8fd3-4352-a66a-0111c49a3f40` berstatus READY_FOR_REVIEW, dengan render JPEG 1080×1350 tersimpan di backend. Pengujian tidak melakukan publikasi Instagram dan belum mencakup Story atau carousel multi-foto. API tetap dikelola PM2, sementara dispatcher AI dan worker publikasi dikelola Supervisor; health dan akses callback diperiksa kembali. n8n tetap berjalan di Docker.
 
 ## Run locally with the server callback tunnel
 
@@ -38,7 +48,7 @@ ssh -f -N -o BatchMode=yes -o ConnectTimeout=10 -o ExitOnForwardFailure=yes -o S
   -o ServerAliveCountMax=3 -R 127.0.0.1:14000:127.0.0.1:4000 festrack
 ```
 
-The server nginx bridge is recorded in `deployment/callback-tunnel.conf`. It exposes only claim, manifest, result and failure routes; every route still requires the backend service credential. The nginx root location continues serving n8n. MySQL stays local and is not exposed by the tunnel. `APP_URL=http://localhost:4000` and `FRONTEND_URL=http://localhost:3000` remain local.
+The server nginx bridge is recorded in `integrations/n8n/deployment/callback-tunnel.conf`. It exposes only claim, manifest, result and failure routes; every route still requires the backend service credential. The nginx root location continues serving n8n. MySQL stays local and is not exposed by the tunnel. `APP_URL=http://localhost:4000` and `FRONTEND_URL=http://localhost:3000` remain local.
 
 Enable dispatcher in the dashboard's integration settings. Find the background tunnel PID with `pgrep -fl "ssh.*14000"` and stop that specific PID with `kill <PID>`; MacBook sleep/offline interrupts callbacks. Failed jobs can be retried after restoring the backend/tunnel. Outbox delivery retries automatically; the watchdog marks stalled processing jobs failed. This is a testing setup, not an always-on deployment.
 
