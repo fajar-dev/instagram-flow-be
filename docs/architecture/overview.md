@@ -6,13 +6,13 @@ Frontend Nuxt mengakses API Hono dengan JWT. API menyimpan state di MySQL, media
 
 | Modul | Tanggung jawab |
 | --- | --- |
-| `auth` | Login, Google, refresh, profil, password dan reset token |
+| `auth` | Login email, Google, Microsoft, refresh, profil, password dan reset token |
 | `user` | CRUD pengguna aktif/nonaktif dan serialisasi avatar |
 | `storage` | Upload objek umum melalui helper MinIO |
 | `content` | Batch dan child `media`: upload, validasi, thumbnail, preview, render |
 | `ai-job` | Job, retry, dispatch; child `workflow`: claim, manifest, result, failure dan adapter n8n |
-| `content-review` | Draft konten dan keputusan Reject |
-| `integration` | Sakelar dispatcher dan pemeriksaan konfigurasi aman |
+| `content-draft` | Draft konten dan keputusan Reject |
+| `settings` | Sakelar dispatcher dan pemeriksaan konfigurasi aman |
 | `reporting` | List, counts, overview, audit log dan serializer reporting |
 | `instagram` | Credential JSON privat, Graph client tervalidasi dan child analytics/cache |
 | `publishing` | Snapshot final, jadwal dan worker publikasi Instagram |
@@ -24,7 +24,7 @@ Tidak ada modul payung social. `*.module.ts` merupakan composition root: file in
 
 Controller menerima input tervalidasi, memanggil service, lalu serializer/ApiResponse. Service menjalankan aturan bisnis melalui interface repository atau adapter I/O. Repository mengakses TypeORM dan mengelola transaksi/lock. Jangan membuka koneksi database atau memanggil ORM dari service/controller.
 
-Repository workflow bersama saat ini melayani transaksi beberapa entitas konten; itu bukan alasan membuat duplikasi repository atau menyatukan seluruh fitur ke satu service. Referensi CRUD konkret: `src/modules/user/`. Referensi alur lintas entitas: `src/modules/ai-job/job.service.ts` dan `src/modules/content-review/draft.service.ts`.
+Repository workflow bersama saat ini melayani transaksi beberapa entitas konten; itu bukan alasan membuat duplikasi repository atau menyatukan seluruh fitur ke satu service. Referensi CRUD konkret: `src/modules/user/`. Referensi alur lintas entitas: `src/modules/ai-job/job.service.ts` dan `src/modules/content-draft/draft.service.ts`.
 
 ## Proses konten
 
@@ -34,9 +34,9 @@ Review langsung menuju Publish atau Reject. Publish mengirim konten final dan ex
 
 ## Media dan akses
 
-Seluruh pengguna aktif terautentikasi memiliki akses aplikasi yang sama. Uploader/reviewer ID tetap disimpan sebagai jejak aktivitas. Callback n8n memakai service token terpisah, bukan JWT pengguna.
+Seluruh pengguna aktif terautentikasi memiliki akses aplikasi yang sama. Uploader/publisher/rejectedBy ID tetap disimpan sebagai jejak aktivitas. Callback n8n memakai service token terpisah, bukan JWT pengguna.
 
-Satu bucket privat digunakan untuk avatar dan konten. MySQL hanya menyimpan metadata/key media. Gambar AI divalidasi sebagai raster statis lalu dinormalisasi ke JPEG. Preview SVG historis ditampilkan sebagai image, bukan markup HTML; callback baru tidak menerima SVG. Tidak ada fallback media lokal.
+Satu bucket privat digunakan untuk avatar dan konten. MySQL hanya menyimpan metadata/key media. Gambar AI divalidasi sebagai raster statis lalu dinormalisasi ke JPEG. Callback tidak menerima SVG. Tidak ada fallback media lokal.
 
 ## Entry point dan operasi
 

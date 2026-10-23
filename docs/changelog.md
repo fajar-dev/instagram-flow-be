@@ -1,3 +1,13 @@
+## 23 Oktober 2026 — Istilah keputusan konsisten
+
+- Ganti modul content-review menjadi content-draft, reviewStatus menjadi decisionStatus, dan endpoint daftar menjadi /api/drafts tanpa alias lama.
+- Gunakan Rejection/rejections/rejectedBy untuk penolakan dan hapus field decision redundan. Tambahkan migration rename yang mempertahankan data; baseline historis tetap utuh.
+
+## 23 Oktober 2026 — Pelaku keputusan konten
+
+- Tampilkan identitas dan waktu pengajuan publish, reject dan pembatalan pada detail job memakai record persisten yang sudah ada.
+- Tambah kontrak OpenAPI dan regresi agar replay/pembatalan oleh pengguna lain tidak mengganti pelaku asli.
+
 ## 21 Oktober 2026 — Audit alur aktif
 
 ## 23 Oktober 2026 — Deployment server
@@ -394,3 +404,19 @@ Mengganti referensi visual dengan contoh terbaru pengguna. Panel logo menempel p
 Feed mendukung upload 19 foto, edit AI untuk setiap foto, pemilihan maksimal 10 slide dan urutan eksplisit. UI pilihan foto utama diganti pilihan hasil edit dan drag reorder; Story tetap satu gambar. Publishing menyimpan snapshot media berurutan dan progress child container; langsung/jadwal menggunakan satu parent carousel. Kontrak API dan workflow n8n diperbarui.
 
 Verifikasi carousel: 197 tes backend dan 53 tes frontend lulus, typecheck/lint/build lulus. Execution n8n 33 menghasilkan dua render AI dan job 5c344a10-00d3-4a40-a47f-396edafca548 READY_FOR_REVIEW. Meta menerima dua child container dan parent carousel sampai FINISHED pada akun beta_dev12; tidak ada media_publish dipanggil. Migration aditif sudah diterapkan setelah backup. Pengujian browser terhalang izin localhost; pengujian UI interaktif belum dilakukan.
+
+## 2026-10-23 — Konsistensi istilah lintas fitur
+
+Settings kini memiliki namespace sendiri, tipe akun Instagram dipisahkan dari publikasi, dan istilah UI mengikuti fitur. Analytics hanya menerima Today/This week/This month. Contoh credential memakai Instagram Login; panduan aktif dibersihkan dari alur revisi dan batas carousel lama. Lihat glosarium backend untuk perbedaan job, draft, keputusan dan delivery publikasi.
+
+## 2026-10-23 — Konsolidasi baseline development
+
+Atas permintaan reset migration sebelum production, seluruh rangkaian menjadi 13 create-table migration schema final. CreateRejections menggantikan CreateReviews; drafts langsung memakai decision_status; migration transisi dihapus. Database lokal dipertahankan, keputusan non-penolakan lama diarsipkan, dan ledger diselaraskan setelah verifikasi backup. Pengujian memakai database terpisah untuk up/down/reapply.
+
+## 2026-10-23 — Pelaku konten dan tabel mobile
+
+Detail menyertakan nama pengunggah selain pelaku publish/reject/cancel. Lebar kolom identitas pada mobile diperbaiki; kolom aksi memakai helper flex dan sticky kanan yang sama di semua tabel beraksi.
+
+## 2026-10-23 — Overview penolakan
+
+Kartu Total photos diganti Rejected setelah Publish. Overview API menambahkan rejected berdasarkan status draft REJECTED, mengikuti filter periode yang sama.

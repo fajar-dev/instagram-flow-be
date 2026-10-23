@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "hono-be",
+      "name": "ig-flow-backend",
       "dependencies": {
         "@azure/msal-node": "^7.1.1",
         "@hono/swagger-ui": "^0.6.1",

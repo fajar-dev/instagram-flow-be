@@ -18,7 +18,7 @@ Bun, Hono, TypeORM/MySQL (mysql2), Zod, JWT hono/jwt, Nodemailer, MinIO dan Shar
 
 ## Aturan produk
 
-Semua pengguna aktif terautentikasi memiliki akses sama. Jangan menambah role/ownership permission. User/uploader/reviewer ID tetap metadata audit. JWT dan service token callback n8n tetap wajib.
+Semua pengguna aktif terautentikasi memiliki akses sama. Jangan menambah role/ownership permission. User/uploader/publisher/rejectedBy ID tetap metadata audit. JWT dan service token callback n8n tetap wajib.
 
 Semua media persisten memakai satu bucket MinIO, termasuk avatar, original, preview, thumbnail dan render. Tidak ada fallback lokal, SVG inline di database, proxy URL umum, atau secret signing tambahan. Presigned URL menggunakan MinIO.
 
@@ -28,7 +28,7 @@ Reset password memakai tabel terpisah; request/resend membuat token baru. Satu r
 
 ## Database dan command
 
-Sync selalu false, termasuk test. Migration aktif: 13 create-table baseline, satu tabel per file, langsung ke schema final. Carousel child_container_ids sudah berada di migration publications; tidak ada migration transisi atau kolom template_id, primary_asset_id dan media_key. Snapshot memakai urutan renderIds dan mediaKeys. Perubahan berikutnya memakai migration baru kecuali reset development diminta eksplisit. Baca docs/operations/database.md sebelum mengubah schema.
+Sync selalu false, termasuk test. Migration aktif: 13 create-table baseline schema final. Carousel child_container_ids sudah berada di migration publications; tidak ada kolom template_id, primary_asset_id dan media_key. Snapshot memakai urutan renderIds dan mediaKeys. Perubahan berikutnya memakai migration baru kecuali reset development diminta eksplisit. Baca docs/operations/database.md sebelum mengubah schema.
 
 Seeder satu file per seeder pada src/database/seeders; index.ts hanya koordinator, import.meta.main menjaga entrypoint CLI. Migration dan seeder memakai script package, bukan job. Worker AI menjalankan dispatch/recovery konten; worker publishing menangani publikasi Instagram.
 
@@ -51,7 +51,7 @@ Backend memakai indentasi 4 spasi, double quote, tanpa semicolon dan tanpa trail
 
 ## Penyederhanaan publish — 20 Oktober 2026
 
-Draft menyimpan isi konten langsung. Tidak ada entity, endpoint edit, nomor, atau tabel revisi aktif. Publish menyimpan konten final dan snapshot publikasi secara atomik; Reject mengakhiri konten. Baseline development sudah disusun ulang langsung ke schema final, satu tabel satu file. Tidak ada migration transisi atau tabel revisi. Backup dan verifikasi schema wajib sebelum menyelaraskan ledger database development yang sudah berisi data.
+Draft menyimpan isi konten langsung. Tidak ada entity, endpoint edit, nomor, atau tabel revisi aktif. Publish menyimpan konten final dan snapshot publikasi secara atomik; Reject mengakhiri konten. Baseline development sudah disusun ulang langsung ke schema final, satu tabel satu file. Tidak ada tabel revisi aktif; upgrade schema berikutnya memakai migration tambahan. Backup dan verifikasi schema wajib sebelum menyelaraskan ledger database development yang sudah berisi data.
 
 ## Output tunggal — 21 Oktober 2026
 
@@ -60,3 +60,11 @@ Setiap job memilih satu `output`: `feed` atau `story` sejak proses upload. Outpu
 ## Kontrak workflow aktif
 
 Integrasi n8n hanya memakai camelCase. Tidak ada adapter snake_case, N8N_CONTRACT, pilihan template, fallback foto mentah/SVG atau snapshot publikasi satu mediaKey. Desain memakai referensi AMTI tetap. Daftar dan statistik job hanya memakai attempt terbaru; retry attempt yang sudah digantikan ditolak.
+
+## Istilah keputusan konten
+
+Modul aktif `content-draft`; status draft `decisionStatus`/`decision_status`. Daftar draft memakai GET /api/drafts. Penolakan memakai entity Rejection, tabel rejections dan rejectedBy/rejected_by tanpa field decision redundan. READY_FOR_REVIEW tetap status sebelum Publish/Reject. Baseline langsung membuat rejections dan decision_status; tidak ada migration transisi review.
+
+## Konsistensi istilah lintas fitur
+
+Settings memakai namespace settings; akun Instagram dimiliki fitur instagram, bukan publishing. Acuan istilah ada di docs/reference/terminology.md. Pertahankan perbedaan job AI, execution n8n, draft, keputusan dan delivery publication. Periode analytics hanya today/this_week/this_month; Top posts memakai metrik lifetime.

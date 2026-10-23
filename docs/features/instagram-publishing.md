@@ -60,18 +60,16 @@ Status: QUEUED, SCHEDULED, PROCESSING, PUBLISHING, PUBLISHED, FAILED, UNKNOWN, C
 
 Test memakai MySQL terisolasi dan adapter Meta/MinIO terkontrol: auth, JSON redaction, snapshot JPEG, idempotency paralel, satu publikasi per project, balapan Publish/Reject, hash konten/consent, scheduling/cancel, worker concurrent, timeout reconciliation dan retry. Live publishing diuji pada 19 Oktober 2026 menggunakan konten sintetis di akun @fajar_chngo. Bukti dan batas pengujian dicatat di docs/archive/audits/audit-instagram-2026-10-19.md.
 
-Cakupan awal adalah gambar tunggal feed dan story per akun. Carousel, Reels/video, onboarding OAuth dan penyegaran token otomatis belum diimplementasikan. Rate limit/permission tetap diputuskan Meta; UI Periksa koneksi bukan tes publish.
+Feed mendukung 1–10 gambar per postingan; Story tepat satu gambar. Reels/video, onboarding OAuth dan penyegaran token otomatis belum diimplementasikan. Rate limit/permission tetap diputuskan Meta; UI Periksa koneksi bukan tes publish.
 
 ## Mendapatkan token Instagram Login
 
 Di Instagram > API setup with Instagram login, tambahkan akun dan terima undangan Instagram Tester bila aplikasi masih development. Klik Generate token dan berikan izin yang diperlukan. Masukkan ID akun Instagram dan token hasilnya ke instagramUserId/accessToken pada JSON privat, lalu enabled=true. Jangan isi file example dengan kredensial nyata. Masa berlaku token harus mengikuti token yang diterbitkan, bukan tanggal perkiraan; token renewal masih manual. Verifikasi melalui Settings > Periksa koneksi. Webhook tidak diperlukan.
 
-## Migrasi alur sederhana
-
-Status review lama yang belum memiliki publikasi dipetakan ke READY_FOR_REVIEW. Draft dengan publikasi menjadi PUBLISH; publikasi CANCELLED menjadi REJECTED. Catatan keputusan historis tetap dipertahankan. Jika satu project mempunyai tepat satu post berhasil dan percobaan FAILED/CANCELLED, percobaan terminal dipindahkan utuh ke audit log sebelum record duplikat dibersihkan. Bila ada beberapa post berhasil atau pekerjaan aktif yang bersaing, migration menolak dan memerlukan rekonsiliasi manual. Migration normalisasi tidak dapat dibalik pada database berisi data tanpa restore backup.
+## Keputusan dan batas publikasi
 
 PUBLISH adalah tahap pengiriman, bukan konfirmasi tayang. Satu project berarti satu batch ID, bukan kesamaan teks nama project. Unique publications.batch_id mencegah publikasi ulang lintas akun, perubahan konten, placement, dan percobaan job. Transaksi menggunakan READ COMMITTED dengan lock project lalu draft agar request bersamaan membaca pemenang yang telah commit.
 
 ## Carousel Feed
 
-Upload maksimal 19 foto. Pilih 1–10 render AI unik untuk publish, dengan urutan renderIds sebagai urutan Instagram. Satu gambar memakai container tunggal; dua atau lebih memakai child container is_carousel_item dan parent CAROUSEL. Worker menyimpan setiap child ID setelah pembuatan, menunggu FINISHED, kemudian memublikasikan satu parent saja. Retry parent publish yang ambigu tetap UNKNOWN, tidak mengulang publish. Media dan urutan dibekukan dalam snapshot untuk langsung maupun terjadwal. Story tepat satu render. Migration AddCarouselContainers menambah progress child tanpa menghapus publikasi lama; snapshot memakai arrays mediaKeys/renderIds yang wajib, termasuk saat hanya satu gambar.
+Upload maksimal 19 foto. Pilih 1–10 render AI unik untuk publish, dengan urutan renderIds sebagai urutan Instagram. Satu gambar memakai container tunggal; dua atau lebih memakai child container is_carousel_item dan parent CAROUSEL. Worker menyimpan setiap child ID setelah pembuatan, menunggu FINISHED, kemudian memublikasikan satu parent saja. Retry parent publish yang ambigu tetap UNKNOWN, tidak mengulang publish. Media dan urutan dibekukan dalam snapshot untuk langsung maupun terjadwal. Story tepat satu render. Kolom child_container_ids berada pada baseline publications; snapshot memakai arrays mediaKeys/renderIds yang wajib, termasuk saat hanya satu gambar.

@@ -9,14 +9,14 @@
 5. Jalankan `bun run dev`; periksa `GET /health` dan `/api/docs`.
 6. Jalankan frontend mengikuti [README frontend](../../../frontend/README.md).
 
-Baseline final 21 Oktober 2026 berisi 13 migration untuk 13 tabel, termasuk publications. Database dengan history lama memerlukan rekonsiliasi eksplisit atau pembuatan ulang database development; lihat [database](database.md). Aplikasi tidak menjalankan migration/seeder otomatis saat startup.
+Baseline final 23 Oktober 2026 berisi 13 create-table migration untuk 13 tabel, termasuk rejections dan publications. Database dengan history lama memerlukan rekonsiliasi eksplisit atau pembuatan ulang database development; lihat [database](database.md). Aplikasi tidak menjalankan migration/seeder otomatis saat startup.
 
 ## Pemrosesan AI
 
 1. Siapkan MinIO yang dapat diakses backend, browser untuk URL presigned, serta n8n/gateway vision.
 2. Import workflow yang dibangun dari `integrations/n8n/`. Atur tiga credential Header Auth di n8n, kemudian publish workflow.
 3. Workflow dan backend menggunakan camelCase. Set webhook HTTPS, token webhook, dan token backend service yang berpasangan.
-4. Sediakan jalur callback dari n8n ke backend. Setup pengujian saat ini memakai SSH reverse tunnel ke MacBook; instruksi lengkap di [runbook n8n](n8n.md).
+4. Sediakan jalur callback dari n8n ke backend. Production memakai jalur langsung ke API; tunnel hanya untuk development. Ikuti [deployment](../../DEPLOYMENT.md) dan [runbook n8n](n8n.md).
 5. Jalankan `bun run jobs:dispatch` pada proses terpisah. `bun run jobs:dispatch --once` menjalankan satu sweep.
 6. Aktifkan dispatcher melalui Settings. Status ready memeriksa keberadaan/format konfigurasi, bukan konektivitas live.
 7. Uji unggah → proses → claim → hasil → ready for review → publish atau reject dengan foto uji, lalu periksa status job dan audit log.

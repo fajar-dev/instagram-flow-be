@@ -6,11 +6,11 @@ Peta ini menunjuk direktori pemilik fitur, bukan salinan daftar semua file yang 
 | --- | --- | --- |
 | Batch/upload/media | src/modules/content/ | app/components/content/, app/composables/content/, app/services/content/ |
 | Job dan workflow | src/modules/ai-job/ | app/services/ai-job/, app/pages/content/[jobId]/ |
-| Review | src/modules/content-review/ | app/components/content-review/, app/services/content-review/ |
+| Draft dan penolakan | src/modules/content-draft/ | app/components/content-draft/, app/services/content-draft/ |
 | Analytics | src/modules/instagram/analytics/ | app/components/analytics/, app/composables/analytics/, app/services/analytics/ |
 | Publish | src/modules/publishing/ | app/components/publishing/, app/composables/publishing/ |
 | Overview/list/audit | src/modules/reporting/ | app/components/reporting/, app/composables/reporting/, app/services/reporting/ |
-| Dispatcher settings | src/modules/integration/ | app/pages/settings.vue, app/services/integration/ |
+| Dispatcher settings | src/modules/settings/ | app/pages/settings.vue, app/services/settings/ |
 | Transaksi bersama | src/modules/shared/ | app/types/, app/util/ |
 | Worker | src/commands/job-dispatch.ts, publication-dispatch.ts, run-worker.ts | Tidak berjalan di browser |
 | Workflow deploy | integrations/n8n/ | Tidak menyimpan credential n8n |

@@ -4,7 +4,7 @@ Panduan ini menggunakan modul yang benar-benar ada sebagai acuan. Tidak ada gene
 
 ## Pilih pemilik perubahan
 
-CRUD akun berada di `user`; login/password di `auth`; batch/asset di `content`; proses/retry/callback di `ai-job`; edit/review di `content-review`; sakelar dispatch di `integration`; list dan statistik di `reporting`. Lihat [arsitektur](../architecture/overview.md) sebelum menambah modul baru. Child terkait ditempatkan dalam modul pemilik.
+CRUD akun berada di `user`; login/password di `auth`; batch/asset di `content`; proses/retry/callback di `ai-job`; draft/penolakan di `content-draft`; sakelar dispatch di `settings`; list dan statistik di `reporting`. Lihat [arsitektur](../architecture/overview.md) sebelum menambah modul baru. Child terkait ditempatkan dalam modul pemilik.
 
 ## Referensi konkret
 
@@ -12,7 +12,7 @@ CRUD akun berada di `user`; login/password di `auth`; batch/asset di `content`; 
 - Service: `src/modules/user/user.service.ts` menerima repository interface dan menjalankan aturan akun.
 - Repository: `src/modules/user/repositories/user.repository.ts` menangani persistence.
 - Composition root: `src/modules/user/user.module.ts` menyusun dependency.
-- Alur transaksi: `src/modules/content-review/draft.service.ts` memakai repository workflow dan pemeriksaan hash konten dan status.
+- Alur transaksi: `src/modules/content-draft/draft.service.ts` memakai repository workflow dan pemeriksaan hash konten dan status.
 
 ## Menambah atau mengubah endpoint
 
