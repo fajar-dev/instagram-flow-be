@@ -380,6 +380,13 @@ components:
       properties:
         code: { type: string, example: "4/0AX4XfWh..." }
 
+    MicrosoftLoginRequest:
+      type: object
+      required: [code, codeVerifier]
+      properties:
+        code: { type: string, example: "M.R3_BAY.0..." }
+        codeVerifier: { type: string, minLength: 43, maxLength: 128, description: "PKCE verifier retained by the login popup opener" }
+
     ForgotPasswordRequest:
       type: object
       required: [email]
@@ -667,6 +674,45 @@ paths:
                       data: { $ref: "#/components/schemas/AuthResponse" }
         "400":
           description: User not registered or account inactive
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationError" }
+
+  # ── Microsoft Login ───────────────────────────────────────────────────────
+  /auth/microsoft:
+    parameters:
+      - $ref: "#/components/parameters/AcceptLanguage"
+    post:
+      tags: [Auth]
+      summary: Login with Microsoft OAuth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MicrosoftLoginRequest" }
+      responses:
+        "200":
+          description: Logged in successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/AuthResponse" }
+        "400":
+          description: User not registered or account inactive
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Invalid Microsoft credentials
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ErrorResponse" }

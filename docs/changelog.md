@@ -1,5 +1,13 @@
 ## 21 Oktober 2026 — Audit alur aktif
 
+## 23 Oktober 2026 — Microsoft login
+
+- Tempatkan adapter Google/Microsoft dan helper token sesi di modul auth; hapus core/helpers/auth dan perbarui wiring serta tes.
+
+- Integrasi MSAL dipisahkan ke adapter yang diinjeksi; pemeriksaan akun Google/Microsoft dan serializer sesi dipakai bersama.
+- Penukaran code wajib PKCE dan redirect URI server, tanpa fallback Graph atau log error provider mentah.
+- OpenAPI, konfigurasi Entra dan tes autentikasi diperbarui.
+
 ## 21 Oktober 2026 — Konsolidasi migration development
 
 - 13 migration create-table langsung ke schema final; perubahan carousel disatukan ke publications.
