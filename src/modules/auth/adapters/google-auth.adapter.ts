@@ -1,33 +1,10 @@
-import { UnauthorizedException } from "../exceptions/base"
-import { sign } from "hono/jwt"
 import { OAuth2Client } from "google-auth-library"
-import { config } from "../../config/config"
+import { UnauthorizedException } from "../../../core/exceptions/base"
+import { config } from "../../../config/config"
+import type { GoogleCodeVerifier } from "../interfaces/google-code-verifier.interface"
 
-export class AuthHelper {
-    static async generateTokens(user: { id: number; email: string }) {
-        const accessToken = await sign(
-            {
-                sub: user.id,
-                email: user.email,
-                exp: Math.floor(Date.now() / 1000) + 60 * 15 // 15 mins
-            },
-            config.app.jwtSecret,
-            "HS256"
-        )
-
-        const refreshToken = await sign(
-            {
-                sub: user.id,
-                exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 // 7 days
-            },
-            config.app.jwtRefreshSecret,
-            "HS256"
-        )
-
-        return { accessToken, refreshToken }
-    }
-
-    private static getOauth2Client() {
+export class GoogleAuthAdapter implements GoogleCodeVerifier {
+    private getOauth2Client() {
         const oAuth2Client = new OAuth2Client(
             config.google.clientId,
             config.google.clientSecret,
@@ -36,7 +13,7 @@ export class AuthHelper {
         return oAuth2Client
     }
 
-    static async verifyGoogleCode(code: string): Promise<{ email: string }> {
+    async verify(code: string): Promise<{ email: string }> {
         try {
             const client = this.getOauth2Client()
             const result = await client.getToken(code)
