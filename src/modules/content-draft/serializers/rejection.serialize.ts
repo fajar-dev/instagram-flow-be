@@ -1,24 +1,16 @@
-import type { Review } from "../entities/review.entity"
+import type { Rejection } from "../entities/rejection.entity"
 
 type PublicFields = Pick<
-    Review,
-    | "id"
-    | "draftId"
-    | "reviewerId"
-    | "decision"
-    | "notes"
-    | "contentHash"
-    | "createdAt"
-    | "updatedAt"
+    Rejection,
+    "id" | "draftId" | "rejectedBy" | "notes" | "contentHash" | "createdAt" | "updatedAt"
 >
 
-export class ReviewSerializer {
+export class RejectionSerializer {
     static single(value: PublicFields) {
         return {
             id: value.id,
             draftId: value.draftId,
-            reviewerId: value.reviewerId,
-            decision: value.decision,
+            rejectedBy: value.rejectedBy,
             notes: value.notes,
             contentHash: value.contentHash,
             createdAt: value.createdAt,

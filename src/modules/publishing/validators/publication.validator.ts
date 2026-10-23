@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { publishContentSchema } from "../../content-review/validators/draft.validator"
+import { publishContentSchema } from "../../content-draft/validators/draft.validator"
 
 const fields = {
     expectedContentHash: z.string().length(64),

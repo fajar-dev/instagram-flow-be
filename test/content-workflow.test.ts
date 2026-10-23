@@ -196,6 +196,9 @@ describe("Content workflow", () => {
         expect(
             (await request(app, "/api/content/counts?days=0", { headers: user.headers })).status
         ).toBe(422)
+        const overview = async (query = "") =>
+            (await request(app, `/api/overview${query}`, { headers: user.headers })).body.data
+        expect((await overview()).rejected).toBe(0)
         const job = await queued(user.headers)
         expect((await counts()).QUEUED).toBe(1)
         await claim(job)
@@ -218,7 +221,8 @@ describe("Content workflow", () => {
         })
         expect((await counts()).READY_FOR_REVIEW).toBe(0)
         expect((await counts()).REJECTED).toBe(1)
-        const listed = await request(app, "/api/review?status=REJECTED&days=30", {
+        expect((await overview()).rejected).toBe(1)
+        const listed = await request(app, "/api/drafts?status=REJECTED&days=30", {
             headers: user.headers
         })
         expect(listed.body.meta.total).toBe((await counts()).REJECTED)
@@ -229,7 +233,7 @@ describe("Content workflow", () => {
             { batchId: job.batchId },
             { deletedAt: new Date() }
         )
-        const archived = await request(app, "/api/review?status=REJECTED", {
+        const archived = await request(app, "/api/drafts?status=REJECTED", {
             headers: user.headers
         })
         expect(archived.body.data[0].photoCount).toBe(0)
@@ -237,6 +241,8 @@ describe("Content workflow", () => {
             createdAt: new Date(Date.now() - 31 * 86400000)
         })
         expect((await counts()).REJECTED).toBe(0)
+        expect((await overview("?days=30")).rejected).toBe(0)
+        expect((await overview()).rejected).toBe(1)
     })
     test("gallery previews authorize access and backfill private thumbnails for existing assets", async () => {
         const user = await actor("gallery@example.com")
@@ -519,7 +525,7 @@ describe("Content workflow", () => {
         expect(replay.body.claimed).toBe(true)
     })
     test("camelCase callback, signed manifest and direct rejection", async () => {
-        const user = await actor("review@example.com")
+        const user = await actor("rejection@example.com")
         const job = await queued(user.headers)
         await claim(job)
         expect(
@@ -610,7 +616,7 @@ describe("Content workflow", () => {
             ).status
         ).toBe(200)
         detail = (await request(app, `/api/jobs/${job.jobId}`, { headers: user.headers })).body.data
-        expect(detail.draft.reviewStatus).toBe("REJECTED")
+        expect(detail.draft.decisionStatus).toBe("REJECTED")
     })
     test("callback cannot return a different output or mismatched slide coverage", async () => {
         const user = await actor("output-callback@example.com")

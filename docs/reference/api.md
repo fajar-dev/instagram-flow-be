@@ -57,7 +57,7 @@ Daftar ini dicocokkan dengan registrasi route pada 21 Oktober 2026. Perbarui saa
 | GET | `/api/jobs/:jobId` | JWT user aktif |
 | GET | `/api/jobs/:jobId/result` | JWT user aktif |
 | POST | `/api/jobs/:jobId/retry` | JWT user aktif |
-| GET | `/api/review` | JWT user aktif |
+| GET | `/api/drafts` | JWT user aktif |
 | POST | `/api/drafts/:draftId/reject` | JWT user aktif |
 | GET | `/api/media` | JWT user aktif |
 | GET | `/api/assets/:assetId/previews` | JWT user aktif |
@@ -87,3 +87,5 @@ Health mengembalikan state inisialisasi DataSource, timestamp, uptime, environme
 Analytics memakai HTTP 502 untuk kegagalan upstream Meta atau payload respons tidak valid; kesalahan domain tetap memakai status aslinya (misalnya 403 untuk media akun lain). Upload avatar `/api/upload` hanya menerima gambar statis JPG/PNG/WEBP yang dapat didecode, sesuai MAX_UPLOAD_MB, lalu menyimpan JPEG aman ke MinIO; body berlebih menghasilkan 413.
 
 Login Microsoft menerima `{ code, codeVerifier }` dari popup PKCE. Redirect URI ditentukan server, bukan request. Lihat [alur autentikasi](../features/authentication.md).
+
+Detail job menyertakan `uploader: { id, name }` dari pengguna pengunggah project, terpisah dari `decisions` untuk pengaju publikasi, penolak dan pembatal. Nama nullable bila pengguna tidak tersedia; serializer hanya mengirim ID/nama, bukan email atau credential.

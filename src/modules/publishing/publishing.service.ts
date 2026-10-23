@@ -50,7 +50,7 @@ export class PublishingService {
                 const content = input.content
                 if (
                     draft.contentHash !== input.expectedContentHash ||
-                    draft.reviewStatus !== "READY_FOR_REVIEW"
+                    draft.decisionStatus !== "READY_FOR_REVIEW"
                 ) {
                     throw new ConflictException("Only current ready content can be published")
                 }
@@ -134,7 +134,7 @@ export class PublishingService {
                     ...draft,
                     ...content,
                     contentHash: contentHash(content),
-                    reviewStatus: "PUBLISH"
+                    decisionStatus: "PUBLISH"
                 })
                 return publication
             })
@@ -170,7 +170,7 @@ export class PublishingService {
                 lockedUntil: null,
                 lockToken: null
             })
-            await store.save("draft", { ...draft, reviewStatus: "REJECTED" })
+            await store.save("draft", { ...draft, decisionStatus: "REJECTED" })
             await this.context.audit(
                 store,
                 actor,

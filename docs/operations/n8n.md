@@ -50,7 +50,7 @@ ssh -f -N -o BatchMode=yes -o ConnectTimeout=10 -o ExitOnForwardFailure=yes -o S
 
 The server nginx bridge is recorded in `integrations/n8n/deployment/callback-tunnel.conf`. It exposes only claim, manifest, result and failure routes; every route still requires the backend service credential. The nginx root location continues serving n8n. MySQL stays local and is not exposed by the tunnel. `APP_URL=http://localhost:4000` and `FRONTEND_URL=http://localhost:3000` remain local.
 
-Enable dispatcher in the dashboard's integration settings. Find the background tunnel PID with `pgrep -fl "ssh.*14000"` and stop that specific PID with `kill <PID>`; MacBook sleep/offline interrupts callbacks. Failed jobs can be retried after restoring the backend/tunnel. Outbox delivery retries automatically; the watchdog marks stalled processing jobs failed. This is a testing setup, not an always-on deployment.
+Enable dispatcher in the dashboard's Settings menu. Find the background tunnel PID with `pgrep -fl "ssh.*14000"` and stop that specific PID with `kill <PID>`; MacBook sleep/offline interrupts callbacks. Failed jobs can be retried after restoring the backend/tunnel. Outbox delivery retries automatically; the watchdog marks stalled processing jobs failed. This is a testing setup, not an always-on deployment.
 
 ## Import and publish
 
@@ -101,4 +101,4 @@ The callback nginx body limit and backend callback limit are 64 MiB for the comp
 
 ## Referensi desain AMTI
 
-Jalankan `bun run brand:upload <referensi.png> <amti-logo.png> <partner-logo.jpeg>` sebelum memakai workflow pada bucket baru. Manifest menyediakan URL presigned referensi dan logo. Prepare Design mengirim referensi sebagai image 1, logo AMTI sebagai image 2, logo Graha Survei sebagai image 3, lalu foto asli; jangan memperlakukan contoh poster sebagai dokumentasi proyek. Lihat [panduan desain](../features/post-templates.md).
+Jalankan `bun run brand:upload <referensi.png> <amti-logo.png> <partner-logo.jpeg>` sebelum memakai workflow pada bucket baru. Manifest menyediakan URL presigned referensi dan logo. Prepare Design mengirim referensi sebagai image 1, logo AMTI sebagai image 2, logo Graha Survei sebagai image 3, lalu foto asli; jangan memperlakukan contoh poster sebagai dokumentasi proyek. Lihat [panduan desain](../features/ai-image-design.md).

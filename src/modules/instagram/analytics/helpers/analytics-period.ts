@@ -11,8 +11,6 @@ export function analyticsRange(period: AnalyticsPeriod, now = new Date()) {
         start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7))
     } else if (period === "this_month") {
         start.setUTCDate(1)
-    } else if (period === "last_7_days" || period === "last_30_days") {
-        start.setUTCDate(start.getUTCDate() - (period === "last_7_days" ? 6 : 29))
     }
     return {
         since: Math.floor((start.getTime() - offset) / 1000),
@@ -31,6 +29,6 @@ export function previousAnalyticsRange(
         const since = Date.UTC(local.getUTCFullYear(), local.getUTCMonth() - 1, 1) / 1000 - 7 * 3600
         return { since, until: Math.min(since + current.until - current.since, current.since) }
     }
-    const shift = (period === "today" ? 1 : period === "last_30_days" ? 30 : 7) * day
+    const shift = (period === "today" ? 1 : 7) * day
     return { since: current.since - shift, until: current.until - shift }
 }

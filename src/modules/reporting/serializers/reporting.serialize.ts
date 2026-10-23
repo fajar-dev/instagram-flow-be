@@ -2,7 +2,7 @@ import { resolveStorageUrl } from "../../../core/helpers/storage-url"
 import { BatchSerializer } from "../../content/serializers/batch.serialize"
 import { AssetSerializer } from "../../content/media/serializers/asset.serialize"
 import { JobSerializer } from "../../ai-job/serializers/job.serialize"
-import { DraftSerializer } from "../../content-review/serializers/draft.serialize"
+import { DraftSerializer } from "../../content-draft/serializers/draft.serialize"
 import { AuditLogSerializer } from "./audit-log.serialize"
 
 const serializers = {

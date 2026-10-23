@@ -15,7 +15,7 @@ Dokumen ini menjelaskan perilaku aktif pada 21 Oktober 2026 dan menggantikan des
 
 Status job dan status review adalah dua state berbeda; tab Content memetakan keduanya ke list terpadu. Backend melindungi idempotency process/retry, claim execution, duplicate callback, content hash dan keputusan publish/reject. Gaya AMTI menjadi instruksi edit gambar AI di n8n. Caption/hashtag boleh diubah; konteks visual desain harus tetap cocok.
 
-Database aktif memiliki 13 tabel aplikasi termasuk publications; tabel history lama dikonsolidasikan ke drafts dan arsip audit. Domain konten memakai UUID, user tetap integer. Modul dipisah menjadi content, ai-job, content-review, reporting dan integration dengan shared repository transaksi. Tidak ada role atau modul social.
+Database aktif memiliki 13 tabel aplikasi termasuk publications; tabel history lama dikonsolidasikan ke drafts dan arsip audit. Domain konten memakai UUID, user tetap integer. Modul dipisah menjadi content, ai-job, content-draft, reporting dan settings dengan shared repository transaksi. Tidak ada role atau modul social.
 
 ## Media
 
@@ -32,3 +32,9 @@ Publikasi dan penjadwalan gambar feed/story tersedia melalui Graph API dengan cr
 Uji nyata yang pernah dilakukan dicatat di [audit n8n](../archive/audits/audit-n8n-2026-10-18.md); itu bukti pada tanggal pengujian, bukan jaminan layanan selalu aktif. Setup backend lokal memerlukan worker dan tunnel yang hidup. Ikuti [runbook](../operations/n8n.md) untuk operasi dan pemulihan.
 
 Daftar jobs dan ringkasan status menggunakan attempt terbaru per batch. Retry membuat attempt baru; kegagalan lama tetap tersimpan, tetapi tidak dihitung di Failed. Filter tanggal/status diterapkan setelah pemilihan attempt terbaru.
+
+## Pelaku keputusan konten
+
+Detail job mengembalikan `decisions` berisi action, actorId, actorName dan createdAt. PUBLISH berasal dari publications.createdBy/createdAt, REJECTED dari rejections.rejectedBy/createdAt, dan CANCELLED dari audit PUBLICATION_CANCELLED. Identitas diambil dari pengguna sesi yang melakukan aksi; replay idempotent tidak menggantinya. Tidak ada kolom/migration duplikat. Nama merupakan nama pengguna saat detail dibaca; bila pengguna sudah tidak tersedia, actorId tetap ada dan actorName null. Serializer tidak mengekspos email, password atau token pengguna.
+
+PUBLISH berarti pengajuan publikasi (langsung maupun terjadwal), bukan waktu postingan benar-benar tayang. Waktu tayang tetap publications.publishedAt. Setelah pembatalan, detail mempertahankan pelaku pengajuan dan menampilkan pembatal secara terpisah.

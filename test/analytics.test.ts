@@ -47,7 +47,7 @@ test("account insights preserves zero and missing values, with a bounded time ra
         const name = url.searchParams.get("metric")
         return { data: name === "reach" ? [] : [{ name, total_value: { value: 0 } }] }
     })
-    const report = await api.account("test", "last_7_days")
+    const report = await api.account("test", "this_week")
     expect(report.metrics.slice(0, 3)).toEqual([
         { name: "views", value: 0 },
         { name: "reach", value: null },
@@ -93,7 +93,7 @@ test("foreign media ownership is rejected before fetching insights", async () =>
 
 test("permission errors are not disguised as unavailable metric values", async () => {
     const api = adapter(() => ({ error: { code: 10, message: "Permission denied" } }))
-    await expect(api.account("test", "last_7_days")).rejects.toThrow("Instagram API request failed")
+    await expect(api.account("test", "this_week")).rejects.toThrow("Instagram API request failed")
 })
 
 test("post listing exposes an opaque cursor, never provider paging URLs or tokens", async () => {
@@ -129,13 +129,10 @@ test("analytics cache coalesces requests and still verifies account availability
         {} as IWorkflowRepository,
         testCache()
     )
-    await Promise.all([
-        service.account("test", "last_7_days"),
-        service.account("test", "last_7_days")
-    ])
+    await Promise.all([service.account("test", "this_week"), service.account("test", "this_week")])
     expect(calls).toBe(22)
     enabled = false
-    await expect(service.account("test", "last_7_days")).rejects.toThrow("unavailable")
+    await expect(service.account("test", "this_week")).rejects.toThrow("unavailable")
 })
 
 test("publication insights require a published record and matching configured account", async () => {
@@ -253,7 +250,6 @@ test("analytics calendar periods use Jakarta midnight and Monday across month bo
     expect(start("today")).toBe("2026-03-01T17:00:00.000Z")
     expect(start("this_week")).toBe("2026-03-01T17:00:00.000Z")
     expect(start("this_month")).toBe("2026-02-28T17:00:00.000Z")
-    expect(start("last_7_days")).toBe("2026-02-23T17:00:00.000Z")
     const sunday = analyticsRange("this_week", new Date("2026-03-01T10:00:00Z"))
     expect(new Date(sunday.since * 1000).toISOString()).toBe("2026-02-22T17:00:00.000Z")
 })
@@ -305,5 +301,11 @@ test("analytics retains domain errors and uses a gateway error for provider fail
         throw new Error("Expected gateway error")
     } catch (error) {
         expect((error as { status: number }).status).toBe(502)
+    }
+})
+
+test("account periods reject removed rolling windows", () => {
+    for (const period of ["last_7_days", "last_30_days"]) {
+        expect(analyticsQuery.safeParse({ period }).success).toBe(false)
     }
 })

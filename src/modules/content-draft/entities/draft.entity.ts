@@ -28,8 +28,8 @@ export class Draft {
     @Column({ type: "varchar", name: "content_hash", length: 64 })
     contentHash!: string
 
-    @Column({ type: "varchar", name: "review_status", length: 40 })
-    reviewStatus!: DraftStatus
+    @Column({ type: "varchar", name: "decision_status", length: 40 })
+    decisionStatus!: DraftStatus
 
     @CreateDateColumn({ name: "created_at", type: "datetime", precision: 6 })
     createdAt!: Date

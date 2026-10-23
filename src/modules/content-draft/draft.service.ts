@@ -21,23 +21,21 @@ export class DraftService {
             if ((await store.find("publication", { batchId: batch.id })).length) {
                 throw new ConflictException("Project already has a publication")
             }
-            if (draft.reviewStatus === "REJECTED") {
+            if (draft.decisionStatus === "REJECTED") {
                 return draft
             }
-            if (draft.reviewStatus !== "READY_FOR_REVIEW") {
+            if (draft.decisionStatus !== "READY_FOR_REVIEW") {
                 throw new ConflictException("Only ready content can be rejected")
             }
-            await store.save("review", {
+            await store.save("rejection", {
                 id: id(),
                 draftId,
-                reviewerId: actor.id,
-                decision: "REJECTED",
+                rejectedBy: actor.id,
                 notes: input.notes,
                 contentHash: input.contentHash
             })
-            const saved = await store.save("draft", { ...draft, reviewStatus: "REJECTED" })
+            const saved = await store.save("draft", { ...draft, decisionStatus: "REJECTED" })
             await this.context.audit(store, actor, "DRAFT_REJECTED", "draft", draftId, {
-                decision: "REJECTED",
                 contentHash: draft.contentHash
             })
             return saved

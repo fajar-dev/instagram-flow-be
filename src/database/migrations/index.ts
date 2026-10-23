@@ -7,7 +7,7 @@ import { CreateJobDispatches1792490400005 } from "./1792490400005-create-job-dis
 import { CreateAiResults1792490400006 } from "./1792490400006-create-ai-results"
 import { CreateRenders1792490400007 } from "./1792490400007-create-renders"
 import { CreateDrafts1792490400008 } from "./1792490400008-create-drafts"
-import { CreateReviews1792490400009 } from "./1792490400009-create-reviews"
+import { CreateRejections1792490400009 } from "./1792490400009-create-rejections"
 import { CreateAuditLogs1792490400010 } from "./1792490400010-create-audit-logs"
 import { CreateSettings1792490400011 } from "./1792490400011-create-settings"
 import { CreatePublications1792490400012 } from "./1792490400012-create-publications"
@@ -22,7 +22,7 @@ export const databaseMigrations = [
     CreateAiResults1792490400006,
     CreateRenders1792490400007,
     CreateDrafts1792490400008,
-    CreateReviews1792490400009,
+    CreateRejections1792490400009,
     CreateAuditLogs1792490400010,
     CreateSettings1792490400011,
     CreatePublications1792490400012

@@ -7,7 +7,7 @@ export class CreateDrafts1792490400008 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE \`drafts\` (
   \`id\` varchar(36) NOT NULL,
   \`job_id\` varchar(36) NOT NULL,
-  \`review_status\` varchar(40) NOT NULL,
+  \`decision_status\` varchar(40) NOT NULL,
   \`created_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   \`updated_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   \`title\` varchar(300) NOT NULL,

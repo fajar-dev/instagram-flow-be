@@ -17,7 +17,7 @@ tags:
   - name: Publishing
   - name: Content
   - name: AI Jobs
-  - name: Content Review
+  - name: Content Drafts
   - name: Reporting
   - name: Integration
   - name: Auth
@@ -420,6 +420,15 @@ components:
           description: Whether the account has a password set (false for Google-only accounts)
           example: true
 
+    ContentDecision:
+      type: object
+      required: [action, actorId, actorName, createdAt]
+      properties:
+        action: { type: string, enum: [PUBLISH, REJECTED, CANCELLED] }
+        actorId: { type: integer, nullable: true }
+        actorName: { type: string, nullable: true, description: Current user name; null if unavailable. No private user fields are returned. }
+        createdAt: { type: string, format: date-time, description: Persisted action time, not Instagram delivery time. }
+
     AuthResponse:
       type: object
       properties:
@@ -553,7 +562,7 @@ paths:
     get:
       tags: [Reporting]
       summary: Count Content tabs by job and current draft status
-      description: Counts use the same date scope as Content lists and only the latest job attempt per batch. Superseded failed attempts are excluded. Completed jobs are represented by draft review status, not counted twice as ready jobs.
+      description: Counts use the same date scope as Content lists and only the latest job attempt per batch. Superseded failed attempts are excluded. Completed jobs are represented by draft decision status, not counted twice as ready jobs.
       security:
         - bearerAuth: []
       parameters:
@@ -1214,6 +1223,7 @@ paths:
       tags:
         - Reporting
       summary: Real scoped overview counts
+      description: Returns batches, assets, processing, ready, failed, publish and rejected counts. Rejected counts drafts whose decisionStatus is REJECTED, including cancelled publications.
       security:
         - bearerAuth:
             []
@@ -1377,7 +1387,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AcceptLanguage"
     get:
-      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and output (feed/story).
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and draft lists also include projectLocation, photoCount (non-archived photos), and output (feed/story).
       tags:
         - Content
       summary: Get owned batch
@@ -1508,7 +1518,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AcceptLanguage"
     get:
-      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and output (feed/story).
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and draft lists also include projectLocation, photoCount (non-archived photos), and output (feed/story).
       tags:
         - AI Jobs
       summary: List latest job attempts per batch
@@ -1593,7 +1603,43 @@ paths:
             []
       responses:
         "200":
-          description: ApiResponse envelope or authenticated binary as described
+          description: Job detail including persisted publishing/rejection actors; publish is the request action, not delivery confirmation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      draft:
+                        type: object
+                        nullable: true
+                        properties:
+                          decisionStatus: { type: string, enum: [READY_FOR_REVIEW, PUBLISH, REJECTED] }
+                      rejections:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            draftId: { type: string, format: uuid }
+                            rejectedBy: { type: integer }
+                            notes: { type: string }
+                            contentHash: { type: string }
+                            createdAt: { type: string, format: date-time }
+                            updatedAt: { type: string, format: date-time }
+                      uploader:
+                        type: object
+                        required: [id, name]
+                        properties:
+                          id: { type: integer }
+                          name: { type: string, nullable: true }
+                      decisions:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ContentDecision"
         "400":
           description: Invalid request or unsupported image/render
         "401":
@@ -1625,7 +1671,43 @@ paths:
             []
       responses:
         "200":
-          description: ApiResponse envelope or authenticated binary as described
+          description: Job detail including persisted publishing/rejection actors; publish is the request action, not delivery confirmation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      draft:
+                        type: object
+                        nullable: true
+                        properties:
+                          decisionStatus: { type: string, enum: [READY_FOR_REVIEW, PUBLISH, REJECTED] }
+                      rejections:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            draftId: { type: string, format: uuid }
+                            rejectedBy: { type: integer }
+                            notes: { type: string }
+                            contentHash: { type: string }
+                            createdAt: { type: string, format: date-time }
+                            updatedAt: { type: string, format: date-time }
+                      uploader:
+                        type: object
+                        required: [id, name]
+                        properties:
+                          id: { type: integer }
+                          name: { type: string, nullable: true }
+                      decisions:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ContentDecision"
         "400":
           description: Invalid request or unsupported image/render
         "401":
@@ -1963,14 +2045,14 @@ paths:
             minLength: 8
             maxLength: 128
             pattern: "^[a-zA-Z0-9_-]+$"
-  /review:
+  /drafts:
     parameters:
       - $ref: "#/components/parameters/AcceptLanguage"
     get:
-      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and output (feed/story).
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and draft lists also include projectLocation, photoCount (non-archived photos), and output (feed/story).
       tags:
-        - Content Review
-      summary: List draft review queue
+        - Content Drafts
+      summary: List content drafts by decision status
       security:
         - bearerAuth:
             []
@@ -2045,7 +2127,7 @@ paths:
       - $ref: "#/components/parameters/AcceptLanguage"
     post:
       tags:
-        - Content Review
+        - Content Drafts
       summary: Reject the current ready content using its content hash
       security:
         - bearerAuth:
@@ -2094,7 +2176,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AcceptLanguage"
     get:
-      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and review lists also include projectLocation, photoCount (non-archived photos), and output (feed/story).
+      description: List items include uploaderName and uploaderPhoto (a presigned private MinIO URL, or null when no photo is set). Job and draft lists also include projectLocation, photoCount (non-archived photos), and output (feed/story).
       tags:
         - Content
       summary: List scoped private original asset metadata
@@ -2872,9 +2954,9 @@ paths:
           required: false
           schema:
             type: string
-            enum: [today, this_week, this_month, last_7_days, last_30_days]
+            enum: [today, this_week, this_month]
             default: this_week
-          description: Asia/Jakarta calendar boundaries; weeks begin Monday. Last 7/30 days include today.
+          description: Asia/Jakarta calendar boundaries; weeks begin Monday. All ranges end at the time of retrieval.
       responses:
         '502':
           description: Instagram upstream request failed

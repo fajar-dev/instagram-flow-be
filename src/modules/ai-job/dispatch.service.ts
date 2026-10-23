@@ -1,7 +1,7 @@
 import { config } from "../../config/config"
 import type { IWorkflowRepository } from "../shared/interfaces/workflow.repository.interface"
 import { WorkflowContextService } from "../shared/context.service"
-import { SettingsService } from "../integration/settings.service"
+import { SettingsService } from "../settings/settings.service"
 
 export interface IWebhookTransport {
     send(payload: unknown): Promise<number>
@@ -97,7 +97,8 @@ export class JobDispatcher {
                         ...job,
                         status: "FAILED",
                         errorCode: "DISPATCH_FAILED",
-                        safeError: "Webhook delivery failed. Check integration settings and retry.",
+                        safeError:
+                            "Webhook delivery failed. Check AI dispatcher settings and retry.",
                         completedAt: new Date(),
                         retryable: true
                     })

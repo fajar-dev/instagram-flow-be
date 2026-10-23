@@ -6,7 +6,7 @@ Analytics adalah child modul Instagram (`src/modules/instagram/analytics`). Cont
 
 Semua endpoint membutuhkan autentikasi aplikasi. Akun berasal dari JSON privat yang sama dengan publishing; membutuhkan Instagram Login dengan `instagram_business_basic` dan `instagram_business_manage_insights`.
 
-- `GET /instagram/accounts/:accountKey/insights?period=today|this_week|this_month|last_7_days|last_30_days`: total views, reach dan interactions untuk rentang berjalan tersebut.
+- `GET /instagram/accounts/:accountKey/insights?period=today|this_week|this_month`: total views, reach dan interactions untuk rentang berjalan tersebut.
 - `GET /instagram/accounts/:accountKey/media?after=...`: 20 postingan per halaman dari akun, termasuk postingan di luar IG Flow. Cursor opaque dikembalikan sebagai `after`; URL paging provider tidak dikembalikan. Tidak memakai filter periode akun.
 - `GET /instagram/accounts/:accountKey/media/:mediaId/insights`: statistik lifetime. Kepemilikan dibandingkan dengan profil token (ID scoped aplikasi dan user_id).
 - `GET /publications/:publicationId/insights`: lookup repository, wajib PUBLISHED dengan media ID dan akun yang sama dengan snapshot publikasi.
@@ -38,10 +38,10 @@ Endpoint GET /instagram/accounts/:accountKey/top-posts menerima cursor after dan
 
 ## Periode kalender
 
-Pilihan Today, This week, This month, Last 7 days dan Last 30 days memakai batas hari Asia/Jakarta (WIB). Minggu dimulai Senin; bulan dimulai tanggal 1; semua rentang berakhir pada waktu pengambilan data. Rentang 7/30 hari mencakup hari ini. Default This week. Cache memasukkan awal rentang agar tidak memakai data rentang kemarin saat berganti hari/minggu/bulan. Top posts tetap memakai angka lifetime dan tidak difilter periode akun.
+Pilihan Today, This week dan This month memakai batas hari Asia/Jakarta (WIB). Minggu dimulai Senin; bulan dimulai tanggal 1; semua rentang berakhir pada waktu pengambilan data. Default This week. Cache memasukkan awal rentang agar tidak memakai data rentang kemarin saat berganti hari/minggu/bulan. Top posts tetap memakai angka lifetime dan tidak difilter periode akun.
 
 ## Radar akun
 
-Hanya statistik akun memakai RadarChart, membandingkan periode terpilih dengan bagian berjalan periode sebelumnya. Today bergeser satu hari, This week tujuh hari, This month mulai tanggal 1 bulan sebelumnya (dibatasi akhir bulan jika lebih pendek), last7/last30 bergeser 7/30 hari. Rentang aktual ditampilkan pada UI. Setiap sumbu (reach, likes, comments, saves, shares, engagement rate) dinormalisasi terhadap maksimum kedua periode; maksimum menjadi 100. Nol tidak dianggap data hilang, null tidak diplot. Minimal tiga sumbu tersedia untuk radar. Nilai asli kedua periode tetap ditampilkan. Insight Content tetap radial tanpa pembanding.
+Hanya statistik akun memakai RadarChart, membandingkan periode terpilih dengan bagian berjalan periode sebelumnya. Today bergeser satu hari, This week tujuh hari, This month mulai tanggal 1 bulan sebelumnya (dibatasi akhir bulan jika lebih pendek). Rentang aktual ditampilkan pada UI. Setiap sumbu (reach, likes, comments, saves, shares, engagement rate) dinormalisasi terhadap maksimum kedua periode; maksimum menjadi 100. Nol tidak dianggap data hilang, null tidak diplot. Minimal tiga sumbu tersedia untuk radar. Nilai asli kedua periode tetap ditampilkan. Insight Content tetap radial tanpa pembanding.
 
 Respons Graph divalidasi menggunakan schema Zod sebelum masuk domain. Payload rusak tidak diubah menjadi metrik nol/kosong. Error domain (misalnya kepemilikan media 403) dipertahankan; error upstream dikembalikan sebagai 502 dengan pesan aman. Hanya hasil sukses disimpan di Redis; release lock memeriksa token pemilik secara atomik.

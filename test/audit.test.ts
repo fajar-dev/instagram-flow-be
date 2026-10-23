@@ -41,7 +41,7 @@ describe("Audit regressions", () => {
             "overview",
             "jobs",
             "batches/example",
-            "review",
+            "drafts",
             "media",
             "assets/example/preview",
             "assets/example/download",
@@ -146,7 +146,7 @@ describe("Audit regressions", () => {
 
     test("reporting queries use the route validation envelope", async () => {
         const { headers } = await registerAndLogin(app)
-        for (const route of ["overview", "jobs", "review", "media", "audit-logs"]) {
+        for (const route of ["overview", "jobs", "drafts", "media", "audit-logs"]) {
             const result = await request(app, `/api/${route}?page=0&limit=101`, { headers })
             expect(result.status).toBe(422)
             expect(result.body.success).toBe(false)

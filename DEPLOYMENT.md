@@ -175,7 +175,7 @@ INSTAGRAM_CREDENTIALS_FILE=secrets/instagram-accounts.json
 
 ### Credential Instagram
 
-Buat direktori `secrets` bila belum ada, lalu `secrets/instagram-accounts.json` milik user `igflow`, mode 0600. Jangan menyalin field legacy pageId/pageAccessToken dari contoh lama; gunakan JSON di bawah yang sesuai schema aktif. Format kode aktif memakai **accessToken**, bukan pageId/pageAccessToken:
+Buat direktori `secrets` bila belum ada, lalu `secrets/instagram-accounts.json` milik user `igflow`, mode 0600. Gunakan secrets/instagram-accounts.example.json sebagai acuan. Instagram Login memakai **accessToken** tanpa Facebook Page:
 
 ```json
 {
@@ -206,7 +206,7 @@ bun run migration:run
 bun run build
 ```
 
-Database baru menjalankan 13 baseline migration; synchronize selalu false. Jangan menjalankan seed demo pada server publik. Startup API/worker tidak menjalankan migration otomatis. Database lama harus dipindah melalui backup/restore beserta ledger migration, bukan menjalankan CREATE TABLE baseline ulang. Lihat [database](docs/operations/database.md).
+Database baru menjalankan 13 baseline migration schema final; synchronize selalu false. Jangan menjalankan seed demo pada server publik. Startup API/worker tidak menjalankan migration otomatis. Database lama harus dipindah melalui backup/restore beserta ledger migration, bukan menjalankan CREATE TABLE baseline ulang. Lihat [database](docs/operations/database.md).
 
 Buat akun awal melalui endpoint `POST /api/auth/register` dengan JSON name/email/password, dari sesi operator yang aman; gunakan password kuat, bukan seeder demo. Endpoint register saat ini terbuka dan tidak memiliki bootstrap sekali-pakai. Untuk aplikasi internal, tetapkan pembatasan akses register di reverse proxy sesuai kebijakan organisasi setelah onboarding. Semua pengguna aktif memiliki akses aplikasi yang sama; tidak ada role admin khusus. Login Google/Microsoft membutuhkan email pengguna yang sudah terdaftar dan aktif.
 
@@ -594,3 +594,7 @@ Migrasi server: hentikan penulisan dan worker di server lama, tunggu execution s
 - [n8n Docker](https://docs.n8n.io/hosting/installation/docker/), [proxy webhook](https://docs.n8n.io/hosting/configuration/configuration-examples/webhook-url/), [Supervisor](https://supervisord.org/configuration.html). Ikuti dokumentasi yang cocok dengan versi yang dipin; nama environment/CLI n8n dapat berubah.
 
 Panduan ini menjelaskan deployment aplikasi yang ada, bukan provisioning cluster HA. Tidak memasang/menjalankan apa pun hanya dengan membuka dokumen. Pada 23 Oktober 2026 festrack telah menguji satu foto Feed sampai READY_FOR_REVIEW; deployment baru tetap wajib menjalankan checklist sendiri.
+
+### Perubahan kontrak keputusan konten
+
+Baseline development 23 Oktober 2026 langsung membuat `rejections`, `rejected_by` dan `decision_status`. Tidak ada migration rename terpisah. Instalasi baru menjalankan 13 baseline; database dari schema lama memerlukan backup dan rekonsiliasi eksplisit atau pembuatan ulang yang telah disetujui, bukan menjalankan baseline di atas tabel lama. API memakai `rejections`, `rejectedBy`, `decisionStatus`, dan `/api/drafts` tanpa alias `/api/review`. Deploy frontend/backend berpasangan. Lihat [database](docs/operations/database.md).

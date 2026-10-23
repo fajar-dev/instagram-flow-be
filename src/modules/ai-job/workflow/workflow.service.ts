@@ -162,7 +162,7 @@ export class WorkflowService {
                 await store.save("draft", {
                     id: id(),
                     jobId,
-                    reviewStatus: "READY_FOR_REVIEW",
+                    decisionStatus: "READY_FOR_REVIEW",
                     ...content,
                     contentHash: contentHash(content)
                 })

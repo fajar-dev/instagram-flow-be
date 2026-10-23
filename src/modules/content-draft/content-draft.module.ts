@@ -4,11 +4,11 @@ import { WorkflowContextService } from "../shared/context.service"
 import { DraftService } from "./draft.service"
 import { DraftController } from "./draft.controller"
 
-export function createContentReviewModule(
+export function createContentDraftModule(
     repository: IWorkflowRepository = workflowRepository,
     context: WorkflowContextService = workflowContext
 ) {
     return { draftController: new DraftController(new DraftService(repository, context)) }
 }
 
-export const { draftController } = createContentReviewModule()
+export const { draftController } = createContentDraftModule()

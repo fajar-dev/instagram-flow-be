@@ -1,18 +1,15 @@
 import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm"
 
-@Entity("reviews")
-export class Review {
+@Entity("rejections")
+export class Rejection {
     @PrimaryColumn({ type: "varchar", length: 36 })
     id!: string
 
     @Column({ type: "varchar", name: "draft_id", length: 36 })
     draftId!: string
 
-    @Column({ type: "int", name: "reviewer_id" })
-    reviewerId!: number
-
-    @Column({ type: "varchar", name: "decision", length: 40 })
-    decision!: string
+    @Column({ type: "int", name: "rejected_by" })
+    rejectedBy!: number
 
     @Column({ type: "text", name: "notes" })
     notes!: string

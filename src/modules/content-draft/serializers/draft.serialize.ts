@@ -10,7 +10,7 @@ type PublicFields = Pick<
     | "location"
     | "activity"
     | "contentHash"
-    | "reviewStatus"
+    | "decisionStatus"
     | "createdAt"
     | "updatedAt"
 >
@@ -26,7 +26,7 @@ export class DraftSerializer {
             location: value.location,
             activity: value.activity,
             contentHash: value.contentHash,
-            reviewStatus: value.reviewStatus,
+            decisionStatus: value.decisionStatus,
             createdAt: value.createdAt,
             updatedAt: value.updatedAt
         }
