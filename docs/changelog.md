@@ -1,5 +1,11 @@
 ## 21 Oktober 2026 — Audit alur aktif
 
+## 23 Oktober 2026 — Startup HTTP pada PM2
+
+- Jalankan Bun.serve secara eksplisit setelah database terhubung agar build tetap membuka port saat dimuat PM2.
+- Log port listening dan hentikan startup bila database/server gagal. Hapus import hostname Zod yang tidak digunakan.
+- Dokumentasikan command PM2 dan endpoint health/Swagger.
+
 ## 23 Oktober 2026 — Microsoft login
 
 - Tempatkan adapter Google/Microsoft dan helper token sesi di modul auth; hapus core/helpers/auth dan perbarui wiring serta tes.
