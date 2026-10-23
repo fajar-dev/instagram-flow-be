@@ -41,7 +41,8 @@
         "Authentication token is required": "Authentication token is required",
         "Missing or invalid authorization header": "Missing or invalid authorization header",
         "Missing or invalid API key": "Missing or invalid API key",
-        "Invalid Google credentials": "Invalid Google credentials"
+        "Invalid Google credentials": "Invalid Google credentials",
+        "Invalid Microsoft credentials": "Invalid Microsoft credentials"
     },
     "user": {
         "User created successfully": "User created successfully",

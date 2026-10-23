@@ -40,6 +40,17 @@ export const GoogleLoginValidator = z.object({
 
 export type GoogleLoginValidator = z.infer<typeof GoogleLoginValidator>
 
+export const MicrosoftLoginValidator = z.object({
+    code: z.string().min(1, "Code is required"),
+    codeVerifier: z
+        .string()
+        .min(43)
+        .max(128)
+        .regex(/^[A-Za-z0-9._~-]+$/)
+})
+
+export type MicrosoftLoginValidator = z.infer<typeof MicrosoftLoginValidator>
+
 export const UpdateProfileValidator = z.object({
     name: z.string().min(1, "Name is required"),
     email: z.string().email("Invalid email format"),

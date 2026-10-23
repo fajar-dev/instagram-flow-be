@@ -92,6 +92,12 @@ export function createConfig(environment: Record<string, string | undefined>) {
             clientId: environment.GOOGLE_CLIENT_ID || "",
             clientSecret: environment.GOOGLE_CLIENT_SECRET || ""
         },
+        microsoft: {
+            clientId: environment.MICROSOFT_CLIENT_ID || "",
+            clientSecret: environment.MICROSOFT_CLIENT_SECRET || "",
+            tenantId: environment.MICROSOFT_TENANT_ID || "common",
+            redirectUri: environment.MICROSOFT_REDIRECT_URI || ""
+        },
         minio: {
             endPoint: environment.MINIO_ENDPOINT || "127.0.0.1",
             port: number("MINIO_PORT", 9000),
