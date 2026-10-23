@@ -58,3 +58,5 @@ Credential multi-account berada di JSON privat. Jalankan `bun run posts:dispatch
 ## Instagram analytics
 
 Statistik akun, perbandingan periode, top posts dan insight Content memakai Graph API dengan cache singkat. Lihat [panduan analytics](docs/features/instagram-analytics.md).
+
+Panduan deployment server: [DEPLOYMENT.md](DEPLOYMENT.md).
