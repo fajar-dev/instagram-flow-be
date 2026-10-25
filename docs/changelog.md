@@ -420,3 +420,9 @@ Detail menyertakan nama pengunggah selain pelaku publish/reject/cancel. Lebar ko
 ## 2026-10-23 — Overview penolakan
 
 Kartu Total photos diganti Rejected setelah Publish. Overview API menambahkan rejected berdasarkan status draft REJECTED, mengikuti filter periode yang sama.
+
+## 25 Oktober 2026 — Gambar full bleed
+
+- Normalisasi render AI memangkas pinggiran putih seragam dan memakai cover proporsional, menggantikan contain yang menambahkan padding putih.
+- Aturan finishing bersama pada cover dan slide foto menjaga branding serta mengizinkan koreksi pencahayaan/kontras yang mempertahankan fakta foto.
+- Render dan snapshot lama tetap immutable; pembaruan workflow n8n diperlukan untuk prompt baru.
