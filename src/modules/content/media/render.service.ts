@@ -52,11 +52,12 @@ export class RenderService {
                 }
                 image = await decoder
                     .rotate()
+                    .trim({ background: "#ffffff", threshold: 8 })
                     .resize(1080, render.height, {
-                        fit: "contain",
-                        background: "#ffffff"
+                        fit: "cover",
+                        position: "centre"
                     })
-                    .flatten({ background: "#ffffff" })
+                    .flatten({ background: "#2d506f" })
                     .jpeg({ quality: 95 })
                     .toBuffer()
             } catch {

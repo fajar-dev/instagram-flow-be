@@ -102,3 +102,12 @@ The callback nginx body limit and backend callback limit are 64 MiB for the comp
 ## Referensi desain AMTI
 
 Jalankan `bun run brand:upload <referensi.png> <amti-logo.png> <partner-logo.jpeg>` sebelum memakai workflow pada bucket baru. Manifest menyediakan URL presigned referensi dan logo. Prepare Design mengirim referensi sebagai image 1, logo AMTI sebagai image 2, logo Graha Survei sebagai image 3, lalu foto asli; jangan memperlakukan contoh poster sebagai dokumentasi proyek. Lihat [panduan desain](../features/ai-image-design.md).
+
+## Verifikasi full bleed — 25 Oktober 2026
+
+Patch normalisasi gambar diterapkan pada backend festrack tanpa menimpa perubahan konfigurasi server. API PM2 dibangun ulang/restart; kedua worker Supervisor kembali RUNNING. Workflow aktif `igFlowContentV3` versi `a378bfa2-5612-48ea-8a9b-85bff9539771` menerima pembaruan Prepare Design saja, mempertahankan Configuration dan credential. Backup privat disimpan di `/root/ig-flow-backups/fullbleed-20261025/` (workflow) dan `/home/fajar/ig-flow-backups/fullbleed-20261025/` (backend).
+
+- Execution 41: Feed dua foto, job `9d9a1c9d-18bc-49bf-b803-b3f353e022d6`, READY_FOR_REVIEW; dua render JPEG 1080×1350.
+- Execution 42: Story satu foto, job `b3df8c24-e4d2-4e32-a10a-5ef4fbb882c5`, READY_FOR_REVIEW; satu render JPEG 1080×1920.
+- Kedua execution berhasil sampai Callback Result. Hasil diunduh dan diperiksa visual: tidak ada padding putih luar, logo/footer utuh dengan empat ikon sosial. Panel logo masih sedikit bervariasi antarhasil model; konsistensi piksel tidak dijamin.
+- Pengujian memakai salinan foto proyek SHMS Lemahireng, tidak mengubah konten sumber dan tidak memublikasikan ke Instagram. Hasil uji tersedia di Content dengan nama `Full bleed feed verification — 25 October` dan `Full bleed story verification — 25 October`.
