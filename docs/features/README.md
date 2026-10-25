@@ -4,6 +4,7 @@ Perilaku produk dan kontrak integrasi per fitur.
 
 - [Autentikasi Google dan Microsoft](authentication.md)
 - [Implementasi konten IG Flow](content-automation.md)
+- [Notifikasi Telegram](telegram-notifications.md)
 - [Desain AI AMTI](ai-image-design.md)
 - [Instagram analytics](instagram-analytics.md)
 - [Publikasi Instagram IG Flow](instagram-publishing.md)

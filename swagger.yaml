@@ -1731,6 +1731,11 @@ paths:
       tags:
         - AI Jobs
       summary: "Atomically persist immutable AI result, render, draft and content"
+      description: >-
+        When Telegram is configured, the same transaction enqueues one ready-for-review
+        notification per job. Delivery runs asynchronously in jobs:dispatch; a repeated
+        identical callback does not enqueue another message. Telegram delivery failure
+        does not change the accepted content result. No Telegram credentials are exposed.
       security:
         - n8nServiceAuth:
             []

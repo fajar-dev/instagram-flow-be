@@ -4,9 +4,9 @@ Backend memakai MySQL, TypeORM dan mysql2. `synchronize` selalu false, termasuk 
 
 ## Schema aktif
 
-Registrasi berada di `src/database/migrations/index.ts`: **13 migration, 13 tabel domain**.
+Registrasi berada di `src/database/migrations/index.ts`: **14 migration, 14 tabel domain** (baseline schema final).
 
-- 1792490400000–1792490400012: users, password_reset_tokens, batches, assets, jobs, job_dispatches, ai_results, renders, drafts, rejections, audit_logs, settings, publications.
+- 1792490400000–1792490400013: users, password_reset_tokens, batches, assets, jobs, job_dispatches, ai_results, renders, drafts, rejections, audit_logs, settings, publications, job_notifications.
 
 Baseline 23 Oktober 2026 langsung membuat rejections/rejected_by dan drafts.decision_status, tanpa kolom decision redundan. Kolom child_container_ids berada di baseline publications; tidak ada migration ALTER/normalisasi snapshot lama.
 
@@ -36,3 +36,11 @@ Backup database harus disertai bucket MinIO bila ingin memulihkan media. Credent
 ## Penyelarasan lokal 23 Oktober 2026
 
 Database lokal diperbarui tanpa reset data: tiga catatan keputusan READY_FOR_REVIEW lama diarsipkan ke audit_logs sebagai LEGACY_REVIEW_ARCHIVED; satu penolakan dipertahankan di rejections. Seluruh record asli diverifikasi terhadap backup privat di luar repository. Ledger diselaraskan menjadi 13 baseline setelah schema final diterapkan. Migration transisi dihapus dari source; database baru langsung memakai istilah final. Server lain tidak diubah.
+
+## Notifikasi Telegram — 25 Oktober 2026
+
+CreateJobNotifications1792490400013 langsung membuat schema final notifikasi, termasuk parts dan next_part. Jalankan migration sebelum merilis callback/worker baru. Tidak ada backfill untuk job terdahulu. Rollback migration akan menghapus antrean dan riwayat delivery, sehingga wajib dicadangkan sebelum rollback.
+
+## Konsolidasi lokal 25 Oktober 2026
+
+Seluruh schema memakai 14 migration CREATE TABLE berurutan, satu tabel per file. Notifikasi langsung memiliki parts dan next_part; migration ALTER/backfill sementara dihapus. Database lokal dicadangkan secara privat sebelum dua ledger notifikasi diselaraskan ke CreateJobNotifications1792490400013. Schema final dan tidak adanya migration pending diverifikasi; data domain tidak dihapus. Server tidak diubah. Database dengan ledger percobaan lama memerlukan rekonsiliasi terverifikasi atau pembuatan ulang setelah backup.

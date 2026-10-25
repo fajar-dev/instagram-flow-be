@@ -47,3 +47,5 @@ Satu bucket privat digunakan untuk avatar dan konten. MySQL hanya menyimpan meta
 Modul instagram membaca JSON credential dan menyediakan adapter Graph API; modul publishing memiliki entity publications, repository transaksi, snapshot media, service, controller dan worker. Keduanya berada di top-level sesuai fitur. Aksi Publish langsung membuat antrean dari READY_FOR_REVIEW. Worker `posts:dispatch` tidak bergantung pada webhook n8n. Lihat [publishing](../features/instagram-publishing.md).
 
 Worker CLI berbagi lifecycle pada `src/commands/run-worker.ts`, termasuk signal shutdown, cleanup koneksi dan opsi `--once`. Repository User dan Reset Token mengambil repository TypeORM saat operasi, sehingga pergantian DataSource test tidak meninggalkan manager lama. Avatar dan Content berbagi decoder `src/core/helpers/upload-image.ts`; semua upload memakai bucket privat.
+
+Notifikasi READY_FOR_REVIEW memakai child notifications di ai-job. Callback menyimpan job_notifications secara atomik, lalu jobs:dispatch mengirim melalui TelegramTransport. Tidak menambahkan layanan queue/worker terpisah. Lihat [notifikasi Telegram](../features/telegram-notifications.md).
