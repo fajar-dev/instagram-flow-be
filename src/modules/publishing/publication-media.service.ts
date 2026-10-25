@@ -10,10 +10,10 @@ export class PublicationMediaService {
         const buffer = await sharp(source, { limitInputPixels: 40000000 })
             .rotate()
             .resize(1080, placement === "story" ? 1920 : 1350, {
-                fit: "contain",
-                background: "#ffffff"
+                fit: "cover",
+                position: "centre"
             })
-            .flatten({ background: "#ffffff" })
+            .flatten({ background: "#2d506f" })
             .jpeg({ quality: 90 })
             .toBuffer()
         if (buffer.length > 8 * 1024 * 1024) {

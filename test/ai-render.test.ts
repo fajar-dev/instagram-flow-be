@@ -95,3 +95,47 @@ test("AI raster enforces output and source membership", async () => {
         )
     ).rejects.toThrow()
 })
+
+test("AI renders fill feed and story canvases without white padding or baked-in outer margins", async () => {
+    for (const output of ["feed", "story"] as const) {
+        for (const bordered of [false, true]) {
+            const source = sharp({
+                create: { width: 900, height: 600, channels: 3, background: "#123456" }
+            })
+            const bytes = await (
+                bordered
+                    ? source.extend({
+                          top: 20,
+                          bottom: 20,
+                          left: 28,
+                          right: 28,
+                          background: "white"
+                      })
+                    : source
+            )
+                .png()
+                .toBuffer()
+            const { service, input, objects } = fixture()
+            input[0]!.placement = output
+            input[0]!.height = output === "story" ? 1920 : 1350
+            input[0]!.imageBase64 = bytes.toString("base64")
+            const result = await service.create(input, assets, output, assetId, "result", [])
+            const { data, info } = await sharp(objects.get(result[0]!.storageKey)!)
+                .raw()
+                .toBuffer({ resolveWithObject: true })
+            expect(info.width).toBe(1080)
+            expect(info.height).toBe(input[0]!.height)
+            for (const [x, y] of [
+                [0, 0],
+                [1079, 0],
+                [0, info.height - 1],
+                [1079, info.height - 1]
+            ]) {
+                const offset = (y! * info.width + x!) * info.channels
+                expect(data[offset]).toBeLessThan(40)
+                expect(data[offset + 1]).toBeLessThan(80)
+                expect(data[offset + 2]).toBeLessThan(110)
+            }
+        }
+    }
+})
