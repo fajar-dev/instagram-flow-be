@@ -1,3 +1,4 @@
+import { JobNotification } from "../ai-job/notifications/notification.entity"
 import { Publication } from "../publishing/entities/publication.entity"
 import { Batch } from "../content/entities/batch.entity"
 import { Asset } from "../content/media/entities/asset.entity"
@@ -11,6 +12,7 @@ import { AuditLog } from "../reporting/entities/audit-log.entity"
 import { Setting } from "../settings/entities/setting.entity"
 
 export interface WorkflowRecords {
+    notification: JobNotification
     publication: Publication
     batch: Batch
     asset: Asset
@@ -25,6 +27,7 @@ export interface WorkflowRecords {
 }
 
 export const workflowEntityMap = {
+    notification: JobNotification,
     publication: Publication,
     batch: Batch,
     asset: Asset,

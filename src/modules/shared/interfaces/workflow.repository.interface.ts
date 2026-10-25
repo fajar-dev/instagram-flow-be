@@ -19,6 +19,7 @@ export interface WorkflowStore {
 
 export interface IWorkflowRepository extends WorkflowStore {
     transaction<T>(work: (store: WorkflowStore) => Promise<T>): Promise<T>
+    dueNotificationIds(): Promise<string[]>
     dueDispatchIds(): Promise<string[]>
     expiredJobIds(timeoutSeconds: number): Promise<string[]>
 }

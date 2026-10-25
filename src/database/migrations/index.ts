@@ -11,6 +11,7 @@ import { CreateRejections1792490400009 } from "./1792490400009-create-rejections
 import { CreateAuditLogs1792490400010 } from "./1792490400010-create-audit-logs"
 import { CreateSettings1792490400011 } from "./1792490400011-create-settings"
 import { CreatePublications1792490400012 } from "./1792490400012-create-publications"
+import { CreateJobNotifications1792490400013 } from "./1792490400013-create-job-notifications"
 
 export const databaseMigrations = [
     CreateUsers1792490400000,
@@ -25,5 +26,6 @@ export const databaseMigrations = [
     CreateRejections1792490400009,
     CreateAuditLogs1792490400010,
     CreateSettings1792490400011,
-    CreatePublications1792490400012
+    CreatePublications1792490400012,
+    CreateJobNotifications1792490400013
 ]

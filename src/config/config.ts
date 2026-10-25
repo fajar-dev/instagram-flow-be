@@ -26,7 +26,31 @@ export function createConfig(environment: Record<string, string | undefined>) {
     const port = number("PORT", 4000)
     const bucket = environment.MINIO_BUCKET || "hono-be"
 
+    const telegramToken = (environment.TELEGRAM_BOT_TOKEN || "").trim()
+    const telegramChat = (environment.TELEGRAM_CHAT_ID || "").trim()
+    if (Boolean(telegramToken) !== Boolean(telegramChat)) {
+        throw new Error(
+            "[CONFIG] TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be configured together"
+        )
+    }
+    const frontendUrl = environment.FRONTEND_URL || "http://localhost:3000"
+    if (telegramToken) {
+        const url = new URL(frontendUrl)
+        if (
+            !["http:", "https:"].includes(url.protocol) ||
+            url.username ||
+            url.password ||
+            url.search ||
+            url.hash
+        ) {
+            throw new Error(
+                "[CONFIG] FRONTEND_URL must be an HTTP(S) application URL without credentials, query or hash"
+            )
+        }
+    }
+
     return {
+        telegram: { botToken: telegramToken, chatId: telegramChat, frontendUrl },
         app: {
             name: environment.APP_NAME || "hono-be",
             hostname: environment.APP_HOSTNAME || "0.0.0.0",
