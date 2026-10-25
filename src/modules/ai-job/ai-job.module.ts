@@ -1,3 +1,6 @@
+import { config } from "../../config/config"
+import { JobNotificationService } from "./notifications/notification.service"
+import { TelegramTransport } from "./notifications/telegram.adapter"
 import { userRepository } from "../user/user.module"
 import type { IUserRepository } from "../user/interfaces/user.repository.interface"
 import { RenderService } from "../content/media/render.service"
@@ -25,8 +28,20 @@ export function createAiJobModule(
     transport: IWebhookTransport = new N8nWebhookTransport(),
     users: Pick<IUserRepository, "findById"> = userRepository
 ) {
-    const workflow = new WorkflowService(repository, new RenderService(media), context, mediaAccess)
+    const notifications = new JobNotificationService(
+        repository,
+        new TelegramTransport(config.telegram.botToken, media),
+        config.telegram
+    )
+    const workflow = new WorkflowService(
+        repository,
+        new RenderService(media),
+        context,
+        mediaAccess,
+        notifications
+    )
     return {
+        notifications,
         workflow,
         dispatcher: new JobDispatcher(repository, context, settings, transport),
         jobController: new JobController(new JobService(repository, context, users)),
@@ -34,4 +49,9 @@ export function createAiJobModule(
     }
 }
 
-export const { jobController, workflowController, dispatcher: jobDispatcher } = createAiJobModule()
+export const {
+    jobController,
+    workflowController,
+    dispatcher: jobDispatcher,
+    notifications: jobNotifications
+} = createAiJobModule()

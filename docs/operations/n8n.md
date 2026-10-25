@@ -76,7 +76,7 @@ docker restart n8n
 - Feed produces one edited render per uploaded asset (up to 19); Story produces one. The scalar event output remains feed or story. Story caption and hashtags must be empty. Callback includes imageBase64 from the image model. Backend validates raster bytes and normalizes size before storing the result in MinIO; it does not draw a template.
 - Post-claim failures call the authenticated failure endpoint with a fixed safe message and then mark the n8n execution failed. Claim errors stop without claiming ownership of another execution.
 - Result retries reuse the same payload; backend hashes it and accepts exact duplicates without creating a second draft.
-- The workflow ends at READY_FOR_REVIEW. Users then choose Publish or Reject in the dashboard; publishing is handled by posts:dispatch. This AI workflow does not send Telegram messages or publish posts.
+- The workflow ends at READY_FOR_REVIEW. Users then choose Publish or Reject in the dashboard; publishing is handled by posts:dispatch. This AI workflow does not send Telegram messages or publish posts. After a successful result callback, the backend optionally queues a Telegram notification; jobs:dispatch sends it independently. See [Telegram notifications](../features/telegram-notifications.md).
 
 
 ### Timeout recovery

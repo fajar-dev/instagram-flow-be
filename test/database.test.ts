@@ -38,7 +38,8 @@ describe("MySQL database integration", () => {
                 "rejections",
                 "audit_logs",
                 "settings",
-                "publications"
+                "publications",
+                "job_notifications"
             ]) {
                 expect(await runner.hasTable(table)).toBe(true)
             }
@@ -52,7 +53,7 @@ describe("MySQL database integration", () => {
     test("fresh baseline has no legacy tables, role or inline media and supports rollback and reapply", async () => {
         const runner = AppDataSource.createQueryRunner()
         try {
-            expect(databaseMigrations).toHaveLength(13)
+            expect(databaseMigrations).toHaveLength(14)
             expect(await runner.hasTable("reviews")).toBe(false)
             expect(await runner.hasColumn("rejections", "rejected_by")).toBe(true)
             expect(await runner.hasColumn("rejections", "decision")).toBe(false)
@@ -63,13 +64,15 @@ describe("MySQL database integration", () => {
             expect(await runner.hasColumn("publications", "media_key")).toBe(false)
             expect(await runner.hasColumn("publications", "child_container_ids")).toBe(true)
             expect(await runner.hasColumn("jobs", "output")).toBe(true)
+            expect(await runner.hasColumn("job_notifications", "parts")).toBe(true)
+            expect(await runner.hasColumn("job_notifications", "next_part")).toBe(true)
             expect(await runner.hasColumn("jobs", "requested_outputs")).toBe(false)
             expect(await runner.hasTable("contacts")).toBe(false)
             const timestamps = databaseMigrations.map((Migration) =>
                 Number(Migration.name.slice(-13))
             )
             expect(timestamps).toEqual([
-                ...Array.from({ length: 13 }, (_, index) => 1792490400000 + index)
+                ...Array.from({ length: 14 }, (_, index) => 1792490400000 + index)
             ])
             expect(await runner.hasColumn("users", "role")).toBe(false)
             expect(await runner.hasColumn("renders", "sanitized_svg")).toBe(false)

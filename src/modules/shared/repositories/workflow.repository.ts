@@ -62,6 +62,19 @@ export class TypeOrmWorkflowRepository implements IWorkflowRepository {
         )
     }
 
+    async dueNotificationIds() {
+        const rows = await AppDataSource.getRepository(workflowEntityMap.notification)
+            .createQueryBuilder("n")
+            .where(
+                "n.status IN ('PENDING', 'SENDING') AND n.next_retry_at <= :now AND (n.locked_until IS NULL OR n.locked_until < :now)",
+                { now: new Date() }
+            )
+            .orderBy("n.created_at", "ASC")
+            .take(20)
+            .getMany()
+        return rows.map((row) => row.id)
+    }
+
     async dueDispatchIds() {
         const rows = await AppDataSource.getRepository(workflowEntityMap.dispatch)
             .createQueryBuilder("d")

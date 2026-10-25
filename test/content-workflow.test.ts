@@ -1,3 +1,4 @@
+import { JobNotificationService } from "../src/modules/ai-job/notifications/notification.service"
 import { AssetSerializer } from "../src/modules/content/media/serializers/asset.serialize"
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test"
 import { Hono } from "hono"
@@ -145,6 +146,108 @@ async function claim(job: { jobId: string; eventId: string }) {
 }
 
 describe("Content workflow", () => {
+    test("ready callbacks enqueue once and Telegram delivery does not change content state", async () => {
+        const original = { ...config.telegram }
+        Object.assign(config.telegram, {
+            botToken: "test-token",
+            chatId: "-100123",
+            frontendUrl: "https://app.test"
+        })
+        try {
+            const user = await actor("telegram@example.com")
+            const job = await queued(user.headers)
+            await claim(job)
+            const callback = () =>
+                request(app, `/api/jobs/${job.jobId}/result`, {
+                    method: "POST",
+                    headers: serviceHeaders,
+                    body: result(job)
+                })
+            const responses = await Promise.all([callback(), callback()])
+            expect(responses.every((response) => response.status === 200)).toBe(true)
+            const repository = new TypeOrmWorkflowRepository()
+            let rows = await repository.find("notification", { jobId: job.jobId })
+            expect(rows).toHaveLength(1)
+            expect(rows[0]!.detailUrl).toBe(`https://app.test/content/${job.jobId}`)
+            let sends = 0
+            const notifications = new JobNotificationService(
+                repository,
+                {
+                    async send() {
+                        sends++
+                        await new Promise((resolve) => setTimeout(resolve, 20))
+                        return { status: "SENT", messageId: "123" }
+                    }
+                },
+                config.telegram
+            )
+            await Promise.all([notifications.tick(), notifications.tick()])
+            expect(sends).toBe(1)
+            const progress = (await repository.get("notification", rows[0]!.id))!
+            expect(progress.nextPart).toBe(1)
+            expect(progress.status).toBe("SENT")
+            expect(progress.parts[0]!.kind).toBe("photo")
+            await repository.save("notification", { ...progress, nextRetryAt: new Date(0) })
+            await notifications.tick()
+            expect(sends).toBe(1)
+            rows = await repository.find("notification", { jobId: job.jobId })
+            expect(rows[0]!.status).toBe("SENT")
+            expect(rows[0]!.messageId).toBe("123")
+
+            await repository.save("notification", {
+                ...rows[0]!,
+                status: "PENDING",
+                nextPart: 0,
+                nextRetryAt: new Date(0)
+            })
+            const unavailable = new JobNotificationService(
+                repository,
+                {
+                    async send() {
+                        return { status: "UNKNOWN" }
+                    }
+                },
+                config.telegram
+            )
+            await unavailable.tick()
+            expect((await repository.get("notification", rows[0]!.id))!.status).toBe("UNKNOWN")
+            expect((await repository.get("job", job.jobId))!.status).toBe("READY_FOR_REVIEW")
+            expect(await repository.dueNotificationIds()).toHaveLength(0)
+
+            await repository.save("notification", {
+                ...rows[0]!,
+                status: "PENDING",
+                attemptNo: 0,
+                nextPart: 0,
+                nextRetryAt: new Date(0)
+            })
+            const throttled = new JobNotificationService(
+                repository,
+                {
+                    async send() {
+                        return { status: "RETRY", retryAfter: 60 }
+                    }
+                },
+                config.telegram
+            )
+            await throttled.tick()
+            const delayed = (await repository.get("notification", rows[0]!.id))!
+            expect(delayed.status).toBe("PENDING")
+            expect(delayed.nextRetryAt.getTime()).toBeGreaterThan(Date.now() + 50000)
+            await repository.save("notification", {
+                ...delayed,
+                status: "SENDING",
+                nextRetryAt: new Date(0),
+                lockedUntil: new Date(0)
+            })
+            await notifications.tick()
+            expect(sends).toBe(1)
+            expect((await repository.get("notification", rows[0]!.id))!.status).toBe("UNKNOWN")
+        } finally {
+            Object.assign(config.telegram, original)
+        }
+    })
+
     test("process accepts only a single output and rejects the old list contract", async () => {
         const { headers } = await registerAndLogin(app)
         const b = await batch(headers)

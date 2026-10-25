@@ -1,3 +1,4 @@
+import type { JobNotificationService } from "../notifications/notification.service"
 import { config } from "../../../config/config"
 import { BadRequestException, ConflictException } from "../../../core/exceptions/base"
 import type { IWorkflowRepository } from "../../shared/interfaces/workflow.repository.interface"
@@ -12,7 +13,8 @@ export class WorkflowService {
         private readonly repository: IWorkflowRepository,
         private readonly renders: RenderService,
         private readonly context: WorkflowContextService,
-        private readonly mediaAccess: MediaService
+        private readonly mediaAccess: MediaService,
+        private readonly notifications: JobNotificationService
     ) {}
 
     async claim(jobId: string, executionId: string, eventId: string) {
@@ -172,6 +174,13 @@ export class WorkflowService {
                     completedAt: new Date()
                 })
                 await store.save("batch", { ...batch, status: "COMPLETED" })
+                await this.notifications.enqueue(store, jobId, batch.projectName, job.output, {
+                    caption: content.caption,
+                    hashtags: content.hashtags,
+                    coverKey: safeRenders.find(
+                        (render) => render.assetId === input.selectedAssetIds[0]
+                    )!.storageKey
+                })
                 await this.context.audit(store, null, "JOB_READY", "job", jobId)
                 return { accepted: true, jobId }
             })

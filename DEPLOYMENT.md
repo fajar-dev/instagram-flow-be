@@ -206,7 +206,7 @@ bun run migration:run
 bun run build
 ```
 
-Database baru menjalankan 13 baseline migration schema final; synchronize selalu false. Jangan menjalankan seed demo pada server publik. Startup API/worker tidak menjalankan migration otomatis. Database lama harus dipindah melalui backup/restore beserta ledger migration, bukan menjalankan CREATE TABLE baseline ulang. Lihat [database](docs/operations/database.md).
+Database baru menjalankan 14 baseline migration schema final, termasuk job_notifications; synchronize selalu false. Jangan menjalankan seed demo pada server publik. Startup API/worker tidak menjalankan migration otomatis. Database lama harus dipindah melalui backup/restore beserta ledger migration, bukan menjalankan CREATE TABLE baseline ulang. Lihat [database](docs/operations/database.md).
 
 Buat akun awal melalui endpoint `POST /api/auth/register` dengan JSON name/email/password, dari sesi operator yang aman; gunakan password kuat, bukan seeder demo. Endpoint register saat ini terbuka dan tidak memiliki bootstrap sekali-pakai. Untuk aplikasi internal, tetapkan pembatasan akses register di reverse proxy sesuai kebijakan organisasi setelah onboarding. Semua pengguna aktif memiliki akses aplikasi yang sama; tidak ada role admin khusus. Login Google/Microsoft membutuhkan email pengguna yang sudah terdaftar dan aktif.
 
@@ -597,4 +597,8 @@ Panduan ini menjelaskan deployment aplikasi yang ada, bukan provisioning cluster
 
 ### Perubahan kontrak keputusan konten
 
-Baseline development 23 Oktober 2026 langsung membuat `rejections`, `rejected_by` dan `decision_status`. Tidak ada migration rename terpisah. Instalasi baru menjalankan 13 baseline; database dari schema lama memerlukan backup dan rekonsiliasi eksplisit atau pembuatan ulang yang telah disetujui, bukan menjalankan baseline di atas tabel lama. API memakai `rejections`, `rejectedBy`, `decisionStatus`, dan `/api/drafts` tanpa alias `/api/review`. Deploy frontend/backend berpasangan. Lihat [database](docs/operations/database.md).
+Baseline development 23 Oktober 2026 langsung membuat `rejections`, `rejected_by` dan `decision_status`. Tidak ada migration rename terpisah. Instalasi baru menjalankan 14 baseline schema final; database dari schema lama memerlukan backup dan rekonsiliasi eksplisit atau pembuatan ulang yang telah disetujui, bukan menjalankan baseline di atas tabel lama. API memakai `rejections`, `rejectedBy`, `decisionStatus`, dan `/api/drafts` tanpa alias `/api/review`. Deploy frontend/backend berpasangan. Lihat [database](docs/operations/database.md).
+
+## Telegram opsional
+
+Isi TELEGRAM_BOT_TOKEN dan TELEGRAM_CHAT_ID pada environment backend/API dan worker yang sama; keduanya kosong menonaktifkan notifikasi. FRONTEND_URL harus URL frontend publik. Terapkan migration CreateJobNotifications1792490400013 sebelum restart API PM2 serta worker jobs:dispatch Supervisor. Tidak perlu merombak workflow n8n atau membuat worker tambahan. Notification token tidak boleh disimpan dalam workflow export. Lihat [setup, retry dan verifikasi Telegram](docs/features/telegram-notifications.md).

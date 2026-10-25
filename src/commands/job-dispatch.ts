@@ -1,7 +1,7 @@
-import { jobDispatcher } from "../modules/ai-job/ai-job.module"
+import { jobDispatcher, jobNotifications } from "../modules/ai-job/ai-job.module"
 import { runWorker } from "./run-worker"
 
-await runWorker(
-    () => jobDispatcher.tick(),
-    "Job dispatcher tick failed; inspect database availability"
-)
+await runWorker(async () => {
+    await jobNotifications.tick()
+    await jobDispatcher.tick()
+}, "Job or notification dispatcher tick failed; inspect database availability")

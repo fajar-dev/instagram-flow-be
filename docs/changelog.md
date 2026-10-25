@@ -426,3 +426,11 @@ Kartu Total photos diganti Rejected setelah Publish. Overview API menambahkan re
 - Normalisasi render AI memangkas pinggiran putih seragam dan memakai cover proporsional, menggantikan contain yang menambahkan padding putih.
 - Aturan finishing bersama pada cover dan slide foto menjaga branding serta mengizinkan koreksi pencahayaan/kontras yang mempertahankan fakta foto.
 - Render dan snapshot lama tetap immutable; pembaruan workflow n8n diperlukan untuk prompt baru.
+
+## 25 Oktober 2026 — Notifikasi Telegram dan baseline database
+
+- Callback READY_FOR_REVIEW mengantrekan satu cover, caption, hashtag dan tombol detail konten, tanpa detail proyek/judul/status tambahan.
+- Teks hingga 1.024 karakter digabung ke caption foto; teks panjang dikirim lengkap sebagai lanjutan. Progres persisten mencegah retry teks mengirim ulang cover. Hasil kirim ambigu tidak diulang otomatis.
+- Konfigurasi Telegram opsional melalui environment, dikirim oleh jobs:dispatch di luar transaksi callback. Tidak ada backfill notifikasi job lama.
+- Baseline dikonsolidasikan menjadi 14 CREATE TABLE, satu tabel per file. Migration ALTER/backfill notifikasi dihapus. Database lokal dicadangkan dan ledger diselaraskan tanpa menghapus konten; server tidak diubah.
+- Tes Telegram nyata mengonfirmasi satu pesan berisi cover dan 466 karakter caption/hashtag. Dokumentasi deployment dan operasi diperbarui.
