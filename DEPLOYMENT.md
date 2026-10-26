@@ -611,13 +611,19 @@ Gunakan external task runner dengan versi yang sama dengan n8n. Extend image run
 
 ```dockerfile
 ARG RUNNERS_IMAGE
+FROM alpine:3.24 AS fonts
+RUN apk add --no-cache font-dejavu fontconfig
 FROM ${RUNNERS_IMAGE}
 USER root
-RUN apk add --no-cache font-dejavu fontconfig
-RUN cd /opt/runners/task-runner-javascript && pnpm add --save-exact sharp@0.35.5
+COPY --from=fonts /usr/share/fonts /usr/share/fonts
+COPY --from=fonts /etc/fonts /etc/fonts
+RUN mkdir -p /opt/branding && cd /opt/branding && echo '{}' > package.json && pnpm add --save-exact sharp@0.35.5
+RUN ln -s /opt/branding/node_modules/sharp /opt/runners/task-runner-javascript/node_modules/sharp
 COPY n8n-task-runners.json /etc/n8n-task-runners.json
 USER runner
 ```
+
+Dependency branding dipasang terpisah agar pnpm tidak menulis ulang dependency bawaan runner. Font disalin dari stage Alpine karena image runner hardened tidak menyediakan apk.
 
 Salin konfigurasi launcher bawaan versi runner yang digunakan. Pertahankan command, args, working directory, health check dan konfigurasi runner lain; tambahkan `"NODE_FUNCTION_ALLOW_EXTERNAL": "sharp"` pada `env-overrides` runner JavaScript. Jangan mengganti seluruh konfigurasi dengan potongan allowlist saja.
 
