@@ -139,3 +139,23 @@ test("AI renders fill feed and story canvases without white padding or baked-in 
         }
     }
 })
+
+test("final branded canvas keeps its edge geometry without trimming", async () => {
+    const center = await sharp({
+        create: { width: 1020, height: 1290, channels: 3, background: "#123456" }
+    })
+        .png()
+        .toBuffer()
+    const bytes = await sharp(center)
+        .extend({ top: 30, bottom: 30, left: 30, right: 30, background: "white" })
+        .png()
+        .toBuffer()
+    const { service, input, objects } = fixture()
+    input[0]!.imageBase64 = bytes.toString("base64")
+    const result = await service.create(input, assets, "feed", assetId, "result", [])
+    const { data, info } = await sharp(objects.get(result[0]!.storageKey)!)
+        .raw()
+        .toBuffer({ resolveWithObject: true })
+    expect(data[0]).toBeGreaterThan(240)
+    expect(data[(100 * info.width + 100) * info.channels]).toBeLessThan(40)
+})

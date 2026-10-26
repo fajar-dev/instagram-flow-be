@@ -116,34 +116,18 @@ describe("deployable n8n workflow", () => {
         expect(() => run("render-result", { data: [] })).toThrow()
         expect(() => run("render-result", { data: [{ url: "https://example.test" }] })).toThrow()
         const request = run("prepare-design", {})
-        expect(request.images).toEqual([
-            imageData(manifest.designReferences.styleUrl),
-            imageData(manifest.designReferences.logoUrl),
-            imageData(manifest.designReferences.partnerLogoUrl),
-            imageData(manifest.assets[0]!.renderImageUrl)
-        ])
+        expect(request.images).toEqual([imageData(manifest.assets[0]!.renderImageUrl)])
         expect(request.model).toBe("cx/gpt-image-2")
         expect(() =>
             run("parse-caption", response({ title: "", caption: "test", hashtags: [] }))
         ).toThrow()
     })
-    test("design request separates brand references from project assets and rejects missing references", () => {
+    test("AI receives only source photos and branding stays in a separate node", () => {
         const request = run("prepare-design", {})
-        expect(request.images.slice(0, 3)).toEqual([
-            imageData(manifest.designReferences.styleUrl),
-            imageData(manifest.designReferences.logoUrl),
-            imageData(manifest.designReferences.partnerLogoUrl)
-        ])
-        expect(request.images.slice(3)).toEqual([imageData(manifest.assets[0]!.renderImageUrl)])
-        for (const key of ["styleUrl", "logoUrl", "partnerLogoUrl"] as const) {
-            const previous = manifest.designReferences[key]
-            try {
-                manifest.designReferences[key] = ""
-                expect(() => run("prepare-design", {})).toThrow("reference")
-            } finally {
-                manifest.designReferences[key] = previous
-            }
-        }
+        expect(request.images).toEqual([imageData(manifest.assets[0]!.renderImageUrl)])
+        const workflow = buildWorkflow()
+        expect(workflow.connections["Edit Image"].main[0][0].node).toBe("Apply Branding")
+        expect(workflow.connections["Apply Branding"].main[0][0].node).toBe("Render Result")
     })
 
     test("Story generates one portrait render and no Feed caption", () => {
@@ -258,7 +242,7 @@ test("Feed edits all 19 source photographs and retains slide identity in the cal
         }))
         const requests = runAll("prepare-design", {})
         expect(requests).toHaveLength(19)
-        expect(requests[1].json.images[3]).toBe(imageData(manifest.assets[1]!.renderImageUrl))
+        expect(requests[1].json.images[0]).toBe(imageData(manifest.assets[1]!.renderImageUrl))
         const responses = requests.map(() => ({ data: [{ b64_json: "aW1hZ2U=" }] }))
         const result = runAll("render-result", responses[0], responses)[0].json
         expect(result.renders.map((r: any) => r.assetId)).toEqual(
@@ -293,7 +277,7 @@ test("analysis ranks all candidates even when a model declines to select a photo
 
 test("image references are downloaded once without sending service credentials to storage", () => {
     const inputs = runAll("prepare-image-inputs", {})
-    expect(inputs).toHaveLength(4)
+    expect(inputs).toHaveLength(3)
     const workflow = buildWorkflow()
     const download = workflow.nodes.find((node) => node.name === "Download Design Images")!
     expect(download.credentials).toBeUndefined()

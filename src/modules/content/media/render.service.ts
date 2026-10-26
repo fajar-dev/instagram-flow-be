@@ -50,9 +50,12 @@ export class RenderService {
                 ) {
                     throw new Error("Unsupported AI image")
                 }
-                image = await decoder
-                    .rotate()
-                    .trim({ background: "#ffffff", threshold: 8 })
+                const normalized = decoder.rotate()
+                // Final n8n templates already have exact geometry; never crop their branding.
+                if (metadata.width !== 1080 || metadata.height !== render.height) {
+                    normalized.trim({ background: "#ffffff", threshold: 8 })
+                }
+                image = await normalized
                     .resize(1080, render.height, {
                         fit: "cover",
                         position: "centre"
