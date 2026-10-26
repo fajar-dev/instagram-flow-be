@@ -171,6 +171,7 @@ export function buildWorkflow() {
     code("Materialize Images", "materialize-images.js")
     code("Prepare Design", "prepare-design.js")
     http("Edit Image", "={{ $('Configuration').first().json.imageUrl }}", ai, "={{ $json }}")
+    code("Apply Branding", "apply-branding.js")
     code("Render Result", "render-result.js")
     http("Callback Result", jobUrl("result"), backend, "={{ $json }}")
     http(
@@ -206,6 +207,7 @@ export function buildWorkflow() {
         "Materialize Images",
         "Prepare Design",
         "Edit Image",
+        "Apply Branding",
         "Render Result",
         "Callback Result"
     ]
