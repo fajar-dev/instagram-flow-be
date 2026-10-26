@@ -1,41 +1,34 @@
-# Desain postingan AI AMTI
+# Desain postingan AMTI
 
-Desain cover mengikuti referensi visual AMTI otomatis: foto utama dengan kolase pendukung hingga empat kandidat. Tidak ada pilihan template dalam form atau API. Tiga referensi wajib: contoh tata letak, logo horizontal AMTI dan logo Graha Survei Indonesia. Model tetap dapat menafsirkan komposisi; hasil harus ditinjau sebelum publish.
+AI hanya memperbaiki foto. Workflow n8n memasang logo asli, footer dan judul cover secara deterministik melalui **Apply Branding**. Backend menerima dan menyimpan JPEG akhir; tidak menggambar template.
 
 ## Alur
 
-n8n menganalisis foto satu per request, memilih kandidat, membuat judul/caption lalu memanggil endpoint gambar gateway dengan foto sumber. n8n mengunduh referensi presigned MinIO satu kali per URL dan memvalidasi JPEG/PNG. Node **Prepare Design** menyusun prompt faktual dan data gambar inline; **Edit Image** menghasilkan gambar; **Render Result** hanya membungkus hasil base64 ke callback. Tidak ada fallback SVG atau komposisi teks di backend bila model gagal.
+1. Analisis memilih cover dan menghasilkan caption/judul. Feed mengolah seluruh foto upload, Story satu foto cover.
+2. Prepare Design mengirim satu foto sumber per permintaan AI. Prompt melarang logo, teks, footer, panel dan kolase buatan model. Model boleh mengoreksi exposure, white balance, kontras dan noise serta crop proporsional, tanpa mengubah fakta lapangan.
+3. Apply Branding memakai Sharp di runner n8n. Foto dinormalisasi full bleed lebih dahulu, kemudian logo asli dan footer ditempel. Cover mendapat judul faktual dari Parse Caption; slide selanjutnya tidak mendapat judul.
+4. Render Result membuat callback dengan urutan cover terlebih dahulu. Backend memvalidasi raster dan menormalisasi JPEG; gambar dengan dimensi final tidak dipangkas ulang sehingga geometri branding tetap.
 
-Gateway Codex yang diuji menggunakan `/v1/images/generations`, model `cx/gpt-image-2`, dan parameter JSON `images` untuk edit berbasis referensi. Ini adapter khusus 9router, bukan kontrak multipart Images API resmi. Model pengarah internal memakai `gpt-6.1-sol`; lihat [runbook n8n](../operations/n8n.md). Model teks tetap terpisah (`cx/gpt-5.6-luna`).
+Feed: 1080×1350. Story: 1080×1920, header/footer bergeser ke area aman. Logo GSI berada pada panel putih yang menempel kiri, AMTI pada panel kanan dengan label Powered by. Logo menggunakan rasio asli dan contain, bukan generasi ulang AI. Footer satu baris: website, Instagram, WhatsApp, LinkedIn. Ikon vektor berada di source workflow dan dirasterisasi ke JPEG, bukan SVG dalam database.
 
-Callback menerima satu render per foto Feed (maksimal 19) atau satu render Story `format: jpeg`, `imageBase64`, asset ID dan output yang cocok dengan job. Backend membatasi body 64 MiB, base64 16 MiB / decoded 12 MiB, raster statis 40 megapixel dan sisi minimum 512 piksel. PNG/WebP/JPEG hasil provider didecode dan dinormalisasi ke JPEG Feed 1080×1350 atau Story 1080×1920 dengan crop tengah proporsional (cover), tanpa padding putih. Tepi putih seragam dipangkas dengan toleransi rendah sebelum resize; transparansi yang tersisa diratakan ke biru AMTI. Rasio yang berbeda dapat memangkas tepi desain, sehingga prompt meminta lettering/logo tetap aman di dalam panel. Backend tetap tidak menyusun desain atau menimpa foto asli. File disimpan di `renders/<uuid>.jpg` pada bucket MinIO yang sama. Database hanya metadata/hash, tidak menyimpan base64.
+Koordinat, ukuran, warna, label dan aturan judul berada di `integrations/n8n/nodes/apply-branding.js`. Seluruh slide menggunakan konfigurasi yang sama. Footer: amti.co.id, Amtiofficial, +62 821-7370-1845, Asset Monitoring Teknologi Indonesia. Font runtime harus DejaVu Sans agar layout konsisten lintas host. Judul panjang dibungkus dan font diperkecil; teks di-escape sebelum dimasukkan ke SVG internal.
 
-Penyimpanan dan preview render hanya menerima JPEG; SVG tidak didukung. Idempotency, claim ownership, validasi asset dan rollback objek tetap berlaku.
+## Runtime wajib
 
-## Review dan publikasi
+Runner JavaScript n8n memerlukan **sharp 0.35.5**, font DejaVu Sans, dan allowlist `NODE_FUNCTION_ALLOW_EXTERNAL=sharp`. Untuk external runner, set allowlist di `env-overrides` konfigurasi launcher, bukan hanya environment container. Lihat [deployment](../../DEPLOYMENT.md#runtime-branding-n8n) sebelum mengaktifkan workflow. Tanpa module/font yang disiapkan, jangan publish workflow baru.
 
-Review menampilkan semua gambar hasil edit AI. Cover memakai desain utama; foto Feed berikutnya diedit satu per satu dengan logo/footer saja. Pengguna memilih 1–10 gambar termasuk cover, mengubah urutan melalui drag handle atau tombol keyboard, lalu mengirim renderIds bersama caption/metadata. Metadata tidak mengubah piksel gambar. Tidak ada selector foto sumber/utama atau fallback foto mentah.
-
-Publish mengambil gambar hasil AI dari MinIO dan membuat snapshot JPEG immutable melalui alur publikasi yang sudah ada. n8n tidak memublikasikan langsung. Satu project tetap satu akun dan satu postingan.
-
-## Referensi visual
-
-Gaya mengikuti contoh AMTI yang disetujui pengguna: foto latar penuh, lapisan biru/cyan, headline pendek condensed italic putih/kuning, kolase diagonal bergutter putih, dua logo asli di header dan footer berikon website, Instagram, WhatsApp serta LinkedIn. Referensi hanya memberi tata letak; foto, nama proyek, logo partner dan kontak dari contoh dilarang disalin. Semua isi proyek harus berasal dari metadata/foto batch.
-
-Provisioning sebelum menjalankan workflow di lingkungan baru:
+Logo diunduh dari URL presigned bucket privat melalui Materialize Images. Provisioning aset tetap:
 
 ```sh
 bun run brand:upload /path/to/approved-design-reference.png /path/to/amti-logo.png /path/to/graha-survei-logo.jpeg
 ```
 
-Command memvalidasi referensi/AMTI PNG dan partner JPEG statis sebelum upload ke `brand/design-reference.png`, `brand/logo.png` dan `brand/partner-logo.jpeg` dalam bucket privat yang sama. Tidak ada file gambar referensi yang di-commit. Manifest service-authenticated memberi `designReferences.styleUrl` dan `logoUrl`/`partnerLogoUrl` presigned; workflow mengirimnya sebelum foto proyek dengan instruksi peran yang eksplisit. Referensi boleh diperbarui melalui command tersebut tanpa mengubah schema/credential. Ketika objek belum tersedia, generation gagal; tidak ada fallback desain polos.
+Referensi desain tetap tersedia dalam manifest untuk provisioning yang ada, tetapi tidak dikirim ke AI untuk menggambar branding. Logo disimpan pada `brand/logo.png` dan `brand/partner-logo.jpeg`. Tidak ada gambar/secret pengguna dalam Git. Logo hilang, hasil AI invalid atau seri tidak lengkap menyebabkan workflow gagal; tidak ada fallback logo generatif atau foto mentah.
 
-Footer memakai detail AMTI dari contoh pengguna: website amti.co.id, Instagram Amtiofficial, WhatsApp +62 821-7370-1845, LinkedIn Asset Monitoring Teknologi Indonesia. Setiap label disertai ikon yang dikenali; seluruh ikon dan label berada dalam satu baris tipis mengikuti referensi. Logo Graha Survei di kiri dan AMTI horizontal beserta tagline di kanan, tanpa komposisi logo oleh backend. Logo tetap hasil reproduksi model gambar, bukan penyisipan piksel deterministik.
+## Batas dan publikasi
 
-Logo header mengikuti panel yang menempel di tepi kiri/kanan dengan ujung dalam membulat dan ruang biru luas di tengah. Footer adalah satu pita putih tipis, empat ikon/label dalam satu baris, ujung kiri membulat dan ujung kanan menyentuh tepi. Tidak memakai grid 2×2 atau panel logo yang berdampingan di tengah.
+Callback tetap satu render per foto Feed (maksimal 19) atau satu Story. Backend membatasi body 64 MiB dan memvalidasi raster statis. Pengguna memilih 1–10 gambar untuk publikasi Feed dan mengatur urutannya; Story tepat satu. Snapshot publikasi immutable dan hasil lama tidak dimodifikasi.
 
-## Konsistensi dan kualitas foto
+Perubahan metadata di form publish tidak mengubah piksel judul cover. Preview harus diperiksa sebelum publish. n8n tidak memublikasikan langsung ke Instagram.
 
-Semua slide menerima aturan finishing yang sama: geometri logo/footer, skala logo, urutan ikon dan warna merek tetap. AI boleh memperbaiki exposure, white balance, highlight, shadow, kontras, noise dan ketajaman secara natural tanpa mengubah fakta lapangan. Foto harus memenuhi seluruh kanvas melalui crop/zoom proporsional; tidak ada letterbox atau bingkai putih luar. Panel logo/footer putih tetap bagian desain yang sah.
-
-Perubahan berlaku pada hasil callback baru; render lama dan snapshot publikasi tidak dimodifikasi. Workflow JSON harus diimpor/diperbarui di n8n dan backend dirilis agar keduanya berlaku. Konsistensi piksel logo tetap bergantung pada model; tidak ada jaminan reproduksi identik atau validasi visual otomatis terhadap semua hasil AI.
+Tes mencakup geometri header/footer antar-slide (toleransi kompresi JPEG), ukuran Feed/Story, logo wajib, routing workflow dan urutan render. Preview lokal memakai foto proyek dan logo asli; ini menguji compositor, bukan panggilan AI baru atau execution produksi.

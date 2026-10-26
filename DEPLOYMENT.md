@@ -602,3 +602,32 @@ Baseline development 23 Oktober 2026 langsung membuat `rejections`, `rejected_by
 ## Telegram opsional
 
 Isi TELEGRAM_BOT_TOKEN dan TELEGRAM_CHAT_ID pada environment backend/API dan worker yang sama; keduanya kosong menonaktifkan notifikasi. FRONTEND_URL harus URL frontend publik. Terapkan migration CreateJobNotifications1792490400013 sebelum restart API PM2 serta worker jobs:dispatch Supervisor. Tidak perlu merombak workflow n8n atau membuat worker tambahan. Notification token tidak boleh disimpan dalam workflow export. Lihat [setup, retry dan verifikasi Telegram](docs/features/telegram-notifications.md).
+
+## Runtime branding n8n
+
+Workflow dengan node **Apply Branding** memerlukan Sharp dan font pada **runtime JavaScript n8n**, bukan pada backend saja. Jangan import/publish workflow ini pada image n8n standar yang belum menyiapkan dependency tersebut.
+
+Gunakan external task runner dengan versi yang sama dengan n8n. Extend image runner yang dipin dan telah diuji; contoh Dockerfile untuk runner berbasis Alpine:
+
+```dockerfile
+ARG RUNNERS_IMAGE
+FROM ${RUNNERS_IMAGE}
+USER root
+RUN apk add --no-cache font-dejavu fontconfig
+RUN cd /opt/runners/task-runner-javascript && pnpm add --save-exact sharp@0.35.5
+COPY n8n-task-runners.json /etc/n8n-task-runners.json
+USER runner
+```
+
+Salin konfigurasi launcher bawaan versi runner yang digunakan. Pertahankan command, args, working directory, health check dan konfigurasi runner lain; tambahkan `"NODE_FUNCTION_ALLOW_EXTERNAL": "sharp"` pada `env-overrides` runner JavaScript. Jangan mengganti seluruh konfigurasi dengan potongan allowlist saja.
+
+Pada service n8n set `N8N_RUNNERS_MODE=external`, `N8N_RUNNERS_BROKER_LISTEN_ADDRESS=0.0.0.0` dan `N8N_RUNNERS_AUTH_TOKEN` privat. Sidecar runner memakai token yang sama serta `N8N_RUNNERS_TASK_BROKER_URI=http://n8n:5679`. Broker hanya jaringan Docker internal, tidak dipublikasikan ke internet. Pin image runner/n8n yang cocok dan pertahankan volume/encryption key lama.
+
+Sebelum mengganti workflow aktif:
+
+1. Backup workflow aktif dan konfigurasi container; tunggu execution berjalan selesai.
+2. Build/start runner baru. Verifikasi `require("sharp")` serta render SVG bertuliskan DejaVu Sans melalui **Code node n8n**, bukan hanya shell container.
+3. Import workflow baru ke lingkungan uji. Jalankan Feed dua foto dan Story satu foto; pastikan Apply Branding sukses dan backend menerima JPEG final.
+4. Periksa logo/footer pada output, baru publish workflow. Jika gagal, pulihkan workflow/image yang sudah dicadangkan.
+
+Referensi konfigurasi: [task runners resmi n8n](https://docs.n8n.io/hosting/configuration/task-runners/). Update ini tidak memerlukan migration database. Backend baru mempertahankan geometri JPEG final tanpa trim ulang; deploy backend bersamaan dengan workflow.

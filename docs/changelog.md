@@ -434,3 +434,7 @@ Kartu Total photos diganti Rejected setelah Publish. Overview API menambahkan re
 - Konfigurasi Telegram opsional melalui environment, dikirim oleh jobs:dispatch di luar transaksi callback. Tidak ada backfill notifikasi job lama.
 - Baseline dikonsolidasikan menjadi 14 CREATE TABLE, satu tabel per file. Migration ALTER/backfill notifikasi dihapus. Database lokal dicadangkan dan ledger diselaraskan tanpa menghapus konten; server tidak diubah.
 - Tes Telegram nyata mengonfirmasi satu pesan berisi cover dan 466 karakter caption/hashtag. Dokumentasi deployment dan operasi diperbarui.
+
+## 26 Oktober 2026 — Branding deterministik di n8n
+
+AI mengolah foto tanpa menulis logo/footer. Apply Branding menempel logo asli, footer sosial dan judul cover dengan geometri tetap sebelum callback. Backend mempertahankan kanvas final; ukuran Feed/Story dan alur publikasi tidak berubah. Runtime n8n membutuhkan Sharp dan font DejaVu, dengan panduan deployment di DEPLOYMENT.md. Tidak mengubah hasil lama atau schema database.
