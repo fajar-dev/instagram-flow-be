@@ -28,14 +28,17 @@ async function render(output: string, count: number, missing = false) {
     const ctx: Record<string, unknown> = {
         "Validate Event": { output },
         "Get Manifest": {
-            assets: Array.from({ length: count }),
+            assets: Array.from({ length: count }, (_, i) => ({
+                assetId: String(i),
+                renderImageUrl: "photo"
+            })),
             designReferences: { logoUrl: "amti", partnerLogoUrl: "gsi" }
         },
-        "Parse Caption": { title: "INSTALASI SHMS & MONITORING" },
         "Materialize Images": {
             images: missing
                 ? {}
                 : {
+                      photo: `data:image/jpeg;base64,${photo.toString("base64")}`,
                       amti: `data:image/png;base64,${logo.toString("base64")}`,
                       gsi: `data:image/png;base64,${logo.toString("base64")}`
                   }
@@ -65,8 +68,8 @@ test("Feed branding has identical header and footer pixels across cover and slid
     expect((await sharp(frames[0]).metadata()).width).toBe(1080)
     expect((await sharp(frames[0]).metadata()).height).toBe(1350)
     for (const area of [
-        { left: 0, top: 0, width: 1080, height: 144 },
-        { left: 0, top: 1248, width: 1080, height: 96 }
+        { left: 20, top: 32, width: 200, height: 80 },
+        { left: 100, top: 1270, width: 900, height: 26 }
     ]) {
         const pixels = await Promise.all(
             frames.map((frame: Buffer) => sharp(frame).extract(area).raw().toBuffer())
@@ -78,7 +81,8 @@ test("Feed branding has identical header and footer pixels across cover and slid
             ) / pixels[0].length
         expect(difference).toBeLessThan(1)
     }
-    expect(frames[0].equals(frames[1])).toBe(false)
+    // Identical AI input stays identical: no cover-only title, inset or replacement bands.
+    expect(frames[0].equals(frames[1])).toBe(true)
 })
 
 test("Story uses final 9:16 dimensions and requires the original logos", async () => {

@@ -2,7 +2,6 @@
 const sharp = require("sharp")
 const event = $("Validate Event").first().json
 const manifest = $("Get Manifest").first().json
-const content = $("Parse Caption").first().json
 const images = $("Materialize Images").first().json.images
 const references = manifest.designReferences
 const width = 1080
@@ -12,11 +11,6 @@ const footerY = event.output === "story" ? 1660 : 1260
 const svg = (body) =>
     Buffer.from(
         `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">${body}</svg>`
-    )
-const escape = (text) =>
-    String(text).replace(
-        /[&<>"']/g,
-        (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[char]
     )
 
 async function logo(url, targetWidth, targetHeight) {
@@ -49,31 +43,6 @@ const panels = svg(`<path fill="white" d="M0 ${headerY}H246a60 60 0 0 1 0 120H0Z
 <g transform="translate(662 ${footerY + 12})"><rect width="24" height="24" rx="2" fill="#087eb2"/><text x="3" y="19" font-family="DejaVu Sans" font-size="20" font-weight="bold" fill="white">in</text></g>
 <g fill="#222" font-family="DejaVu Sans" font-size="14"><text x="110" y="${footerY + 30}">amti.co.id</text><text x="283" y="${footerY + 30}">Amtiofficial</text><text x="463" y="${footerY + 30}">+62 821-7370-1845</text><text x="694" y="${footerY + 30}" font-size="12">Asset Monitoring Teknologi Indonesia</text></g>`)
 
-function titleLayer(title) {
-    const words = String(title).trim().toUpperCase().split(/\s+/)
-    const lines = []
-    let line = ""
-    for (const word of words) {
-        // Long unbroken titles are wrapped too; never silently truncate factual text.
-        for (const chunk of word.match(/.{1,30}/gu) || []) {
-            if ((line + " " + chunk).trim().length > 30) {
-                lines.push(line)
-                line = chunk
-            } else {
-                line = (line + " " + chunk).trim()
-            }
-        }
-    }
-    if (line) {
-        lines.push(line)
-    }
-    const size = Math.min(52, Math.floor(260 / Math.max(lines.length, 1)))
-    const y = headerY + 178
-    return svg(
-        `<defs><linearGradient id="shade" x2="0" y2="1"><stop stop-color="#103d60" stop-opacity=".82"/><stop offset="1" stop-color="#103d60" stop-opacity="0"/></linearGradient></defs><rect y="${headerY + 136}" width="1080" height="340" fill="url(#shade)"/>${lines.map((text, i) => `<text x="50" y="${y + i * (size + 8)}" font-family="DejaVu Sans" font-size="${size}" font-weight="bold" font-style="italic" fill="${i === 0 ? "white" : "#ffe229"}">${escape(text)}</text>`).join("")}`
-    )
-}
-
 const responses = $input.all()
 const expected = event.output === "feed" ? manifest.assets.length : 1
 if (responses.length !== expected) {
@@ -98,16 +67,18 @@ for (let index = 0; index < responses.length; index++) {
         throw new Error("AI photograph must be a static raster image")
     }
     const layers = [
-        ...(index === 0 ? [{ input: titleLayer(content.title), top: 0, left: 0 }] : []),
         { input: panels, top: 0, left: 0 },
         { input: partner, top: headerY + 12, left: 12 },
         { input: amti, top: headerY + 28, left: 813 }
     ]
-    const bytes = await sharp(input, { limitInputPixels: 40000000 })
-        .rotate()
-        .trim({ background: "#ffffff", threshold: 8 })
-        .resize(width, height, { fit: "cover", position: "centre" })
-        .flatten({ background: "#2e506f" })
+    const normalize = (bytes, targetWidth, targetHeight) =>
+        sharp(bytes, { limitInputPixels: 40000000 })
+            .rotate()
+            .trim({ background: "#ffffff", threshold: 8 })
+            .resize(targetWidth, targetHeight, { fit: "cover", position: "centre" })
+            .flatten({ background: "#2e506f" })
+    // One full-canvas AI image: never inset the artwork or replace its header/footer background.
+    const bytes = await normalize(input, width, height)
         .composite(layers)
         .jpeg({ quality: 92 })
         .toBuffer()

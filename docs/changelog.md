@@ -1,3 +1,13 @@
+## 26 Oktober 2026 — Cover portrait menyatu
+
+- Hapus inset artwork dan pita latar terpisah; gunakan satu gambar AI full bleed.
+- Tetapkan area judul di bawah logo, ukuran judul lebih seimbang dan maksimal dua foto kolase pendukung.
+
+## 26 Oktober 2026 — Cover desain AI
+
+- Kembalikan desain cover ke AI dengan referensi gaya dan maksimal tiga foto proyek; slide berikutnya tetap satu foto.
+- Hapus overlay judul buatan kode. Logo/footer tetap menggunakan aset asli dan koordinat tetap.
+
 ## 23 Oktober 2026 — Istilah keputusan konsisten
 
 - Ganti modul content-review menjadi content-draft, reviewStatus menjadi decisionStatus, dan endpoint daftar menjadi /api/drafts tanpa alias lama.
@@ -359,7 +369,7 @@ Cache Analytics dipindahkan dari memori proses ke Redis dengan TTL lima menit, l
 
 ## 21 Oktober 2026 — Pemulihan callback dan analisis foto
 
-Tunnel callback n8n lokal dipulihkan setelah port server 14000 tidak memiliki listener dan Claim Job mendapat 502. Analisis foto dibagi maksimal empat per request karena gateway mengembalikan respons kosong untuk upload 13 foto. Hasil digabung dan tetap wajib mencakup semua aset unik; respons kosong/tidak final ditolak dengan pesan yang jelas.
+Tunnel callback n8n lokal dipulihkan setelah port server 14000 tidak memiliki listener dan Claim Job mendapat 502. Analisis foto dibagi maksimal tiga per request karena gateway mengembalikan respons kosong untuk upload 13 foto. Hasil digabung dan tetap wajib mencakup semua aset unik; respons kosong/tidak final ditolak dengan pesan yang jelas.
 
 Verifikasi live: callback kembali terhubung dan Claim Job berhasil. Execution 21 memakai analisis bertahap: tiga dari empat respons berhasil, satu tetap kosong (in_progress, usage 0), sehingga job ditandai FAILED dengan benar. Belum ada hasil READY_FOR_REVIEW untuk upload ini; perbaikan gateway AI masih diperlukan. Suite 191 tes, typecheck, lint dan build lulus.
 

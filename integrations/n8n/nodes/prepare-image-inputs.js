@@ -1,9 +1,9 @@
 const manifest = $("Get Manifest").first().json
 const references = manifest.designReferences
-if (!references?.logoUrl || !references?.partnerLogoUrl) {
-    throw new Error("Both supplied logos are required")
+if (!references?.styleUrl || !references?.logoUrl || !references?.partnerLogoUrl) {
+    throw new Error("The style reference and both supplied logos are required")
 }
-const urls = [references.logoUrl, references.partnerLogoUrl]
+const urls = [references.styleUrl, references.logoUrl, references.partnerLogoUrl]
 const output = $("Validate Event").first().json.output
 const candidates = $("Parse Analysis").first().json.selectedAssetIds
 const assets =

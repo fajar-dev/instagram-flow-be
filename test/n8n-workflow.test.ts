@@ -116,15 +116,21 @@ describe("deployable n8n workflow", () => {
         expect(() => run("render-result", { data: [] })).toThrow()
         expect(() => run("render-result", { data: [{ url: "https://example.test" }] })).toThrow()
         const request = run("prepare-design", {})
-        expect(request.images).toEqual([imageData(manifest.assets[0]!.renderImageUrl)])
+        expect(request.images).toEqual([
+            imageData(manifest.designReferences.styleUrl),
+            imageData(manifest.assets[0]!.renderImageUrl)
+        ])
         expect(request.model).toBe("cx/gpt-image-2")
         expect(() =>
             run("parse-caption", response({ title: "", caption: "test", hashtags: [] }))
         ).toThrow()
     })
-    test("AI receives only source photos and branding stays in a separate node", () => {
+    test("AI designs the cover from the reference and branding stays in a separate node", () => {
         const request = run("prepare-design", {})
-        expect(request.images).toEqual([imageData(manifest.assets[0]!.renderImageUrl)])
+        expect(request.images).toEqual([
+            imageData(manifest.designReferences.styleUrl),
+            imageData(manifest.assets[0]!.renderImageUrl)
+        ])
         const workflow = buildWorkflow()
         expect(workflow.connections["Edit Image"].main[0][0].node).toBe("Apply Branding")
         expect(workflow.connections["Apply Branding"].main[0][0].node).toBe("Render Result")
@@ -277,7 +283,7 @@ test("analysis ranks all candidates even when a model declines to select a photo
 
 test("image references are downloaded once without sending service credentials to storage", () => {
     const inputs = runAll("prepare-image-inputs", {})
-    expect(inputs).toHaveLength(3)
+    expect(inputs).toHaveLength(4)
     const workflow = buildWorkflow()
     const download = workflow.nodes.find((node) => node.name === "Download Design Images")!
     expect(download.credentials).toBeUndefined()
@@ -310,4 +316,39 @@ test("materialized image inputs preserve bytes and reject non-image responses", 
     await expect(invoke(Buffer.from("<html>error</html>"))).rejects.toThrow("JPEG or PNG")
     await expect(invoke(jpeg, [])).rejects.toThrow("Incomplete")
     await expect(invoke(Buffer.alloc(12 * 1024 * 1024 + 1))).rejects.toThrow("size limit")
+})
+
+test("cover uses up to three selected photos while secondary slides remain photo-only", () => {
+    const previousAssets = manifest.assets
+    const previousSelection = analysis.selectedAssetIds
+    const previousOutput = event.output
+    try {
+        manifest.assets = Array.from({ length: 5 }, (_, i) => ({
+            assetId: crypto.randomUUID(),
+            aiImageUrl: `https://storage.test/${i}.jpg`,
+            renderImageUrl: `https://storage.test/${i}.jpg`
+        }))
+        analysis.selectedAssetIds = manifest.assets.map((asset) => asset.assetId).reverse()
+        const requests = runAll("prepare-design", {})
+        expect(requests[0].json.images).toEqual([
+            imageData(manifest.designReferences.styleUrl),
+            ...manifest.assets
+                .slice(2)
+                .reverse()
+                .map((asset) => imageData(asset.renderImageUrl))
+        ])
+        expect(requests[1].json.images).toEqual([imageData(manifest.assets[0]!.renderImageUrl)])
+        expect(requests[0].json.prompt).toContain("Approved factual content")
+        expect(requests[1].json.prompt).not.toContain("Approved factual content")
+        event.output = "story"
+        expect(runAll("prepare-design", {})).toHaveLength(1)
+        const downloads = runAll("prepare-image-inputs", {}).map((item: any) => item.json.url)
+        for (const photo of manifest.assets) {
+            expect(downloads).toContain(photo.renderImageUrl)
+        }
+    } finally {
+        manifest.assets = previousAssets
+        analysis.selectedAssetIds = previousSelection
+        event.output = previousOutput
+    }
 })
