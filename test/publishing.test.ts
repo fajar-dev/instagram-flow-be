@@ -10,7 +10,7 @@ import {
     createTestApp,
     destroyTestDatabase,
     initTestDatabase,
-    registerAndLogin,
+    createUserAndLogin,
     request
 } from "./setup"
 import {
@@ -61,7 +61,7 @@ afterAll(async () => {
 })
 
 async function fixture(output: "feed" | "story" = "feed") {
-    const auth = await registerAndLogin(app, {
+    const auth = await createUserAndLogin(app, {
         name: "Publisher",
         email: `${crypto.randomUUID()}@example.com`,
         password: "password123"
@@ -730,7 +730,7 @@ test("detail retains the publishing actor after another user cancels", async () 
     const key = crypto.randomUUID()
     const queued = await f.enqueue(f.payload, key)
     expect(queued.status).toBe(202)
-    const other = await registerAndLogin(app, {
+    const other = await createUserAndLogin(app, {
         name: "Canceller",
         email: "canceller@example.com",
         password: "password123"
@@ -766,7 +766,7 @@ test("detail retains the publishing actor after another user cancels", async () 
 
 test("rejection records the deciding user and replay does not replace them", async () => {
     const f = await fixture()
-    const other = await registerAndLogin(app, {
+    const other = await createUserAndLogin(app, {
         name: "Reviewer",
         email: "reviewer@example.com",
         password: "password123"

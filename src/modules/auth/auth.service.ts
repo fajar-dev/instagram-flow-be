@@ -1,7 +1,6 @@
 import type { MicrosoftCodeVerifier } from "./interfaces/microsoft-code-verifier.interface"
 import { User } from "../user/entities/user.entity"
 import {
-    RegisterValidator,
     LoginValidator,
     ForgotPasswordValidator,
     ResetPasswordValidator,
@@ -37,21 +36,6 @@ export class AuthService {
         private readonly microsoft: MicrosoftCodeVerifier,
         private readonly google: GoogleCodeVerifier
     ) {}
-
-    async register(data: RegisterValidator) {
-        if (data.email) {
-            const existing = await this.userService.getByEmail(data.email)
-            if (existing) {
-                throw new BadRequestException("Email already in use")
-            }
-        }
-
-        // Transaction dikelola di repository layer (bukan service)
-        return await this.userService.saveInTransaction({
-            ...data,
-            password: await hashPassword(data.password)
-        })
-    }
 
     async googleLogin(data: GoogleLoginValidator) {
         const payload = await this.google.verify(data.code)

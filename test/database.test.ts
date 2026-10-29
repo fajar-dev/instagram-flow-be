@@ -7,7 +7,7 @@ import {
     createTestApp,
     destroyTestDatabase,
     initTestDatabase,
-    registerAndLogin
+    createUserAndLogin
 } from "./setup"
 
 let app: Hono
@@ -105,7 +105,7 @@ describe("MySQL database integration", () => {
     })
 
     test("removed contact routes are unavailable to authenticated and anonymous users", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
         for (const auth of [undefined, headers]) {
             for (const [method, path] of [
                 ["GET", "/api/contact"],

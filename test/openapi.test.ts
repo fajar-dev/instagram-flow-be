@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test"
+import { format } from "prettier"
 import { createApp } from "../src/app"
 
 const document = Bun.YAML.parse(
@@ -60,4 +61,9 @@ test("OpenAPI references resolve and every operation declares responses", () => 
             }
         }
     }
+})
+
+test("Swagger YAML rejects duplicate mapping keys", async () => {
+    const source = await Bun.file(new URL("../swagger.yaml", import.meta.url)).text()
+    await expect(format(source, { parser: "yaml" })).resolves.toBeString()
 })

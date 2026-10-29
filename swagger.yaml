@@ -21,7 +21,7 @@ tags:
   - name: Reporting
   - name: Integration
   - name: Auth
-    description: Registration, login, session, and password management
+    description: Login, session, and password management for existing accounts
   - name: User
     description: User management for authenticated active users
   - name: Upload
@@ -359,14 +359,6 @@ components:
               message: { type: string, example: "Invalid email format" }
 
     # --- Auth Schemas ---
-    RegisterRequest:
-      type: object
-      required: [name, email, password]
-      properties:
-        name: { type: string, example: "Budi Santoso" }
-        email: { type: string, format: email, example: "budi@example.com" }
-        password: { type: string, minLength: 6, example: "secret123" }
-
     LoginRequest:
       type: object
       required: [email, password]
@@ -588,40 +580,6 @@ paths:
           description: Authentication required
         '422':
           description: Invalid query parameters
-  # ── Register ──────────────────────────────────────────────────────────────
-  /auth/register:
-    parameters:
-      - $ref: "#/components/parameters/AcceptLanguage"
-    post:
-      tags: [Auth]
-      summary: Register a new user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/RegisterRequest" }
-      responses:
-        "201":
-          description: User registered successfully
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/BaseResponse"
-                  - type: object
-                    properties:
-                      data: { $ref: "#/components/schemas/AuthUser" }
-        "400":
-          description: Email already in use
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ErrorResponse" }
-        "422":
-          description: Validation error
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ValidationError" }
-
   # ── Login ─────────────────────────────────────────────────────────────────
   /auth/login:
     parameters:
@@ -1736,6 +1694,7 @@ paths:
         notification per job. Delivery runs asynchronously in jobs:dispatch; a repeated
         identical callback does not enqueue another message. Telegram delivery failure
         does not change the accepted content result. No Telegram credentials are exposed.
+        Integration requests and responses use camelCase. Service bearer is distinct from user JWT.
       security:
         - n8nServiceAuth:
             []
@@ -1761,7 +1720,6 @@ paths:
           schema:
             type: string
             format: uuid
-      description: Integration requests and responses use camelCase. Service bearer is distinct from user JWT.
       requestBody:
         required: true
         content:

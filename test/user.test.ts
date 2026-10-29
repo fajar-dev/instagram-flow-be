@@ -7,7 +7,7 @@ import {
     cleanTestDatabase,
     createTestApp,
     request,
-    registerAndLogin
+    createUserAndLogin
 } from "./setup"
 import { createUserData, resetCounters } from "./helpers"
 
@@ -87,7 +87,7 @@ describe("User - Auth Required", () => {
 
 describe("POST /api/user", () => {
     test("should create a user successfully", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
         const userData = createUserData()
 
         const { status, body } = await request(app, "/api/user", {
@@ -109,7 +109,7 @@ describe("POST /api/user", () => {
     })
 
     test("should fail validation without name", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         const { status, body } = await request(app, "/api/user", {
             method: "POST",
@@ -122,7 +122,7 @@ describe("POST /api/user", () => {
     })
 
     test("should fail validation with invalid email", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         const { status, body } = await request(app, "/api/user", {
             method: "POST",
@@ -135,7 +135,7 @@ describe("POST /api/user", () => {
     })
 
     test("should fail validation with short password", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         const { status, body } = await request(app, "/api/user", {
             method: "POST",
@@ -148,7 +148,7 @@ describe("POST /api/user", () => {
     })
 
     test("should fail if email already in use", async () => {
-        const { headers, user } = await registerAndLogin(app) // this creates the first user
+        const { headers, user } = await createUserAndLogin(app) // this creates the first user
 
         const { status, body } = await request(app, "/api/user", {
             method: "POST",
@@ -172,7 +172,7 @@ describe("POST /api/user", () => {
 
 describe("GET /api/user", () => {
     test("should return list containing at least the logged in user", async () => {
-        const { headers, user } = await registerAndLogin(app)
+        const { headers, user } = await createUserAndLogin(app)
 
         const { status, body } = await request(app, "/api/user", {
             method: "GET",
@@ -194,7 +194,7 @@ describe("GET /api/user", () => {
     })
 
     test("should search users by name or email", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         await request(app, "/api/user", {
             method: "POST",
@@ -217,7 +217,7 @@ describe("GET /api/user", () => {
     })
 
     test("should sort by name ascending", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         await request(app, "/api/user", {
             method: "POST",
@@ -249,7 +249,7 @@ describe("GET /api/user", () => {
     })
 
     test("should sort by name descending", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         await request(app, "/api/user", {
             method: "POST",
@@ -286,7 +286,7 @@ describe("GET /api/user", () => {
 
 describe("GET /api/user/:id", () => {
     test("should return user by ID", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
         const userData = createUserData()
 
         const createRes = await request(app, "/api/user", {
@@ -310,7 +310,7 @@ describe("GET /api/user/:id", () => {
     })
 
     test("should return 404 for non-existent user", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         const { status, body } = await request(app, "/api/user/99999", {
             method: "GET",
@@ -329,7 +329,7 @@ describe("GET /api/user/:id", () => {
 
 describe("PUT /api/user/:id", () => {
     test("should update user details successfully", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         const createRes = await request(app, "/api/user", {
             method: "POST",
@@ -358,7 +358,7 @@ describe("PUT /api/user/:id", () => {
 
 describe("DELETE /api/user/:id", () => {
     test("should delete user successfully", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         const createRes = await request(app, "/api/user", {
             method: "POST",
@@ -391,7 +391,7 @@ describe("DELETE /api/user/:id", () => {
 
 describe("POST /api/upload", () => {
     test("should upload a file successfully and return path", async () => {
-        const { accessToken } = await registerAndLogin(app)
+        const { accessToken } = await createUserAndLogin(app)
 
         const formData = new FormData()
         const fileContent = await sharp({
@@ -422,7 +422,7 @@ describe("POST /api/upload", () => {
 })
 
 test("avatar endpoint rejects corrupt bytes before storing and shares PATCH CORS", async () => {
-    const { headers } = await registerAndLogin(app)
+    const { headers } = await createUserAndLogin(app)
     const form = new FormData()
     form.append("file", new File(["not an image"], "avatar.png", { type: "image/png" }))
     const response = await app.request("/api/upload", { method: "POST", headers, body: form })

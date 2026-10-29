@@ -11,7 +11,7 @@ import {
     createTestApp,
     destroyTestDatabase,
     initTestDatabase,
-    registerAndLogin,
+    createUserAndLogin,
     request
 } from "./setup"
 
@@ -70,7 +70,7 @@ describe("Audit regressions", () => {
     })
 
     test("dispatcher control validates readiness, persists toggles and excludes deployment details", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
         const original = {
             n8n: { ...config.n8n },
             media: { ...config.media },
@@ -119,7 +119,7 @@ describe("Audit regressions", () => {
 
     test("upload limits come from runtime configuration and require authentication", async () => {
         expect((await app.request("/api/batches/limits")).status).toBe(401)
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
         const previous = config.media.maxUploadMb
         try {
             config.media.maxUploadMb = 7
@@ -136,7 +136,7 @@ describe("Audit regressions", () => {
     })
 
     test("empty and out-of-range pagination uses a zero range", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
         const empty = await request(app, "/api/user?q=not-a-matching-user", { headers })
         expect(empty.body.meta).toMatchObject({ total: 0, from: 0, to: 0 })
         const outside = await request(app, "/api/user?page=99&limit=10", { headers })
@@ -145,7 +145,7 @@ describe("Audit regressions", () => {
     })
 
     test("reporting queries use the route validation envelope", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
         for (const route of ["overview", "jobs", "drafts", "media", "audit-logs"]) {
             const result = await request(app, `/api/${route}?page=0&limit=101`, { headers })
             expect(result.status).toBe(422)
@@ -155,12 +155,12 @@ describe("Audit regressions", () => {
     })
 
     test("users have no role field or database column and share management access", async () => {
-        const first = await registerAndLogin(app, {
+        const first = await createUserAndLogin(app, {
             name: "First",
             email: "first@example.com",
             password: "password123"
         })
-        const second = await registerAndLogin(app, {
+        const second = await createUserAndLogin(app, {
             name: "Second",
             email: "second@example.com",
             password: "password123"
@@ -182,7 +182,7 @@ describe("Audit regressions", () => {
     })
 
     test("inactive accounts cannot use existing access or refresh tokens", async () => {
-        const { user, headers, refreshToken } = await registerAndLogin(app)
+        const { user, headers, refreshToken } = await createUserAndLogin(app)
         await AppDataSource.getRepository(User).update(user.id, { isActive: false })
         expect((await request(app, "/api/auth/me", { headers })).status).toBe(401)
         expect(
@@ -192,12 +192,12 @@ describe("Audit regressions", () => {
     })
 
     test("protected routes keep domain errors instead of converting them to 401", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
         expect((await request(app, "/api/user/999999999", { headers })).status).toBe(404)
     })
 
     test("profile photo null clears the persisted photo", async () => {
-        const { user, headers } = await registerAndLogin(app)
+        const { user, headers } = await createUserAndLogin(app)
         await AppDataSource.getRepository(User).update(user.id, { photo: "users/avatar.png" })
         const result = await request(app, "/api/auth/profile", {
             method: "PUT",
@@ -212,7 +212,7 @@ describe("Audit regressions", () => {
     })
 
     test("reset email preserves plus addresses and HTML escapes user names", async () => {
-        const { user } = await registerAndLogin(app, {
+        const { user } = await createUserAndLogin(app, {
             name: "<script>alert(1)</script>",
             email: "user+reset@example.com",
             password: "password123"
@@ -249,7 +249,7 @@ describe("Audit regressions", () => {
     })
 
     test("SMTP failure is reported instead of claiming the email was sent", async () => {
-        const { user } = await registerAndLogin(app)
+        const { user } = await createUserAndLogin(app)
         const send = spyOn(mail, "sendHtml").mockRejectedValue(
             new InternalServerException("Failed to send email")
         )

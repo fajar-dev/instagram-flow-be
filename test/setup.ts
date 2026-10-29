@@ -1,5 +1,7 @@
 import { mockExternalServices, restoreExternalServices } from "./external-services"
 import "reflect-metadata"
+import { User } from "../src/modules/user/entities/user.entity"
+import { hashPassword } from "../src/core/helpers/hash"
 import { Hono } from "hono"
 import { DataSource } from "typeorm"
 import { config } from "../src/config/config"
@@ -102,15 +104,21 @@ export async function request(app: Hono, path: string, options: RequestOptions =
 
 // ── Auth Helper ─────────────────────────────────────────────────────────────
 
-export async function registerAndLogin(
+export async function createTestUser(
+    data = { name: "Test User", email: "test@example.com", password: "password123" }
+) {
+    return TestDataSource.getRepository(User).save({
+        ...data,
+        password: await hashPassword(data.password),
+        isActive: true
+    })
+}
+
+export async function createUserAndLogin(
     app: Hono,
     userData = { name: "Test User", email: "test@example.com", password: "password123" }
 ) {
-    // Register
-    const regRes = await request(app, "/api/auth/register", { method: "POST", body: userData })
-    if (!regRes.body.success) {
-        throw new Error(`Register failed: ${JSON.stringify(regRes.body)}`)
-    }
+    await createTestUser(userData)
 
     // Login
     const loginRes = await request(app, "/api/auth/login", {

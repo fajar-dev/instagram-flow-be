@@ -5,7 +5,8 @@ import {
     destroyTestDatabase,
     cleanTestDatabase,
     createTestApp,
-    request
+    request,
+    createTestUser
 } from "./setup"
 import { createUserData, resetCounters } from "./helpers"
 import en from "../src/core/i18n/en.json"
@@ -79,24 +80,28 @@ describe("Language detection", () => {
 
 describe("Localized response messages", () => {
     test("success message is translated to Indonesian", async () => {
-        const { status, body } = await request(app, "/api/auth/register", {
+        const userData = createUserData()
+        await createTestUser(userData)
+        const { status, body } = await request(app, "/api/auth/login", {
             method: "POST",
             headers: { "Accept-Language": "id" },
-            body: createUserData()
+            body: userData
         })
 
-        expect(status).toBe(201)
-        expect(body.message).toBe("Registrasi berhasil")
+        expect(status).toBe(200)
+        expect(body.message).toBe("Berhasil masuk")
     })
 
     test("success message stays in English by default", async () => {
-        const { status, body } = await request(app, "/api/auth/register", {
+        const userData = createUserData()
+        await createTestUser(userData)
+        const { status, body } = await request(app, "/api/auth/login", {
             method: "POST",
-            body: createUserData()
+            body: userData
         })
 
-        expect(status).toBe(201)
-        expect(body.message).toBe("User registered successfully")
+        expect(status).toBe(200)
+        expect(body.message).toBe("Logged in successfully")
     })
 
     test("exception message is translated to Indonesian", async () => {
@@ -109,16 +114,18 @@ describe("Localized response messages", () => {
     })
 
     test("validation field messages are translated to Indonesian", async () => {
-        const { status, body } = await request(app, "/api/auth/register", {
+        const userData = createUserData()
+        await createTestUser(userData)
+        const { status, body } = await request(app, "/api/auth/login", {
             method: "POST",
             headers: { "Accept-Language": "id" },
-            body: { name: "", email: "not-an-email", password: "123" }
+            body: { email: "not-an-email", password: "" }
         })
 
         expect(status).toBe(422)
         expect(body.message).toBe("Validasi gagal")
-        const nameError = body.errors.find((e: any) => e.field === "name")
-        expect(nameError.message).toBe("Nama wajib diisi")
+        const passwordError = body.errors.find((e: any) => e.field === "password")
+        expect(passwordError.message).toBe("Kata sandi wajib diisi")
     })
 })
 

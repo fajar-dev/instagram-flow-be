@@ -51,10 +51,6 @@ export class UserService {
         return await this.repository.save(data)
     }
 
-    async saveInTransaction(data: Partial<User>): Promise<User> {
-        return await this.repository.saveInTransaction(data)
-    }
-
     async create(input: Partial<User>): Promise<User> {
         const data = { ...input }
         if (data.email) {

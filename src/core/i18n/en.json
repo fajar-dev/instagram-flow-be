@@ -18,7 +18,6 @@
         "Job cannot be retried": "Job cannot be retried"
     },
     "auth": {
-        "User registered successfully": "User registered successfully",
         "Logged in successfully": "Logged in successfully",
         "Logged out successfully": "Logged out successfully",
         "Token refreshed successfully": "Token refreshed successfully",

@@ -30,7 +30,6 @@ import { zValidator } from "@hono/zod-validator"
 
 // ── Validators ──────────────────────────────────────────────────────────────
 import {
-    RegisterValidator,
     LoginValidator,
     ForgotPasswordValidator,
     ResetPasswordValidator,
@@ -54,9 +53,6 @@ import { userController } from "../modules/user/user.module"
 const routes = new Hono()
 
 // Auth
-routes.post("/auth/register", zValidator("json", RegisterValidator, validationHook), (c) =>
-    authController.register(c)
-)
 routes.post("/auth/login", zValidator("json", LoginValidator, validationHook), (c) =>
     authController.login(c)
 )

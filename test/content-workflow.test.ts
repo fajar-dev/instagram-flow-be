@@ -8,7 +8,7 @@ import {
     destroyTestDatabase,
     cleanTestDatabase,
     createTestApp,
-    registerAndLogin,
+    createUserAndLogin,
     request
 } from "./setup"
 import { AppDataSource } from "../src/config/database"
@@ -49,7 +49,7 @@ const serviceHeaders = { Authorization: "Bearer test-service-token" }
 const metadata = createBatchData()
 
 async function actor(email: string) {
-    const session = await registerAndLogin(app, {
+    const session = await createUserAndLogin(app, {
         name: "Content test",
         email,
         password: "password123"
@@ -249,7 +249,7 @@ describe("Content workflow", () => {
     })
 
     test("process accepts only a single output and rejects the old list contract", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
         const b = await batch(headers)
         await upload(b.id, headers)
         for (const body of [

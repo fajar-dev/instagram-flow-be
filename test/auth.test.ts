@@ -8,7 +8,8 @@ import {
     cleanTestDatabase,
     createTestApp,
     request,
-    registerAndLogin
+    createUserAndLogin,
+    createTestUser
 } from "./setup"
 import { createUserData, resetCounters } from "./helpers"
 
@@ -31,86 +32,20 @@ beforeEach(async () => {
 })
 
 // ═══════════════════════════════════════════════════════════════════════════
-// POST /api/auth/register
-// ═══════════════════════════════════════════════════════════════════════════
-
-describe("POST /api/auth/register", () => {
-    test("should register a new user successfully", async () => {
-        const userData = createUserData()
-
-        const { status, body } = await request(app, "/api/auth/register", {
-            method: "POST",
-            body: userData
-        })
-
-        expect(status).toBe(201)
-        expect(body.success).toBe(true)
-        expect(body.statusCode).toBe(201)
-        expect(body.message).toBe("User registered successfully")
-        expect(body.data).toBeDefined()
-        expect(body.data.email).toBe(userData.email)
-        expect(body.data.name).toBe(userData.name)
-        expect(body.data.id).toBeDefined()
-        // Password should NOT be in response
-        expect(body.data.password).toBeUndefined()
+// Public registration is intentionally unavailable.
+test("public registration is not available", async () => {
+    const response = await app.request("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(createUserData())
     })
-
-    test("should fail when email is already registered", async () => {
-        const userData = createUserData()
-
-        // Register first time
-        await request(app, "/api/auth/register", { method: "POST", body: userData })
-
-        // Register again with same email
-        const { status, body } = await request(app, "/api/auth/register", {
-            method: "POST",
-            body: userData
-        })
-
-        expect(status).toBe(400)
-        expect(body.success).toBe(false)
-        expect(body.message).toBe("Email already in use")
-    })
-
-    test("should fail validation when name is missing", async () => {
-        const { status, body } = await request(app, "/api/auth/register", {
-            method: "POST",
-            body: { email: "test@example.com", password: "password123" }
-        })
-
-        expect(status).toBe(422)
-        expect(body.success).toBe(false)
-    })
-
-    test("should fail validation when email is invalid", async () => {
-        const { status, body } = await request(app, "/api/auth/register", {
-            method: "POST",
-            body: { name: "Test", email: "not-an-email", password: "password123" }
-        })
-
-        expect(status).toBe(422)
-        expect(body.success).toBe(false)
-    })
-
-    test("should fail validation when password is too short", async () => {
-        const { status, body } = await request(app, "/api/auth/register", {
-            method: "POST",
-            body: { name: "Test", email: "test@example.com", password: "123" }
-        })
-
-        expect(status).toBe(422)
-        expect(body.success).toBe(false)
-    })
+    expect(response.status).toBe(404)
 })
-
-// ═══════════════════════════════════════════════════════════════════════════
-// POST /api/auth/login
-// ═══════════════════════════════════════════════════════════════════════════
 
 describe("POST /api/auth/login", () => {
     test("should login successfully with valid credentials", async () => {
         const userData = createUserData()
-        await request(app, "/api/auth/register", { method: "POST", body: userData })
+        await createTestUser(userData)
 
         const { status, body } = await request(app, "/api/auth/login", {
             method: "POST",
@@ -141,7 +76,7 @@ describe("POST /api/auth/login", () => {
 
     test("should fail with wrong password", async () => {
         const userData = createUserData()
-        await request(app, "/api/auth/register", { method: "POST", body: userData })
+        await createTestUser(userData)
 
         const { status, body } = await request(app, "/api/auth/login", {
             method: "POST",
@@ -179,7 +114,7 @@ describe("POST /api/auth/login", () => {
 
 describe("POST /api/auth/refresh", () => {
     test("should refresh token successfully", async () => {
-        const { refreshToken } = await registerAndLogin(app)
+        const { refreshToken } = await createUserAndLogin(app)
 
         const { status, body } = await request(app, "/api/auth/refresh", {
             method: "POST",
@@ -221,7 +156,7 @@ describe("POST /api/auth/refresh", () => {
 
 describe("GET /api/auth/me", () => {
     test("should return current user profile", async () => {
-        const { headers, user } = await registerAndLogin(app)
+        const { headers, user } = await createUserAndLogin(app)
 
         const { status, body } = await request(app, "/api/auth/me", {
             method: "GET",
@@ -265,7 +200,7 @@ describe("GET /api/auth/me", () => {
 
 describe("POST /api/auth/logout", () => {
     test("should logout successfully", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         const { status, body } = await request(app, "/api/auth/logout", {
             method: "POST",
@@ -294,7 +229,7 @@ describe("POST /api/auth/logout", () => {
 describe("POST /api/auth/forgot-password", () => {
     test("should send reset email for registered user", async () => {
         const userData = createUserData()
-        await request(app, "/api/auth/register", { method: "POST", body: userData })
+        await createTestUser(userData)
 
         const { status, body } = await request(app, "/api/auth/forgot-password", {
             method: "POST",
@@ -411,15 +346,11 @@ describe("POST /api/auth/reset-password", () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe("Full Auth Flow", () => {
-    test("Register → Login → Me → Refresh → Logout", async () => {
+    test("Existing account → Login → Me → Refresh → Logout", async () => {
         const userData = createUserData()
 
-        // 1. Register
-        const registerRes = await request(app, "/api/auth/register", {
-            method: "POST",
-            body: userData
-        })
-        expect(registerRes.status).toBe(201)
+        // Provision an existing account before authentication.
+        await createTestUser(userData)
 
         // 2. Login
         const loginRes = await request(app, "/api/auth/login", {
@@ -467,7 +398,7 @@ describe("Full Auth Flow", () => {
 
 describe("PUT /api/auth/profile", () => {
     test("should update profile details successfully", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         const { status, body } = await request(app, "/api/auth/profile", {
             method: "PUT",
@@ -483,7 +414,7 @@ describe("PUT /api/auth/profile", () => {
     })
 
     test("should sanitize and accept absolute photo URLs to prevent nested paths", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         // 1. Update profile with a relative photo path
         const res1 = await request(app, "/api/auth/profile", {
@@ -512,11 +443,11 @@ describe("PUT /api/auth/profile", () => {
     })
 
     test("should fail with duplicate email", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
-        // register user 2
+        // Create user 2
         const user2Data = createUserData()
-        await request(app, "/api/auth/register", { method: "POST", body: user2Data })
+        await createTestUser(user2Data)
 
         // try to change user 1's email to user 2's email
         const { status, body } = await request(app, "/api/auth/profile", {
@@ -537,7 +468,7 @@ describe("PUT /api/auth/profile", () => {
 
 describe("PUT /api/auth/password", () => {
     test("should update password successfully when old password matches", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         const { status, body } = await request(app, "/api/auth/password", {
             method: "PUT",
@@ -551,7 +482,7 @@ describe("PUT /api/auth/password", () => {
     })
 
     test("should fail to update password when old password does not match", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         const { status, body } = await request(app, "/api/auth/password", {
             method: "PUT",
@@ -565,7 +496,7 @@ describe("PUT /api/auth/password", () => {
     })
 
     test("should fail validation with short password", async () => {
-        const { headers } = await registerAndLogin(app)
+        const { headers } = await createUserAndLogin(app)
 
         const { status, body } = await request(app, "/api/auth/password", {
             method: "PUT",
@@ -580,7 +511,7 @@ describe("PUT /api/auth/password", () => {
 
 describe("Microsoft login", () => {
     test("uses the registered active account and returns the standard session", async () => {
-        const { user } = await registerAndLogin(app)
+        const { user } = await createUserAndLogin(app)
         const verify = spyOn(MicrosoftAuthAdapter.prototype, "verify").mockResolvedValue({
             email: user.email
         })

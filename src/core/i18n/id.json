@@ -18,7 +18,6 @@
         "Job cannot be retried": "Pekerjaan ini tidak dapat dicoba ulang"
     },
     "auth": {
-        "User registered successfully": "Registrasi berhasil",
         "Logged in successfully": "Berhasil masuk",
         "Logged out successfully": "Berhasil keluar",
         "Token refreshed successfully": "Token berhasil diperbarui",

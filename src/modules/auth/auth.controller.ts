@@ -7,13 +7,6 @@ import { BadRequestException } from "../../core/exceptions/base"
 export class AuthController {
     constructor(private readonly service: AuthService) {}
 
-    async register(c: Context) {
-        const body = c.req.valid("json" as never)
-        const user = await this.service.register(body)
-        const serialized = await AuthSerializer.single(user)
-        return ApiResponse.success(c, serialized, "User registered successfully", 201)
-    }
-
     private async sessionResponse(
         c: Context,
         data: Awaited<ReturnType<AuthService["login"]>>,

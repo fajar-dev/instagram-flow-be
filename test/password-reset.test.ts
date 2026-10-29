@@ -10,7 +10,7 @@ import {
     createTestApp,
     destroyTestDatabase,
     initTestDatabase,
-    registerAndLogin,
+    createUserAndLogin,
     request
 } from "./setup"
 
@@ -32,7 +32,7 @@ const validate = (email: string, token: string) =>
 
 describe("Password reset token storage", () => {
     test("forgot password stores hashes and resends without invalidating previous links", async () => {
-        const { user } = await registerAndLogin(app)
+        const { user } = await createUserAndLogin(app)
         const sent: string[] = []
         const sendMail = spyOn(mail, "sendHtml").mockImplementation(
             async (_to, _subject, html, text) => {
@@ -76,7 +76,7 @@ describe("Password reset token storage", () => {
     })
 
     test("valid link changes the password and cannot be reused", async () => {
-        const { user } = await registerAndLogin(app)
+        const { user } = await createUserAndLogin(app)
         const token = await createPasswordResetToken(user.id, user.email)
         expect((await validate("other@example.com", token)).status).toBe(400)
         expect((await validate(user.email, token)).status).toBe(200)
@@ -100,7 +100,7 @@ describe("Password reset token storage", () => {
     })
 
     test("expired links are rejected by validation and reset", async () => {
-        const { user } = await registerAndLogin(app)
+        const { user } = await createUserAndLogin(app)
         const token = await createPasswordResetToken(
             user.id,
             user.email,
@@ -111,15 +111,15 @@ describe("Password reset token storage", () => {
     })
 
     test("concurrent requests can consume a token only once", async () => {
-        const { user } = await registerAndLogin(app)
+        const { user } = await createUserAndLogin(app)
         const token = await createPasswordResetToken(user.id, user.email)
         const results = await Promise.all([reset(token), reset(token)])
         expect(results.map((result) => result.status).sort()).toEqual([200, 400])
     })
 
     test("reset deletes all tokens for this user including expired tokens but preserves other users", async () => {
-        const { user } = await registerAndLogin(app)
-        const other = await registerAndLogin(app, {
+        const { user } = await createUserAndLogin(app)
+        const other = await createUserAndLogin(app, {
             name: "Other User",
             email: "other@example.com",
             password: "password123"
@@ -144,7 +144,7 @@ describe("Password reset token storage", () => {
     })
 
     test("concurrent resets using different tokens for the same user succeed only once", async () => {
-        const { user } = await registerAndLogin(app)
+        const { user } = await createUserAndLogin(app)
         const first = await createPasswordResetToken(user.id, user.email)
         const second = await createPasswordResetToken(user.id, user.email)
         const results = await Promise.all([reset(first), reset(second)])
@@ -153,7 +153,7 @@ describe("Password reset token storage", () => {
     })
 
     test("deleting a user cascades to their reset token", async () => {
-        const { user, headers } = await registerAndLogin(app)
+        const { user, headers } = await createUserAndLogin(app)
         await createPasswordResetToken(user.id, user.email)
         expect(
             (await request(app, `/api/user/${user.id}`, { method: "DELETE", headers })).status

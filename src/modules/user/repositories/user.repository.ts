@@ -96,12 +96,6 @@ export class TypeOrmUserRepository implements IUserRepository {
         return this.repository.merge(entity, data)
     }
 
-    async saveInTransaction(data: Partial<User>): Promise<User> {
-        return AppDataSource.transaction(async (manager) => {
-            return await manager.getRepository(User).save(data)
-        })
-    }
-
     async delete(id: number): Promise<void> {
         await this.repository.delete(id)
     }

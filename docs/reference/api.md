@@ -24,7 +24,6 @@ Daftar ini dicocokkan dengan registrasi route pada 21 Oktober 2026. Perbarui saa
 
 | Method | Path | Akses |
 | --- | --- | --- |
-| POST | `/api/auth/register` | Publik |
 | POST | `/api/auth/login` | Publik |
 | POST | `/api/auth/google` | Publik |
 | POST | `/api/auth/microsoft` | Publik |

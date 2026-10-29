@@ -2,6 +2,10 @@
 
 Login password, Google dan Microsoft menghasilkan kontrak sesi yang sama: user, accessToken dan refreshToken. Login sosial hanya menerima email akun yang sudah terdaftar dan aktif; tidak membuat pengguna otomatis. Microsoft memakai identitas dari respons MSAL dan pencocokan email pengguna lokal, bukan provisioning atau sinkronisasi Microsoft Graph.
 
+## Akun internal
+
+Tidak ada registrasi publik. Akun dibuat melalui endpoint CRUD User yang memerlukan sesi pengguna aktif, atau seeder untuk bootstrap. POST `/api/auth/register` tidak tersedia (404). Login email, Google, Microsoft dan reset password tetap memakai akun yang sudah ada.
+
 ## Microsoft popup
 
 1. Klik login membuka popup sebelum operasi asynchronous agar tidak diblokir browser.
