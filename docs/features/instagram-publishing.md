@@ -35,7 +35,7 @@ Worker memeriksa pekerjaan sekitar setiap tiga detik. Production memerlukan proc
 
 ## Alur UI
 
-Buka Content yang READY_FOR_REVIEW. Form langsung mengikuti output job yang dipilih sejak upload, bukan memilih placement lagi. Feed menyediakan caption, hashtag, metadata dan foto. Story menyediakan foto/sumber desain tanpa caption/hashtag posting; payload Story harus mengirim caption kosong dan hashtag kosong. Keduanya memilih satu akun, sumber foto/desain, dan Post sekarang atau Jadwalkan. Output request yang berbeda dengan job ditolak. Tanggal/jam input adalah WIB; server menyimpan UTC. Izin publikasi batch harus sudah diberikan.
+Buka Content yang READY_FOR_REVIEW. Form langsung mengikuti output job yang dipilih sejak upload, bukan memilih placement lagi. Feed menyediakan caption, hashtag, metadata dan foto. Story menyediakan foto/sumber desain tanpa caption/hashtag posting; payload Story harus mengirim caption kosong dan hashtag kosong. Keduanya memilih satu akun, sumber foto/desain, dan Post sekarang atau Jadwalkan. Output request yang berbeda dengan job ditolak. Tanggal/jam input adalah WIB; server menyimpan UTC. Seluruh dokumentasi internal telah diizinkan; tidak ada checkbox izin publikasi.
 
 Form memilih renderIds hasil edit AI dalam urutan publikasi. Foto sumber mentah tidak menjadi opsi publikasi. Caption/hashtag dan metadata boleh diedit tanpa merender ulang gambar. Backend tidak menggambar ulang desain. Caption feed menggabungkan caption dan hashtag (maksimal 2.200 karakter). Caption tidak dikirim sebagai teks Story.
 
@@ -58,7 +58,7 @@ Status: QUEUED, SCHEDULED, PROCESSING, PUBLISHING, PUBLISHED, FAILED, UNKNOWN, C
 
 ## Cakupan pengujian
 
-Test memakai MySQL terisolasi dan adapter Meta/MinIO terkontrol: auth, JSON redaction, snapshot JPEG, idempotency paralel, satu publikasi per project, balapan Publish/Reject, hash konten/consent, scheduling/cancel, worker concurrent, timeout reconciliation dan retry. Live publishing diuji pada 19 Oktober 2026 menggunakan konten sintetis di akun @fajar_chngo. Bukti dan batas pengujian dicatat di docs/archive/audits/audit-instagram-2026-10-19.md.
+Test memakai MySQL terisolasi dan adapter Meta/MinIO terkontrol: auth, JSON redaction, snapshot JPEG, idempotency paralel, satu publikasi per project, balapan Publish/Reject, hash konten, scheduling/cancel, worker concurrent, timeout reconciliation dan retry. Live publishing diuji pada 19 Oktober 2026 menggunakan konten sintetis di akun @fajar_chngo. Bukti dan batas pengujian dicatat di docs/archive/audits/audit-instagram-2026-10-19.md.
 
 Feed mendukung 1–10 gambar per postingan; Story tepat satu gambar. Reels/video, onboarding OAuth dan penyegaran token otomatis belum diimplementasikan. Rate limit/permission tetap diputuskan Meta; UI Periksa koneksi bukan tes publish.
 

@@ -1328,10 +1328,6 @@ paths:
                   default: ""
                   type: string
                   maxLength: 200
-                publicationPermission:
-                  type: boolean
-                  enum:
-                    - true
               required:
                 - projectName
                 - activity
@@ -1339,7 +1335,6 @@ paths:
                 - documentationDate
                 - description
                 - clientName
-                - publicationPermission
               additionalProperties: false
   "/batches/{batchId}":
     parameters:

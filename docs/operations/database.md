@@ -4,7 +4,7 @@ Backend memakai MySQL, TypeORM dan mysql2. `synchronize` selalu false, termasuk 
 
 ## Schema aktif
 
-Registrasi berada di `src/database/migrations/index.ts`: **14 migration, 14 tabel domain** (baseline schema final).
+Registrasi berada di `src/database/migrations/index.ts`: **15 migration, 14 tabel domain** (14 baseline dan satu perubahan schema).
 
 - 1792490400000–1792490400013: users, password_reset_tokens, batches, assets, jobs, job_dispatches, ai_results, renders, drafts, rejections, audit_logs, settings, publications, job_notifications.
 
@@ -44,3 +44,7 @@ CreateJobNotifications1792490400013 langsung membuat schema final notifikasi, te
 ## Konsolidasi lokal 25 Oktober 2026
 
 Seluruh schema memakai 14 migration CREATE TABLE berurutan, satu tabel per file. Notifikasi langsung memiliki parts dan next_part; migration ALTER/backfill sementara dihapus. Database lokal dicadangkan secara privat sebelum dua ledger notifikasi diselaraskan ke CreateJobNotifications1792490400013. Schema final dan tidak adanya migration pending diverifikasi; data domain tidak dihapus. Server tidak diubah. Database dengan ledger percobaan lama memerlukan rekonsiliasi terverifikasi atau pembuatan ulang setelah backup.
+
+## Penghapusan konfirmasi izin — 30 Oktober 2026
+
+Jalankan `bun run migration:run` sebelum merilis backend terbaru. Migration RemoveBatchConsent menghapus publication_permission, consent_by dan consent_at; uploader dan audit publikasi tetap tersimpan. Cadangkan database sebelum menjalankan migration karena catatan konfirmasi lama dihapus. Rollback mengembalikan kolom dengan izin false dan metadata null, bukan merekonstruksi konfirmasi historis.

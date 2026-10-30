@@ -26,15 +26,6 @@ export class Batch {
     @Column({ type: "varchar", name: "client_name", length: 200 })
     clientName!: string
 
-    @Column({ type: "boolean", name: "publication_permission" })
-    publicationPermission!: boolean
-
-    @Column({ type: "int", name: "consent_by" })
-    consentBy!: number
-
-    @Column({ type: "datetime", name: "consent_at", precision: 6 })
-    consentAt!: Date
-
     @Column({ type: "varchar", name: "status", length: 40 })
     status!: string
 

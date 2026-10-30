@@ -53,13 +53,16 @@ describe("MySQL database integration", () => {
     test("fresh baseline has no legacy tables, role or inline media and supports rollback and reapply", async () => {
         const runner = AppDataSource.createQueryRunner()
         try {
-            expect(databaseMigrations).toHaveLength(14)
+            expect(databaseMigrations).toHaveLength(15)
             expect(await runner.hasTable("reviews")).toBe(false)
             expect(await runner.hasColumn("rejections", "rejected_by")).toBe(true)
             expect(await runner.hasColumn("rejections", "decision")).toBe(false)
             expect(await runner.hasColumn("drafts", "review_status")).toBe(false)
             expect(await runner.hasColumn("drafts", "decision_status")).toBe(true)
             expect(await runner.hasColumn("batches", "template_id")).toBe(false)
+            for (const column of ["publication_permission", "consent_by", "consent_at"]) {
+                expect(await runner.hasColumn("batches", column)).toBe(false)
+            }
             expect(await runner.hasColumn("drafts", "primary_asset_id")).toBe(false)
             expect(await runner.hasColumn("publications", "media_key")).toBe(false)
             expect(await runner.hasColumn("publications", "child_container_ids")).toBe(true)
@@ -72,7 +75,8 @@ describe("MySQL database integration", () => {
                 Number(Migration.name.slice(-13))
             )
             expect(timestamps).toEqual([
-                ...Array.from({ length: 14 }, (_, index) => 1792490400000 + index)
+                ...Array.from({ length: 14 }, (_, index) => 1792490400000 + index),
+                1793318400000
             ])
             expect(await runner.hasColumn("users", "role")).toBe(false)
             expect(await runner.hasColumn("renders", "sanitized_svg")).toBe(false)

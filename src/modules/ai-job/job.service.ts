@@ -49,7 +49,7 @@ export class JobService {
                 throw new ConflictException("Use retry for a failed job")
             }
             const assets = (await store.find("asset", { batchId })).filter((a) => !a.deletedAt)
-            if (!batch.publicationPermission || !assets.length) {
+            if (!assets.length) {
                 throw new BadRequestException("Publication permission and images are required")
             }
             if (assets.length > config.jobs.maxJobFiles) {

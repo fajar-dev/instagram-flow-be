@@ -1,3 +1,4 @@
+import { RemoveBatchConsent1793318400000 } from "./1793318400000-remove-batch-consent"
 import { CreateUsers1792490400000 } from "./1792490400000-create-users"
 import { CreatePasswordResetTokens1792490400001 } from "./1792490400001-create-password-reset-tokens"
 import { CreateBatches1792490400002 } from "./1792490400002-create-batches"
@@ -27,5 +28,6 @@ export const databaseMigrations = [
     CreateAuditLogs1792490400010,
     CreateSettings1792490400011,
     CreatePublications1792490400012,
-    CreateJobNotifications1792490400013
+    CreateJobNotifications1792490400013,
+    RemoveBatchConsent1793318400000
 ]

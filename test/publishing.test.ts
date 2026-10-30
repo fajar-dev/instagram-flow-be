@@ -86,9 +86,6 @@ async function fixture(output: "feed" | "story" = "feed") {
         documentationDate: "2026-10-19",
         description: "",
         clientName: "",
-        publicationPermission: true,
-        consentBy: auth.user.id,
-        consentAt: new Date(),
         status: "LOCKED",
         idempotencyKey: crypto.randomUUID()
     })
@@ -507,7 +504,7 @@ describe("Instagram publishing", () => {
             state === "PUBLISH" ? 1 : 0
         )
     })
-    test("rejects rejected, stale, unauthorized media permission and outdated design", async () => {
+    test("rejects rejected, stale content and foreign media", async () => {
         const f = await fixture()
         await repo.save("draft", { id: f.draftId, decisionStatus: "REJECTED" })
         expect((await f.enqueue()).status).toBe(409)
@@ -515,9 +512,6 @@ describe("Instagram publishing", () => {
         expect(
             (await f.enqueue({ ...f.payload, expectedContentHash: "b".repeat(64) })).status
         ).toBe(409)
-        await repo.save("batch", { id: f.batchId, publicationPermission: false })
-        expect((await f.enqueue()).status).toBe(400)
-        await repo.save("batch", { id: f.batchId, publicationPermission: true })
         expect((await f.enqueue({ ...f.payload, renderIds: [crypto.randomUUID()] })).status).toBe(
             400
         )

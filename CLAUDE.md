@@ -28,7 +28,7 @@ Reset password memakai tabel terpisah; request/resend membuat token baru. Satu r
 
 ## Database dan command
 
-Sync selalu false, termasuk test. Migration aktif: 14 create-table baseline schema final (satu tabel per migration). Carousel child_container_ids sudah berada di migration publications; tidak ada kolom template_id, primary_asset_id dan media_key. Snapshot memakai urutan renderIds dan mediaKeys. Perubahan berikutnya memakai migration baru kecuali reset development diminta eksplisit. Baca docs/operations/database.md sebelum mengubah schema.
+Sync selalu false, termasuk test. Migration aktif: 14 create-table baseline dan satu migration penghapusan kolom konfirmasi izin batch (15 migration, 14 tabel). Carousel child_container_ids sudah berada di migration publications; tidak ada kolom template_id, primary_asset_id dan media_key. Snapshot memakai urutan renderIds dan mediaKeys. Perubahan berikutnya memakai migration baru kecuali reset development diminta eksplisit. Baca docs/operations/database.md sebelum mengubah schema.
 
 Seeder satu file per seeder pada src/database/seeders; index.ts hanya koordinator, import.meta.main menjaga entrypoint CLI. Migration dan seeder memakai script package, bukan job. Worker AI menjalankan dispatch/recovery konten; worker publishing menangani publikasi Instagram.
 

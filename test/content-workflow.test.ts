@@ -368,7 +368,7 @@ describe("Content workflow", () => {
                 .status
         ).toBe(404)
     })
-    test("batch idempotency rejects different metadata and preserves original consent", async () => {
+    test("batch idempotency rejects different metadata and preserves original metadata", async () => {
         const user = await actor("idempotency@example.com")
         const headers = { ...user.headers, "Idempotency-Key": crypto.randomUUID() }
         const first = await request(app, "/api/batches", {
@@ -376,6 +376,10 @@ describe("Content workflow", () => {
             headers,
             body: metadata
         })
+        expect(first.status).toBe(201)
+        expect(first.body.data).not.toHaveProperty("publicationPermission")
+        expect(first.body.data).not.toHaveProperty("consentBy")
+        expect(first.body.data).not.toHaveProperty("consentAt")
         const duplicate = await request(app, "/api/batches", {
             method: "POST",
             headers,

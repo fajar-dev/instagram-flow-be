@@ -79,7 +79,6 @@ export function createBatchData() {
         projectName: "Bridge monitoring",
         activity: "Sensor installation",
         location: "Jakarta",
-        documentationDate: "2026-01-01",
-        publicationPermission: true as const
+        documentationDate: "2026-01-01"
     }
 }

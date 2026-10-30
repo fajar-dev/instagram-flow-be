@@ -6,8 +6,7 @@ export const batchSchema = z.object({
     location: z.string().trim().min(3).max(200),
     documentationDate: z.iso.date(),
     description: z.string().max(2000).default(""),
-    clientName: z.string().max(200).default(""),
-    publicationPermission: z.literal(true)
+    clientName: z.string().max(200).default("")
 })
 
 export type BatchInput = z.infer<typeof batchSchema>

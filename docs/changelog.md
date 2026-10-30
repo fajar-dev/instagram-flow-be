@@ -1,5 +1,8 @@
 ## 29 Oktober 2026 — Hapus registrasi publik dan perbaiki Swagger
 
+- Hapus konfirmasi izin publikasi dari form, kontrak batch, serta syarat pemrosesan AI dan publikasi; seluruh dokumentasi internal telah diizinkan.
+
+
 - Hapus endpoint auth/register, validator, controller/service, terjemahan sukses registrasi dan helper transaksi yang tidak dipakai. CRUD User terautentikasi tetap tersedia.
 - Fixture test membuat akun langsung di database test lalu login; tambahkan regresi endpoint register 404.
 - Gabungkan description duplikat pada callback hasil AI yang menyebabkan Swagger gagal parsing. Cara penyajian file dan alamat server Swagger tetap. Tambahkan validasi YAML ketat agar key duplikat terdeteksi.

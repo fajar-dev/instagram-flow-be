@@ -10,9 +10,6 @@ type PublicFields = Pick<
     | "documentationDate"
     | "description"
     | "clientName"
-    | "publicationPermission"
-    | "consentBy"
-    | "consentAt"
     | "status"
     | "createdAt"
     | "updatedAt"
@@ -29,9 +26,6 @@ export class BatchSerializer {
             documentationDate: value.documentationDate,
             description: value.description,
             clientName: value.clientName,
-            publicationPermission: value.publicationPermission,
-            consentBy: value.consentBy,
-            consentAt: value.consentAt,
             status: value.status,
             createdAt: value.createdAt,
             updatedAt: value.updatedAt

@@ -115,7 +115,6 @@
         "Publication image exceeds size limit": "Publication image exceeds size limit",
         "Publishing requires a public HTTP or HTTPS object storage endpoint": "Publishing requires a public HTTP or HTTPS object storage endpoint",
         "Publication request key was already used": "Publication request key was already used",
-        "Publication permission is required": "Publication permission is required",
         "Schedule must be at least one minute in the future": "Schedule must be at least one minute in the future",
         "Instagram caption exceeds 2200 characters": "Instagram caption exceeds 2200 characters",
         "Publication asset is unavailable": "Publication asset is unavailable",

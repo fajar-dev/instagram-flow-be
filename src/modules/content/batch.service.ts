@@ -58,8 +58,6 @@ export class BatchService {
                     id: id(),
                     ...input,
                     uploaderId: actor.id,
-                    consentBy: actor.id,
-                    consentAt: new Date(),
                     status: "DRAFT",
                     idempotencyKey: key
                 })

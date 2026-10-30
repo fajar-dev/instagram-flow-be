@@ -115,7 +115,6 @@
         "Publication image exceeds size limit": "Gambar publikasi melebihi batas ukuran",
         "Publishing requires a public HTTP or HTTPS object storage endpoint": "Publikasi memerlukan endpoint object storage HTTPS yang dapat diakses publik",
         "Publication request key was already used": "Kunci permintaan publikasi telah digunakan",
-        "Publication permission is required": "Izin publikasi diperlukan",
         "Schedule must be at least one minute in the future": "Jadwal harus minimal satu menit dari sekarang",
         "Instagram caption exceeds 2200 characters": "Caption Instagram melebihi 2200 karakter",
         "Publication asset is unavailable": "Aset publikasi tidak tersedia",

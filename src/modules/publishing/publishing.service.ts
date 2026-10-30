@@ -54,9 +54,6 @@ export class PublishingService {
                 ) {
                     throw new ConflictException("Only current ready content can be published")
                 }
-                if (!batch?.publicationPermission) {
-                    throw new BadRequestException("Publication permission is required")
-                }
                 const scheduledAt = input.scheduledAt ? new Date(input.scheduledAt) : new Date()
                 if (input.scheduledAt && scheduledAt.getTime() < Date.now() + 60000) {
                     throw new BadRequestException(
